@@ -1,0 +1,108 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for user in page_obj %}
+        <tr>
+            <td class="mobile-hide">{{ user.id }}</td>
+            <td class="mobile-hide">{{ user.profile_id }}</td>
+            <td>
+                <div>
+                    <span class="font-weight-bold">{{ user.full_name }}</span>
+                </div>
+            </td>
+            <td>{{ user.phone_number|phone_number }}</td>
+            <td class="mobile-hide">{{ user.email|default:"-" }}</td>
+            <td class="mobile-hide">
+                <span class="badge badge-primary">{{ user.groups.all|first|default:"User" }}</span>
+            </td>
+            <td class="mobile-hide">
+                {% if user.address %}
+                    <span class="text-truncate"
+                          style="max-width: 150px;
+                                 display: inline-block"
+                          title="{{ user.address }}">{{ user.address|truncatechars:30 }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">
+                {% if user.is_commission_eligible %}
+                    <span class="badge text-success">
+                        <i class="fas fa-check-circle"></i>
+                        Yes
+                    </span>
+                {% else %}
+                    <span class="badge text-secondary">
+                        <i class="fas fa-times-circle"></i>
+                        No
+                    </span>
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_active %}
+                    <span class="badge text-success">
+                        <i class="fas fa-check-circle"></i>
+                        Active
+                    </span>
+                {% else %}
+                    <span class="badge text-danger">
+                        <i class="fas fa-times-circle"></i>
+                        Inactive
+                    </span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ user.date_joined|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    {% if perms.user.view_customuser %}
+                        <a href="{% url 'user:detail' user.id %}"
+                           class="btn-action btn-view"
+                           title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.user.change_customuser %}
+                        <a href="{% url 'user:edit' user.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit User">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.user.view_salary %}
+                        {% if user.commission or user.current_salary and user.current_salary.commission %}
+                            <a href="{% url 'user:commission' user.id %}"
+                               class="btn-action btn-info"
+                               title="View Commission">
+                                <i class="fas fa-percentage"></i>
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                    {% if perms.user.delete_customuser %}
+                        <a href="{% url 'user:delete' user.id %}"
+                           class="btn-action btn-delete"
+                           title="Delete User">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="100" class="text-center p-2">
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h4>No Users Found</h4>
+                <p>No users match your search criteria. Try adjusting your filters or add a new user.</p>
+                <a href="{% url 'user:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add First User
+                </a>
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

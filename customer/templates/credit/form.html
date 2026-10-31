@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      {% if customer %}
+        <a href="{% url 'customer:credit_detail' customer.id %}"
+           class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Details
+        </a>
+      {% endif %}
+      <a href="{% url 'customer:credit_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to List
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'customer:home' %}" class="breadcrumb-item">Customers</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if customer %}
+      <a href="{% url 'customer:credit_detail' customer.id %}"
+         class="breadcrumb-item">{{ customer.name }}</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Payment</span>
+    {% else %}
+      <span class="breadcrumb-active">Create Payment</span>
+    {% endif %}
+  </nav>
+  <!-- Payment Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Payment Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-credit-card"></i> Payment Details{% if customer %} : {{ customer.credit_summary.balance_amount|currency }}{% endif %}</h5>
+          <!-- Customer Field -->
+          <div class="form-group {% if form.customer.errors %}has-error{% endif %}">
+            <label for="{{ form.customer.id_for_label }}" class="form-label">{{ form.customer.label }}</label>
+            {{ form.customer }}
+            <small class="form-help {% if form.customer.errors %}has-error{% endif %}">
+              {% if form.customer.errors %}
+                {% for error in form.customer.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Select the customer for this payment</span>
+            </small>
+          </div>
+          <!-- Payment Type Field -->
+          <div class="form-group {% if form.payment_type.errors %}has-error{% endif %}">
+            <label for="{{ form.payment_type.id_for_label }}" class="form-label">{{ form.payment_type.label }}</label>
+            {{ form.payment_type }}
+            <small class="form-help {% if form.payment_type.errors %}has-error{% endif %}">
+              {% if form.payment_type.errors %}
+                {% for error in form.payment_type.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Select Paid (customer pays) or Purchased (customer owes)</span>
+            </small>
+          </div>
+          <!-- Amount Field -->
+          <div class="form-group {% if form.amount.errors %}has-error{% endif %}">
+            <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+            {{ form.amount }}
+            <small class="form-help {% if form.amount.errors %}has-error{% endif %}">
+              {% if form.amount.errors %}
+                {% for error in form.amount.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Enter the payment amount (must be greater than zero)</span>
+            </small>
+          </div>
+          <!-- Payment Method Field -->
+          <div class="form-group {% if form.method.errors %}has-error{% endif %}">
+            <label for="{{ form.method.id_for_label }}" class="form-label">{{ form.method.label }}</label>
+            {{ form.method }}
+            <small class="form-help {% if form.method.errors %}has-error{% endif %}">
+              {% if form.method.errors %}
+                {% for error in form.method.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Select the payment method used (Cash, UPI, Bank Transfer, etc.)</span>
+            </small>
+          </div>
+          <!-- Transaction ID Field -->
+          <div class="form-group {% if form.transaction_id.errors %}has-error{% endif %}">
+            <label for="{{ form.transaction_id.id_for_label }}" class="form-label">{{ form.transaction_id.label }}</label>
+            {{ form.transaction_id }}
+            <small class="form-help {% if form.transaction_id.errors %}has-error{% endif %}">
+              {% if form.transaction_id.errors %}
+                {% for error in form.transaction_id.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Optional: Bank transaction reference number</span>
+            </small>
+          </div>
+          <!-- Payment Date Field -->
+          <div class="form-group {% if form.payment_date.errors %}has-error{% endif %}">
+            <label for="{{ form.payment_date.id_for_label }}" class="form-label">{{ form.payment_date.label }}</label>
+            {{ form.payment_date }}
+            <small class="form-help {% if form.payment_date.errors %}has-error{% endif %}">
+              {% if form.payment_date.errors %}
+                {% for error in form.payment_date.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Select the date and time for the payment</span>
+            </small>
+          </div>
+          <!-- Notes Field -->
+          <div class="form-group {% if form.notes.errors %}has-error{% endif %}">
+            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            <small class="form-help {% if form.notes.errors %}has-error{% endif %}">
+              {% if form.notes.errors %}
+                {% for error in form.notes.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Optional: Enter any additional notes about this payment</span>
+            </small>
+          </div>
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              {% if customer %}
+                Update Payment
+              {% else %}
+                Create Payment
+              {% endif %}
+            </button>
+            <div class="cart-options-row">
+              <a class="cart-option-btn text-danger" href="{% url 'customer:credit_home' %}" title="Cancel">
+                <i class="fas fa-times"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    $(document).ready(function () {
+      $('#id_customer').select2({ width: '100%' });
+    });
+  </script>
+{% endblock extra_js %}

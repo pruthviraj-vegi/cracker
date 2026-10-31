@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {% if user %}
+        Edit User
+    {% else %}
+        Create User
+    {% endif %}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            {% if user %}
+                Edit User
+            {% else %}
+                Create User
+            {% endif %}
+        </h2>
+        <div class="page-actions">
+            {% if user %}
+                <a href="{% url 'user:detail' user.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Details
+                </a>
+            {% endif %}
+            <a href="{% url 'user:home' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i>
+                Back to List
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+        <span class="breadcrumb-separator">/</span>
+        {% if user %}
+            <a href="{% url 'user:detail' user.id %}" class="breadcrumb-item">{{ user.full_name }}</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Edit</span>
+        {% else %}
+            <span class="breadcrumb-active">Create New</span>
+        {% endif %}
+    </nav>
+    <!-- User Form -->
+    <div class="form-container">
+        <div class="form-card">
+            <form method="post" class="details-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <!-- User Details Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-user"></i> User Details</h5>
+                    <!-- First Name Field -->
+                    <div class="form-group {% if form.first_name.errors %}has-error{% endif %}">
+                        <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                            {{ form.first_name.label|default:"First Name" }} *
+                        </label>
+                        {{ form.first_name }}
+                        <small class="form-help {% if form.first_name.errors %}has-error{% endif %}">
+                            {% if form.first_name.errors %}
+                                {% for error in form.first_name.errors %}
+                                    <span class="form-error-inline">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
+                            <span class="form-help-text">Enter the first name of the user</span>
+                        </small>
+                    </div>
+                    <!-- Last Name Field -->
+                    <div class="form-group {% if form.last_name.errors %}has-error{% endif %}">
+                        <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                            {{ form.last_name.label|default:"Last Name" }}
+                        </label>
+                        {{ form.last_name }}
+                        <small class="form-help {% if form.last_name.errors %}has-error{% endif %}">
+                            {% if form.last_name.errors %}
+                                {% for error in form.last_name.errors %}
+                                    <span class="form-error-inline">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
+                            <span class="form-help-text">Enter the last name of the user (optional)</span>
+                        </small>
+                    </div>
+                    <!-- Phone Number Field -->
+                    <div class="form-group {% if form.phone_number.errors %}has-error{% endif %}">
+                        <label for="{{ form.phone_number.id_for_label }}" class="form-label">
+                            {{ form.phone_number.label|default:"Phone Number" }}
+                        </label>
+                        {{ form.phone_number }}
+                        <small class="form-help {% if form.phone_number.errors %}has-error{% endif %}">
+                            {% if form.phone_number.errors %}
+                                {% for error in form.phone_number.errors %}
+                                    <span class="form-error-inline">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
+                            <span class="form-help-text">Enter phone number (must be unique)</span>
+                        </small>
+                    </div>
+                    <!-- Email Field -->
+                    <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label|default:"Email Address" }}</label>
+                        {{ form.email }}
+                        <small class="form-help {% if form.email.errors %}has-error{% endif %}">
+                            {% if form.email.errors %}
+                                {% for error in form.email.errors %}
+                                    <span class="form-error-inline">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
+                            <span class="form-help-text">Enter email address (optional, must be unique if provided)</span>
+                        </small>
+                    </div>
+                    <!-- Row 3: Groups and Is Active -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Groups Field -->
+                            <div class="form-group {% if form.groups.errors %}has-error{% endif %}">
+                                <label for="{{ form.groups.id_for_label }}" class="form-label">{{ form.groups.label|default:"Groups" }}</label>
+                                {{ form.groups }}
+                                <small class="form-help {% if form.groups.errors %}has-error{% endif %}">
+                                    {% if form.groups.errors %}
+                                        {% for error in form.groups.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="form-help-text">Select the groups for the user</span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Is Active Field -->
+                            <div class="form-group {% if form.is_active.errors %}has-error{% endif %}">
+                                <label for="{{ form.is_active.id_for_label }}" class="form-label">
+                                    {{ form.is_active.label|default:"Active Status" }}
+                                </label>
+                                <div class="checkbox-group">
+                                    {{ form.is_active }}
+                                    <label for="{{ form.is_active.id_for_label }}" class="checkbox-label">User is active and can login</label>
+                                </div>
+                                {% if form.is_active.errors %}
+                                    {% for error in form.is_active.errors %}
+                                        <small class="form-help form-error-inline">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                            {{ error }}
+                                        </small>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Row 4: Address (Full Width) -->
+                    <div class="form-group {% if form.address.errors %}has-error{% endif %}">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label|default:"Address" }}</label>
+                        {{ form.address }}
+                        <small class="form-help {% if form.address.errors %}has-error{% endif %}">
+                            {% if form.address.errors %}
+                                {% for error in form.address.errors %}
+                                    <span class="form-error-inline">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </span>
+                                {% endfor %}
+                            {% endif %}
+                            <span class="form-help-text">Enter the address of the user (optional)</span>
+                        </small>
+                    </div>
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            {% if user %}
+                                Update User
+                            {% else %}
+                                Create User
+                            {% endif %}
+                        </button>
+                        <div class="cart-options-row">
+                          <a class="cart-option-btn text-danger" href="{% url 'user:home' %}" title="Cancel">
+                            <i class="fas fa-times"></i>
+                          </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!-- Help Text -->
+            <div class="help-section mt-4 pt-3 border-top">
+                <h5 class="text-muted mb-2">Notes:</h5>
+                <ul class="text-muted mb-0 small ps-4">
+                    <li>Fields marked with * are required</li>
+                    <li>First name and phone number are required fields</li>
+                    <li>Phone number must be unique across all users</li>
+                    <li>Email address is optional but must be valid and unique if provided</li>
+                    <li>Last name and address are optional fields</li>
+                    <li>Commission eligibility is managed through salary records</li>
+                    <li>
+                        New users will have a default password: <code>changeme123</code>
+                    </li>
+                    <li>Users can change their password after first login</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

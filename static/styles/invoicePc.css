@@ -1,0 +1,306 @@
+* {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 1rem
+}
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+    font-size: 0.7rem;
+}
+
+.invoice-container {
+    width: 148mm;
+    min-height: 210mm;
+    margin: 5px auto;
+    background-color: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.7rem;
+}
+
+.shop-title {
+    display: flex;
+    /* Use flexbox to align items */
+    align-items: center;
+    /* Vertically center items */
+    justify-content: space-between;
+    /* Center the shop details */
+    text-align: center;
+    position: relative;
+    /* For positioning of the logo */
+    line-height: 9px;
+
+}
+
+.logo {
+    position: absolute;
+    /* Fix the logo on the left side */
+    left: 10px;
+    /* Stick it to the left edge */
+    
+    width: 50px;
+    padding-bottom: 15px;
+}
+
+.logo img {
+    width: 100%;
+}
+
+.shop-title div {
+    flex-grow: 1;
+    /* Let the shop details take up the remaining space */
+}
+
+.shop-name {
+    font-size: 15px;
+    /* Adjust font size if needed */
+    font-weight: bold;
+}
+
+.shop-address,
+.text-bold {
+    margin: 5px 0;
+    /* Ensure some spacing between lines */
+}
+
+.shop-details {
+    text-align: right;
+    line-height: 0.5rem;
+}
+
+.shop-name {
+    font-size: 22px;
+    font-weight: bold;
+    padding-bottom: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.shop-address {
+    font-size: 0.7rem;
+}
+
+.text-bold {
+    font-weight: bold;
+}
+
+.invoice_details {
+    display: flex;
+    justify-content: space-between;
+    line-height: 1px;
+    text-align: center;
+    border: 1px solid #ddd;
+    padding: 5px;
+}
+
+.invoice {
+    text-align: left;
+    min-width: 35px;
+}
+
+.invoice-value {
+    font-weight: bold;
+}
+
+.buyer_details {
+    padding-top: 8px;
+    text-align: right;
+    padding-right: 2mm;
+}
+
+.content-table {
+    padding: 5px 0;
+    min-height: 110mm;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.table-logo {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    height: 100%;
+}
+
+.table-logo img {
+    width: 100%;
+    opacity: 30%;
+    padding-top: 10px;
+    height: 90%;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    flex-grow: 1;
+    /* This makes the table grow to fill the container */
+}
+
+table th {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    background-color: #318df7;
+    color: white;
+}
+
+table th,
+table td {
+    padding: 0.2rem 0;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
+    text-align: center;
+    font-size: 0.75rem;
+}
+table td:last-child,
+table td:nth-last-child(2),
+table th:last-child,
+table th:nth-last-child(2) {
+    text-align: right;
+    padding-right: 10px;
+}
+
+.items-table tbody tr:nth-child(even) {
+    background-color: #dddddd;
+    /* White for even rows */
+}
+
+table tbody {
+    flex-grow: 1;
+}
+
+.items-table tfoot {
+    position: sticky;
+    bottom: 0;
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.empty-space {
+    height: 100%;
+    /* Let this row grow */
+}
+
+.empty-space td {
+    height: 100%;
+    /* Ensure the cells stretch */
+    background-color: #fff;
+    /* Matches the table background */
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-left: none;
+    border-right: none;
+    /* Remove vertical borders */
+}
+
+.amounts-calculations {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    border: 1px solid #ddd;
+    justify-content: space-between;
+    border-collapse: collapse;
+}
+
+.tax-data {
+    width: 60%;
+    padding: 5px;
+}
+
+.amount-words {
+    text-align: center;
+}
+
+.amounts-data {
+    width: 30%;
+    line-height: 1px;
+    padding-inline: 5px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.amounts-data p {
+    display: flex;
+    /* Use flexbox to align text and number */
+    justify-content: space-between;
+    /* Separate the text and number */
+    padding: 1px 0;
+    /* Add space between the paragraphs */
+}
+
+.amounts-data p span {
+    min-width: 50px;
+    /* Optional: Ensure the number has enough space */
+    text-align: right;
+    /* Align numbers to the right */
+}
+
+.highlight {
+    font-size: 15px;
+    /* Increase font size to make it stand out */
+    font-weight: bold;
+    /* Make the text bold */
+}
+.terms_subject {
+    display: flex;
+    flex-direction: column;
+    line-height: 0.8rem;
+}
+.terms_subject em {
+    font-style: italic;
+}
+
+.terms-qrcode {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+    border: 1px solid #ddd;
+    padding: 2px 0;
+}
+
+.terms-conditions {
+    display: flex;
+    flex-direction: column;
+    line-height: 1px;
+    padding-left: 10px;
+    justify-content: center;
+}
+
+.terms_title {
+    text-decoration: underline;
+}
+
+.barcode {
+    padding-right: 20px;
+}
+
+.barcode img {
+    width: 20mm;
+}
+
+.thank-you {
+    text-align: center;
+    line-height: 1px;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+tbody,
+td,
+tfoot,
+th,
+thead,
+tr {
+    border-color: inherit;
+    border-style: solid;
+    border-width: 0;
+}

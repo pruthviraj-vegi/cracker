@@ -1,0 +1,414 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  {{ user.full_name }} - User Details
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ user.full_name }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'user:home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back
+      </a>
+      {% if perms.user.change_customuser %}
+        <a href="{% url 'user:edit' user.id %}" class="btn btn-primary">
+          <i class="fas fa-edit"></i>
+          Edit User
+        </a>
+      {% endif %}
+      {% if perms.user.change_customuser %}
+        <a href="{% url 'user:reset_password' user.id %}"
+           class="btn btn-warning">
+          <i class="fas fa-key"></i>
+          Reset Password
+        </a>
+        {% if user.is_active %}
+          <form method="post"
+                action="{% url 'user:change_status' user.id %}"
+                class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-warning">
+              <i class="fas fa-user-slash"></i>
+              Deactivate
+            </button>
+          </form>
+        {% else %}
+          <form method="post"
+                action="{% url 'user:change_status' user.id %}"
+                class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-user-check"></i>
+              Activate
+            </button>
+          </form>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ user.full_name }}</span>
+  </nav>
+  <!-- Main Layout -->
+  <div class="col d-flex flex-row detail-layout two-column-layout">
+    <!-- Left Column - User Details and Summary -->
+    <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+      <!-- User Details Column -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-user"></i> User Details
+          </h3>
+        </div>
+        <div class="details-info-compact summary-card-body">
+          <div class="detail-name-compact">
+            <h4>{{ user.full_name }}</h4>
+            <span class="detail-status {% if user.is_active %}status-active{% else %}status-inactive{% endif %}">
+              {% if user.is_active %}
+                Active
+              {% else %}
+                Inactive
+              {% endif %}
+            </span>
+          </div>
+          <div class="detail-contact-compact">
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>{{ user.phone_number }}</span>
+            </div>
+            {% if user.email %}
+              <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>{{ user.email }}</span>
+              </div>
+            {% endif %}
+            {% if user.address %}
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ user.address|truncatechars:50 }}</span>
+              </div>
+            {% endif %}
+            <div class="contact-item">
+              <i class="fas fa-users"></i>
+              <span>{{ user.groups.all|first|default:"User" }}</span>
+            </div>
+            {% if current_salary %}
+              <div class="contact-item">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>{{ current_salary.amount|currency }}/mo</span>
+              </div>
+            {% endif %}
+            <div class="contact-item">
+              <i class="fas fa-calendar"></i>
+              <span>{{ user.date_joined|date:"M d, Y" }}</span>
+            </div>
+            {% if user.last_login %}
+              <div class="contact-item">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Last: {{ user.last_login|date:"M d, Y" }}</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Salary Summary Card -->
+      <div class="sidebar-card" id="salarySummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-money-bill-wave"></i> Salary Summary
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    data-count="{{ total_salaries|default:0 }}">0</span>
+              <span class="stat-label">Total Records</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">
+                {% if current_salary %}
+                  {{ current_salary.amount|currency }}
+                {% else %}
+                  0
+                {% endif %}
+              </span>
+              <span class="stat-label">Current</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">
+                {% if user.is_commission_eligible %}
+                  <i class="fas fa-check text-success"></i>
+                {% else %}
+                  <i class="fas fa-times text-secondary"></i>
+                {% endif %}
+              </span>
+              <span class="stat-label">Commission</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Transaction Summary Card -->
+      <div class="sidebar-card" id="transactionSummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-exchange-alt"></i> Transaction Summary
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    data-count="{{ total_transactions|default:0 }}">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ credit_transactions|currency|default:0 }}</span>
+              <span class="stat-label">Credit</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ debit_transactions|currency|default:0 }}</span>
+              <span class="stat-label">Debit</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Net Amount Card -->
+      <div class="sidebar-card" id="netAmountCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-calculator"></i> Net Amount
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item w-100">
+              <span class="stat-number {% if net_amount >= 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ net_amount|currency|default:0 }}
+              </span>
+              <span class="stat-label">Balance</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Tables -->
+    <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+      <!-- Salary Table Section -->
+      <div class="table-section" id="salarySection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-money-bill-wave"></i> Salary History
+          </h3>
+          {% if perms.user.add_salary %}
+            <a href="{% url 'user:salary_create' user.id %}"
+               class="btn btn-sm btn-primary">
+              <i class="fas fa-plus"></i>
+              Add Salary
+            </a>
+          {% endif %}
+        </div>
+        <div class="table-container">
+          {% if salaries %}
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Amount</th>
+                  <th class="mobile-hide">Commission</th>
+                  <th class="mobile-hide">Effective From</th>
+                  <th class="mobile-hide">Effective To</th>
+                  <th class="mobile-hide">Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for salary in salaries %}
+                  <tr>
+                    <td>{{ salary.amount|currency }}</td>
+                    <td class="mobile-hide">
+                      {% if salary.commission %}
+                        <span class="badge badge-success">Yes</span>
+                      {% else %}
+                        <span class="badge badge-secondary">No</span>
+                      {% endif %}
+                    </td>
+                    <td class="mobile-hide">{{ salary.effective_from|date:"M d, Y" }}</td>
+                    <td class="mobile-hide">
+                      {% if salary.effective_to %}
+                        {{ salary.effective_to|date:"M d, Y" }}
+                      {% else %}
+                        <span class="badge badge-success">Current</span>
+                      {% endif %}
+                    </td>
+                    <td class="mobile-hide">{{ salary.created_at|date:"M d, Y" }}</td>
+                    <td>
+                      <div class="action-buttons">
+                        {% if perms.user.change_salary %}
+                          <a href="{% url 'user:salary_edit' user.id salary.id %}"
+                             class="btn btn-sm btn-outline"
+                             title="Edit">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                        {% endif %}
+                        {% if perms.user.delete_salary %}
+                          <a href="{% url 'user:salary_delete' user.id salary.id %}"
+                             class="btn btn-sm btn-danger"
+                             title="Delete">
+                            <i class="fas fa-trash"></i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div class="text-center p-4">
+              <p class="text-muted">No salary records found.</p>
+              {% if perms.user.add_salary %}
+                <a href="{% url 'user:salary_create' user.id %}" class="btn btn-primary">
+                  <i class="fas fa-plus"></i>
+                  Add First Salary
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Transaction Table Section -->
+      <div class="table-section" id="transactionSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-exchange-alt"></i> Transactions
+          </h3>
+          {% if perms.user.add_transaction %}
+            <a href="{% url 'user:transaction_create' user.id %}"
+               class="btn btn-sm btn-primary">
+              <i class="fas fa-plus"></i>
+              Add Transaction
+            </a>
+          {% endif %}
+        </div>
+        <div class="table-container">
+          {% if transactions %}
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="mobile-hide">Transaction ID</th>
+                  <th>Type</th>
+                  <th>Amount</th>
+                  <th class="mobile-hide">Payment Method</th>
+                  <th class="mobile-hide">Description</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for transaction in transactions %}
+                  <tr>
+                    <td class="mobile-hide">{{ transaction.transaction_id }}</td>
+                    <td>{{ transaction.get_transaction_type_display }}</td>
+                    <td>
+                      {% if transaction.is_debit %}
+                        <span class="text-danger">-{{ transaction.amount|currency }}</span>
+                      {% else %}
+                        <span class="text-success">+{{ transaction.amount|currency }}</span>
+                      {% endif %}
+                    </td>
+                    <td class="mobile-hide">{{ transaction.get_payment_method_display }}</td>
+                    <td class="mobile-hide">{{ transaction.description|truncatewords:10|default:"-" }}</td>
+                    <td>{{ transaction.date|date:"M d, Y" }}</td>
+                    <td>
+                      <div class="action-buttons">
+                        {% if perms.user.change_transaction %}
+                          <a href="{% url 'user:transaction_edit' user.id transaction.id %}"
+                             class="btn btn-sm btn-outline"
+                             title="Edit">
+                            <i class="fas fa-edit"></i>
+                          </a>
+                        {% endif %}
+                        {% if perms.user.delete_transaction %}
+                          <a href="{% url 'user:transaction_delete' user.id transaction.id %}"
+                             class="btn btn-sm btn-danger"
+                             title="Delete">
+                            <i class="fas fa-trash"></i>
+                          </a>
+                        {% endif %}
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <div class="text-center p-4">
+              <p class="text-muted">No transactions found.</p>
+              {% if perms.user.add_transaction %}
+                <a href="{% url 'user:transaction_create' user.id %}"
+                   class="btn btn-primary">
+                  <i class="fas fa-plus"></i>
+                  Add First Transaction
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Summary card click handlers
+      const salarySummaryCard = document.getElementById('salarySummaryCard')
+      const transactionSummaryCard = document.getElementById('transactionSummaryCard')
+      const netAmountCard = document.getElementById('netAmountCard')
+      const salarySection = document.getElementById('salarySection')
+      const transactionSection = document.getElementById('transactionSection')
+    
+      if (salarySummaryCard && salarySection) {
+        salarySummaryCard.addEventListener('click', function () {
+          salarySection.scrollIntoView({ behavior: 'smooth' })
+        })
+      }
+    
+      if (transactionSummaryCard && transactionSection) {
+        transactionSummaryCard.addEventListener('click', function () {
+          transactionSection.scrollIntoView({ behavior: 'smooth' })
+        })
+      }
+
+      if (netAmountCard && transactionSection) {
+        netAmountCard.addEventListener('click', function () {
+          transactionSection.scrollIntoView({ behavior: 'smooth' })
+        })
+      }
+
+      // Animate counting numbers
+      const countingNumbers = document.querySelectorAll('.counting-number')
+      countingNumbers.forEach(function(element) {
+        const target = parseInt(element.getAttribute('data-count')) || 0
+        let current = 0
+        const increment = target / 50
+        const timer = setInterval(function() {
+          current += increment
+          if (current >= target) {
+            element.textContent = target
+            clearInterval(timer)
+          } else {
+            element.textContent = Math.floor(current)
+          }
+        }, 20)
+      })
+    })
+  </script>
+{% endblock extra_js %}

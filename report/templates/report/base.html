@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="description" content="My Billing System PDF" />
+        <meta name="keywords" content="billing, POS" />
+        <title>
+            {% block title %}
+                My Billing
+            {% endblock title %}
+        </title>
+        {% block style %}
+        {% endblock style %}
+    </head>
+    <body>
+        {% block content %}
+        {% endblock content %}
+    </body>
+</html>

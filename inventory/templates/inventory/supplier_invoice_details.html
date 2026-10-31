@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Invoice {{ invoice_number }} Details
+{% endblock title %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}">
+{% endblock extra_css %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Invoice {{ invoice_number }} Details</h2>
+        <div class="page-actions">
+            <button type="button"
+                    class="btn btn-secondary"
+                    onclick="reloadTable('invoiceProductsTable')">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+            <a href="{% url 'inventory:supplier_invoice' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Tracking
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Inventory</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'inventory:supplier_invoice' %}" class="breadcrumb-item">Supplier Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ invoice_number }}</span>
+    </nav>
+
+    <!-- Invoice Overview Hero Tier (Dashboard Style) -->
+    <div class="dash-hero-grid detail-dash-grid">
+        <!-- 1. Invoice Financials & Profit Hero Card -->
+        <div class="dash-hero-card">
+            <div>
+                <div class="hero-card-header">
+                    <span class="hero-card-title">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        Invoice {{ invoice_number }}
+                    </span>
+                    <div class="d-flex align-items-center gap-1">
+                        <span class="hero-tag {% if invoice_info.supplier_invoice__status == 'Paid' %}text-success{% elif invoice_info.supplier_invoice__status == 'Partially Paid' %}text-warning{% else %}text-secondary{% endif %}">
+                            {{ invoice_info.supplier_invoice__status|default:"Active" }}
+                        </span>
+                        {% if invoice_info.supplier_invoice__type %}
+                            <span class="hero-tag text-primary">{{ invoice_info.supplier_invoice__type }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="hero-val-display">
+                    <span class="hero-number-lg">{{ invoice_info.supplier_invoice__total_amount|currency }}</span>
+                    <span class="stat-label-small ms-1">invoice total</span>
+                </div>
+                <div class="stat-label-small mt-1">
+                    Date: <strong>{{ invoice_info.supplier_invoice__invoice_date|date:"M d, Y" }}</strong> · Intake: <strong>{{ total_stock_in_value|currency }}</strong> · Margin: <span class="{% if profit_margin > 0 %}text-success{% elif profit_margin < 0 %}text-danger{% endif %} fw-semibold">{{ profit_margin|floatformat:1 }}%</span>
+                </div>
+            </div>
+
+            <div class="hero-submetrics">
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Sales Revenue</span>
+                    <div class="hero-submetric-val">{{ total_sales_revenue|currency }}</div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Gross Profit</span>
+                    <div class="hero-submetric-val {% if total_profit > 0 %}text-success{% elif total_profit < 0 %}text-danger{% endif %}">
+                        {{ total_profit|currency }}
+                    </div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Cost of Goods (COGS)</span>
+                    <div class="hero-submetric-val">{{ total_cogs|currency }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Stock Movement & Sell-Through Hero Card -->
+        <div class="dash-hero-card">
+            <div>
+                <div class="hero-card-header">
+                    <span class="hero-card-title">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        Stock &amp; Sell-Through
+                    </span>
+                    <span class="hero-tag text-success">
+                        <i class="fa-solid fa-chart-line me-1"></i>{{ sold_percentage|floatformat:1 }}% Sold
+                    </span>
+                </div>
+                <div class="hero-val-display">
+                    <span class="hero-number-lg">{{ total_remaining|floatformat:0 }}</span>
+                    <span class="stat-label-small ms-1">units remaining</span>
+                </div>
+                <div class="stat-label-small mt-1">
+                    Supplier: <strong class="text-primary">{{ invoice_info.supplier_invoice__supplier__name }}</strong> · Received: <strong>{{ total_stock_in|floatformat:0 }}</strong> units
+                </div>
+            </div>
+
+            <div class="hero-submetrics">
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Units Sold</span>
+                    <div class="hero-submetric-val">{{ total_sales|floatformat:0 }}</div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Damaged</span>
+                    <div class="hero-submetric-val {% if total_damage > 0 %}text-danger{% endif %}">
+                        {{ total_damage|floatformat:0 }} <small class="text-secondary">({{ total_damage_value|currency }})</small>
+                    </div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Total Stock In</span>
+                    <div class="hero-submetric-val">{{ total_stock_in|floatformat:0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products in Invoice Table Section (Full Width) -->
+    <div class="table-section" id="productsSection">
+        <div class="table-header">
+            <h3>
+                <i class="fas fa-list"></i> Products in Invoice
+            </h3>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="search-filter-section">
+            <form method="get" class="search-filter-form" id="searchForm" autocomplete="off">
+                <div class="search-group search-expanded">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="search"
+                           name="search"
+                           class="search-input"
+                           placeholder="Search products, brand, barcode, color, size..."
+                           id="searchInput"
+                           autofocus>
+                </div>
+                <select name="status" class="filter-select" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="in_stock">In Stock</option>
+                    <option value="low_stock">Low Stock (≤ 5)</option>
+                    <option value="sold_out">Sold Out</option>
+                    <option value="selling_well">Selling Well (≥ 50%)</option>
+                    <option value="slow_moving">Slow Moving (&lt; 50%)</option>
+                    <option value="damaged">Has Damaged Stock</option>
+                </select>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Search
+                </button>
+            </form>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table"
+                   id="invoiceProductsTable"
+                   data-sort="-stock_in_quantity">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="brand">Product</th>
+                        <th>Size</th>
+                        <th>Color</th>
+                        <th class="sortable" data-sort="barcode">Barcode</th>
+                        <th class="sortable" data-sort="stock_in_quantity">Stock In</th>
+                        <th class="sortable" data-sort="sales_quantity">Sales</th>
+                        <th class="sortable" data-sort="damage_quantity">Damage</th>
+                        <th class="sortable" data-sort="remaining_quantity">Remaining</th>
+                        <th class="sortable" data-sort="purchase_price">Purchase Price</th>
+                        <th class="sortable" data-sort="selling_price">Selling Price</th>
+                        <th>Revenue</th>
+                        <th class="sortable" data-sort="profit">Profit</th>
+                        <th class="sortable" data-sort="sold_percentage">Sold %</th>
+                        <th>Stock Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="15" class="text-center empty-state-container p-3">
+                            <div class="empty-state">
+                                <i class="fas fa-boxes"></i>
+                                <h4>No Products Found</h4>
+                                <p>No products found in this invoice.</p>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fetchUrl = '{% url "inventory:supplier_invoice_details_fetch" invoice_id %}';
+
+        initTableAjax('searchForm', 'invoiceProductsTable', fetchUrl, {
+            loadingText: 'Loading products...',
+            autoLoad: true,
+        }, true);
+
+        initTableSorting('invoiceProductsTable');
+    });
+    </script>
+{% endblock extra_js %}

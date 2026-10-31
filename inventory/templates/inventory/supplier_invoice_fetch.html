@@ -1,0 +1,42 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for invoice in page_obj %}
+        <tr>
+            <td>
+                <strong>{{ invoice.invoice_number }}</strong>
+            </td>
+            <td>{{ invoice.supplier.name }}</td>
+            <td class="mobile-hide">{{ invoice.invoice_date|date:"M d, Y" }}</td>
+            <td>{{ invoice.total_amount|currency }}</td>
+            <td class="mobile-hide">{{ invoice.stock_amount|currency }}</td>
+            <td class="mobile-hide">{{ invoice.stock_in_quantity|floatformat:0 }}</td>
+            <td class="mobile-hide">{{ invoice.sales_quantity|floatformat:0 }}</td>
+            <td class="mobile-hide">{{ invoice.remaining_quantity|floatformat:0 }}</td>
+            <td class="mobile-hide">
+                <span class="badge {% if invoice.sold_percentage < 25 %}text-danger{% elif invoice.sold_percentage < 50 %}text-warning{% else %}text-success{% endif %}">
+                    {{ invoice.sold_percentage|floatformat:2 }}%
+                </span>
+            </td>
+            <td class="mobile-hide">{{ invoice.products_count }}</td>
+            <td>
+                <div class="action-buttons">
+                    <a href="{% url 'inventory:supplier_invoice_details' invoice.id %}"
+                       class="btn-action btn-view"
+                       title="View Invoice Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="100" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h4>No Supplier Invoices Found</h4>
+                <p>No supplier invoices match your filters. Try adjusting the search criteria.</p>
+            </div>
+        </td>
+    </tr>
+{% endif %}

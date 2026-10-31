@@ -1,0 +1,125 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {{ supplier.name }} - {% now "F d, Y" %}
+{% endblock title %}
+{% block style %}
+    <link rel="stylesheet" href="styles/A4.css" />
+{% endblock style %}
+{% block content %}
+    <div class="header-content">
+        <div class="shop-info">
+            {% if shop_details %}
+                {% if shop_details.shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+                <div class="shop-details">
+                    {% if shop_details.address_line_one %}<p>{{ shop_details.address_line_one }}</p>{% endif %}
+                    {% if shop_details.gst_no %}
+                        <p>
+                            <strong>GST:</strong> {{ shop_details.gst_no }}
+                        </p>
+                    {% endif %}
+                    {% if shop_details.contact_info %}
+                        <p>
+                            <strong>Contact:</strong> {{ shop_details.contact_info }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="report-info">
+            <div class="report-title">Supplier Ledger Report</div>
+            <div class="report-title">{{ supplier.name }}</div>
+            <div class="report-meta">
+                <p>
+                    <strong>Generated:</strong> {% now "F d, Y h:i A" %}
+                </p>
+                <p>
+                    <strong>Balance:</strong> {{ supplier.balance_due|currency }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Date Period Section -->
+    <div class="date-period-section">
+        <div class="date-period-content ">
+            <span class="date-period-label">Report Period:</span>
+            <span class="date-period-value">{{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</span>
+        </div>
+    </div>
+    <!-- Table Section -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="text-center">Sl.</th>
+                    <th class="text-center">Date</th>
+                    <th class="text-center">Type</th>
+                    <th class="text-center">Reference</th>
+                    <th class="text-center">Description</th>
+                    <th class="text-center">Credit</th>
+                    <th class="text-center">Debit</th>
+                    <th class="text-center">Running Balance</th>
+                    <th class="text-center">Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if opening_balance != 0 %}
+                    <tr>
+                        <td></td>
+                        <td class="text-center">{{ start_date|date:"M d, Y" }}</td>
+                        <td colspan="5" class="text-center">Opening Balance</td>
+                        <td class="text-center">
+                            <strong>{{ opening_balance|currency }}</strong>
+                        </td>
+                        <td></td>
+                    </tr>
+                {% endif %}
+                {% if transactions %}
+                    {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td class="text-center">{{ transaction.date|date:"M d, Y" }}</td>
+                            <td class="text-center">{{ transaction.type }}</td>
+                            <td class="text-center">{{ transaction.reference }}</td>
+                            <td class="text-center">{{ transaction.description }}</td>
+                            <td class="text-center">{{ transaction.credit|currency }}</td>
+                            <td class="text-center">{{ transaction.debit|currency }}</td>
+                            <td class="text-center">{{ transaction.running_balance|currency }}</td>
+                            <td class="text-center">{{ transaction.notes }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="5" class="text-center">Total</td>
+                        <td class="text-center">
+                            <strong>{{ total_invoiced|currency }}</strong>
+                        </td>
+                        <td class="text-center">
+                            <strong>{{ total_paid|currency }}</strong>
+                        </td>
+                        <td class="text-center">
+                            <strong>{{ outstanding_balance|currency }}</strong>
+                        </td>
+                        <td class="text-center"></td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="100" class="text-center empty-state">
+                            <p class="text-muted">No purchase orders found matching the criteria.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Footer Section -->
+    <div class="footer-section">
+        <div class="total-info">
+            <p>
+                <strong>Balance Due: {{ supplier.balance_due|currency }}</strong>
+            </p>
+        </div>
+        <p>This is a computer-generated report. No signature required.</p>
+        <p>Generated on {% now "F d, Y \a\t h:i A" %}</p>
+    </div>
+{% endblock content %}

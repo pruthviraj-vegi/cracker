@@ -1,0 +1,67 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for category in page_obj %}
+        <tr>
+            <td class="mobile-hide">{{ category.id }}</td>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary">{{ category.name }}</span>
+                </div>
+            </td>
+            <td class="mobile-hide">
+                {% if category.parent %}
+                    <span class="text-muted">{{ category.parent.name }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">
+                {% if category.description %}
+                    <span class="text-muted">{{ category.description|truncatechars:50 }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <span class="badge badge-primary">{{ category.products_count|default:0 }}</span>
+            </td>
+            <td class="mobile-hide">{{ category.created_at|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    {% if perms.inventory.change_category %}
+                        <a href="{% url 'inventory:category_edit' category.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit Category">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.inventory.delete_category %}
+                        <a href="{% url 'inventory:category_delete' category.id %}"
+                           class="btn-action btn-delete"
+                           title="Delete Category">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="8" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-folder"></i>
+                <h4>No Categories Found</h4>
+                <p>No categories match your search criteria. Try adjusting your filters or add a new category.</p>
+                <a href="{% url 'inventory:category_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add First Category
+                </a>
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

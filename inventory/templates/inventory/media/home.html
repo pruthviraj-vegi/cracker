@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Media Gallery - Billing System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/media-gallery.css' %}">
+{% endblock %}
+
+{% block content %}
+    <!-- ── Sticky Page Header ── -->
+    <div class="page-header page-header-sticky">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h2 class="page-title mb-0">Media Gallery</h2>
+            <span class="gallery-count-pill" title="Total visual items in catalog">
+                <i class="fas fa-camera"></i> {{ stats.total_media }} Items
+            </span>
+        </div>
+        <div class="page-actions d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-secondary btn-sm" id="refreshGalleryBtn">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Search & Filter Section with Inline Breadcrumbs ── -->
+    <div class="search-filter-section mb-3">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Inventory</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Media Gallery</span>
+        </nav>
+
+        <form method="#" class="search-filter-form" id="searchForm" onsubmit="return false;">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search products by brand, name, or SKU..."
+                       id="mediaSearchInput"
+                       autocomplete="off"
+                       autofocus>
+            </div>
+            {% if categories %}
+            <select name="category" class="filter-select" id="categoryFilter">
+                <option value="all">All Categories</option>
+                {% for category in categories %}
+                    <option value="{{ category.cat_id }}">{{ category.cat_name }} ({{ category.media_count }})</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <button type="submit" class="btn btn-primary" id="searchSubmitBtn">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- ── Main Gallery Content Viewport ── -->
+    <div id="galleryViewport" class="layout-lookbook">
+        <div id="galleryContent">
+            <!-- Shimmer Skeleton Loading State -->
+            <div class="skeleton-grid">
+                {% for _ in "12345678" %}
+                <div class="skeleton-card">
+                    <div class="skeleton-block skeleton-image"></div>
+                    <div class="skeleton-block skeleton-title"></div>
+                    <div class="skeleton-block skeleton-meta"></div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Pagination Row ── -->
+    <div id="galleryPagination" class="pagination-wrapper mt-3" style="display:none;"></div>
+
+    <!-- ── Studio Lightbox & Quick View Modal ── -->
+    <div class="studio-modal-overlay" id="studioModal" role="dialog" aria-modal="true" aria-hidden="true">
+        <div class="studio-modal-box">
+            <!-- Close Button -->
+            <button type="button" class="studio-close-btn" id="studioCloseBtn" aria-label="Close modal">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <!-- Navigation Chevrons -->
+            <button type="button" class="studio-nav-arrow studio-nav-prev" id="studioPrevBtn" aria-label="Previous item">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button type="button" class="studio-nav-arrow studio-nav-next" id="studioNextBtn" aria-label="Next item">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+
+            <!-- Left Inspection Canvas -->
+            <div class="studio-image-canvas" id="studioCanvas">
+                <div class="studio-zoom-hint">
+                    <i class="fas fa-magnifying-glass-plus"></i> Hover to inspect
+                </div>
+                <div class="studio-image-container" id="studioMediaContainer">
+                    <img src="" alt="" class="studio-main-img" id="studioMainImg">
+                </div>
+                <div class="studio-media-counter" id="studioCounter">1 / 1</div>
+            </div>
+
+            <!-- Right Spec Sidebar (Flowing Modern Design) -->
+            <div class="studio-spec-sidebar">
+                <!-- Header Flow: Brand, Title, Meta -->
+                <div class="studio-header-flow">
+                    <div class="studio-brand-eyebrow" id="studioBrand">BRAND</div>
+                    <h2 class="studio-product-title" id="studioTitle">Garment Name</h2>
+
+                    <div class="studio-meta-flow">
+                        <div class="studio-sku-chip" id="studioSkuChip" title="Click to copy barcode">
+                            <i class="fas fa-barcode"></i>
+                            <span id="studioBarcodeText">SKU-000</span>
+                            <i class="fas fa-copy ms-1 text-muted" id="studioCopyIcon"></i>
+                        </div>
+                        <span class="card-status-badge badge-instock" id="studioStockBadge">
+                            <span class="badge-dot dot-in"></span> In Stock
+                        </span>
+                        <span class="card-discount-badge" id="studioDiscountPill" style="display:none;">20% OFF</span>
+                    </div>
+                </div>
+
+                <!-- Seamless Pricing Flow (No Rigid Boxes) -->
+                <div class="studio-price-flow">
+                    <div class="studio-price-row">
+                        <span class="studio-selling-price" id="studioSellingPrice">0.00</span>
+                        <span class="studio-mrp-crossed" id="studioMrpCrossed">MRP 0.00</span>
+                        <span class="studio-savings-badge" id="studioSavingsBadge">Save 0.00</span>
+                    </div>
+                    <div class="studio-stock-line" id="studioStockDetails">
+                        Available: <strong>0 units</strong>
+                    </div>
+                </div>
+
+                <div class="studio-flow-divider"></div>
+
+                <!-- Attributes Flow (Fluid Modern Pills instead of Table Grid) -->
+                <div class="studio-attributes-section">
+                    <span class="studio-attributes-title">Attributes &amp; Specs</span>
+                    <div class="studio-pills-flow">
+                        <div class="studio-flow-pill">
+                            <span class="flow-pill-label">Category</span>
+                            <span class="flow-pill-value" id="studioCategory">-</span>
+                        </div>
+                        <div class="studio-flow-pill">
+                            <span class="flow-pill-label">Fabric</span>
+                            <span class="flow-pill-value" id="studioMaterial">-</span>
+                        </div>
+                        <div class="studio-flow-pill">
+                            <span class="flow-pill-label">Color</span>
+                            <span class="flow-pill-value" id="studioColor">-</span>
+                        </div>
+                        <div class="studio-flow-pill">
+                            <span class="flow-pill-label">Size</span>
+                            <span class="flow-pill-value" id="studioSize">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modern Flowing Footer Actions -->
+                <div class="studio-footer-flow">
+                    <a href="#" class="studio-btn-secondary" id="studioDownloadBtn" target="_blank" download>
+                        <i class="fas fa-download"></i> Download Image
+                    </a>
+                    <a href="#" class="studio-btn-primary" id="studioVariantLink">
+                        View Variant Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    'use strict';
+
+    // ── State Management ──
+    const state = {
+        search: '',
+        category: 'all',
+        stock: 'all',
+        media_type: 'all',
+        on_sale: false,
+        sort: 'newest',
+        page: 1,
+        view: localStorage.getItem('mybilling_media_view') || 'lookbook'
+    };
+
+    let searchTimeout = null;
+    let currentFetchAbort = null;
+    let renderedCards = [];
+    let currentModalIndex = 0;
+
+    // ── DOM References ──
+    const searchForm = document.getElementById('searchForm');
+    const searchInput = document.getElementById('mediaSearchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const refreshBtn = document.getElementById('refreshGalleryBtn');
+    const viewport = document.getElementById('galleryViewport');
+    const galleryContent = document.getElementById('galleryContent');
+    const paginationWrapper = document.getElementById('galleryPagination');
+
+    // Modal DOM
+    const modal = document.getElementById('studioModal');
+    const modalCloseBtn = document.getElementById('studioCloseBtn');
+    const modalPrevBtn = document.getElementById('studioPrevBtn');
+    const modalNextBtn = document.getElementById('studioNextBtn');
+    const modalCanvas = document.getElementById('studioCanvas');
+    const modalMediaContainer = document.getElementById('studioMediaContainer');
+    const modalMainImg = document.getElementById('studioMainImg');
+    const modalCounter = document.getElementById('studioCounter');
+    const modalBrand = document.getElementById('studioBrand');
+    const modalTitle = document.getElementById('studioTitle');
+    const modalSkuChip = document.getElementById('studioSkuChip');
+    const modalBarcodeText = document.getElementById('studioBarcodeText');
+    const modalCopyIcon = document.getElementById('studioCopyIcon');
+    const modalStockBadge = document.getElementById('studioStockBadge');
+    const modalDiscountPill = document.getElementById('studioDiscountPill');
+    const modalSellingPrice = document.getElementById('studioSellingPrice');
+    const modalMrpCrossed = document.getElementById('studioMrpCrossed');
+    const modalSavingsBadge = document.getElementById('studioSavingsBadge');
+    const modalStockDetails = document.getElementById('studioStockDetails');
+    const modalCategory = document.getElementById('studioCategory');
+    const modalMaterial = document.getElementById('studioMaterial');
+    const modalColor = document.getElementById('studioColor');
+    const modalSize = document.getElementById('studioSize');
+    const modalDownloadBtn = document.getElementById('studioDownloadBtn');
+    const modalVariantLink = document.getElementById('studioVariantLink');
+
+    // ── Apply Layout Mode ──
+    if (viewport) {
+        viewport.className = 'layout-lookbook';
+    }
+
+    // ── Skeleton Loader Renderer ──
+    function showSkeletonLoading() {
+        const count = state.view === 'compact' ? 12 : 8;
+        let skeletons = '<div class="skeleton-grid">';
+        for (let i = 0; i < count; i++) {
+            skeletons += `
+                <div class="skeleton-card">
+                    <div class="skeleton-block skeleton-image"></div>
+                    <div class="skeleton-block skeleton-title"></div>
+                    <div class="skeleton-block skeleton-meta"></div>
+                </div>`;
+        }
+        skeletons += '</div>';
+        galleryContent.innerHTML = skeletons;
+    }
+
+    // ── Fetch Gallery Data (AJAX) ──
+    function fetchGallery(resetPage = false) {
+        if (resetPage) state.page = 1;
+
+        if (currentFetchAbort) {
+            currentFetchAbort.abort();
+        }
+        currentFetchAbort = new AbortController();
+
+        showSkeletonLoading();
+
+        const params = new URLSearchParams();
+        if (state.search) params.set('search', state.search);
+        if (state.category && state.category !== 'all') params.set('category', state.category);
+        if (state.stock && state.stock !== 'all') params.set('stock', state.stock);
+        if (state.media_type && state.media_type !== 'all') params.set('media_type', state.media_type);
+        if (state.on_sale) params.set('on_sale', '1');
+        if (state.sort && state.sort !== 'newest') params.set('sort', state.sort);
+        if (state.page > 1) params.set('page', state.page);
+
+        const url = '{% url "inventory:media_gallery_fetch" %}?' + params.toString();
+
+        fetch(url, { signal: currentFetchAbort.signal })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    galleryContent.innerHTML = data.html;
+                    updatePagination(data.pagination || '');
+                    collectRenderedCards();
+                } else {
+                    renderErrorState('Could not load media assets. Please try again.');
+                }
+            })
+            .catch(err => {
+                if (err.name === 'AbortError') return;
+                renderErrorState('Network error occurred. Please check your connection.');
+            });
+    }
+
+    function renderErrorState(message) {
+        galleryContent.innerHTML = `
+            <div class="gallery-empty-state">
+                <div class="empty-icon-wrapper"><i class="fas fa-exclamation-triangle"></i></div>
+                <h3 class="empty-title">Something went wrong</h3>
+                <p class="empty-description">${message}</p>
+                <button type="button" class="btn btn-outline-primary btn-sm reset-filters-action" onclick="window.location.reload();">
+                    <i class="fas fa-redo"></i> Reload Page
+                </button>
+            </div>`;
+        if (paginationWrapper) {
+            paginationWrapper.style.display = 'none';
+        }
+    }
+
+    // ── Pagination Handler ──
+    function updatePagination(html) {
+        if (!paginationWrapper) return;
+        if (!html || !html.trim()) {
+            paginationWrapper.innerHTML = '';
+            paginationWrapper.style.display = 'none';
+            return;
+        }
+        paginationWrapper.style.display = 'flex';
+        paginationWrapper.innerHTML = html;
+    }
+
+    if (paginationWrapper) {
+        paginationWrapper.addEventListener('click', (e) => {
+            const link = e.target.closest('a[data-page]');
+            if (!link) return;
+            e.preventDefault();
+            const page = parseInt(link.getAttribute('data-page'), 10);
+            if (page && page !== state.page) {
+                state.page = page;
+                fetchGallery(false);
+                viewport.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        });
+    }
+
+    // ── Search Input Debounce ──
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const val = this.value.trim();
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                state.search = val;
+                fetchGallery(true);
+            }, 300);
+        });
+    }
+
+    // ── Search Form Submit (Search Button or Enter key) ──
+    if (searchForm) {
+        searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearTimeout(searchTimeout);
+            state.search = searchInput ? searchInput.value.trim() : '';
+            fetchGallery(true);
+        });
+    }
+
+    // ── Category Select Dropdown ──
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function() {
+            state.category = this.value;
+            fetchGallery(true);
+        });
+    }
+
+    // ── Refresh Button ──
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            fetchGallery(false);
+        });
+    }
+
+    // ── Reset Filters (Delegated) ──
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('#resetGalleryFiltersBtn') || e.target.closest('.reset-filters-action')) {
+            state.search = '';
+            state.category = 'all';
+            state.page = 1;
+
+            if (searchInput) {
+                searchInput.value = '';
+            }
+            if (categoryFilter) {
+                categoryFilter.value = 'all';
+            }
+
+            fetchGallery(true);
+        }
+    });
+
+    // ── Clipboard Copy Helper ──
+    function copyBarcodeText(barcode, targetElement) {
+        if (!barcode) return;
+        navigator.clipboard.writeText(barcode).then(() => {
+            const toast = targetElement.querySelector('.sku-copy-toast');
+            if (toast) {
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 1500);
+            } else {
+                const icon = targetElement.querySelector('i');
+                if (icon) {
+                    const originalClass = icon.className;
+                    icon.className = 'fas fa-check text-success';
+                    setTimeout(() => { icon.className = originalClass; }, 1500);
+                }
+            }
+        }).catch(() => {});
+    }
+
+    // ── Card Interaction Delegations ──
+    galleryContent.addEventListener('click', (e) => {
+        // Expand button -> open Studio Lightbox Modal
+        if (e.target.closest('.card-expand-btn')) {
+            e.stopPropagation();
+            const card = e.target.closest('.gallery-card');
+            if (card) openStudioModal(card);
+            return;
+        }
+
+        // Edit/Profile link -> allow native link navigation
+        if (e.target.closest('a.card-action-icon-btn')) {
+            return; // Native link navigation to variant profile
+        }
+
+        // Card click (including big image) -> open Studio Lightbox Modal
+        const card = e.target.closest('.gallery-card');
+        if (card) {
+            openStudioModal(card);
+        }
+    });
+
+    // Keyboard support for cards
+    galleryContent.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const card = e.target.closest('.gallery-card');
+            if (card && !e.target.closest('a.card-action-icon-btn')) {
+                e.preventDefault();
+                openStudioModal(card);
+            }
+        }
+    });
+
+    // ── Studio Lightbox Modal & Carousel ──
+    function collectRenderedCards() {
+        renderedCards = Array.from(galleryContent.querySelectorAll('.gallery-card'));
+    }
+
+    function openStudioModal(card) {
+        collectRenderedCards();
+        currentModalIndex = renderedCards.indexOf(card);
+        if (currentModalIndex < 0) currentModalIndex = 0;
+        updateStudioModalContent(card);
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeStudioModal() {
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        // Stop any playing video
+        const vid = modalMediaContainer.querySelector('video');
+        if (vid) vid.pause();
+    }
+
+    function navigateStudioModal(delta) {
+        if (renderedCards.length <= 1) return;
+        currentModalIndex = (currentModalIndex + delta + renderedCards.length) % renderedCards.length;
+        const nextCard = renderedCards[currentModalIndex];
+        if (nextCard) {
+            updateStudioModalContent(nextCard);
+        }
+    }
+
+    function updateStudioModalContent(card) {
+        const d = card.dataset;
+        const originalUrl = d.original || d.thumbnail || '';
+        const isVideo = d.mediaType === 'VIDEO';
+        const brand = d.brand || 'Brand';
+        const productName = d.productName && d.productName !== '-' ? d.productName : (d.variantName || 'Garment');
+        const barcode = d.barcode || 'N/A';
+        const qty = parseFloat(d.quantity) || 0;
+        const discount = parseFloat(d.discount) || 0;
+        const sellingPrice = d.sellingPriceDisplay || d.sellingPrice || '0.00';
+        const mrp = d.mrpDisplay || d.mrp || '0.00';
+        const category = d.category || 'Apparel';
+        const material = d.material || 'Standard Fabric';
+        const color = d.color || 'Standard';
+        const size = d.size || 'Free Size';
+        const variantUrl = d.variantUrl || '#';
+
+        // Media container
+        if (isVideo) {
+            modalMediaContainer.innerHTML = `
+                <video src="${originalUrl}" controls autoplay playsinline class="studio-main-img" style="max-height:70vh;"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"></video>
+                <div class="gallery-img-fallback studio-fallback" style="display:none; width: 100%; min-height: 280px;">
+                    <i class="fas fa-film fallback-icon"></i>
+                    <span class="fallback-text">Video Not Available</span>
+                </div>
+            `;
+        } else {
+            modalMediaContainer.innerHTML = `
+                <img src="${originalUrl}" alt="${productName}" class="studio-main-img" id="studioMainImg"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="gallery-img-fallback studio-fallback" style="display:none; width: 100%; min-height: 280px;">
+                    <i class="fas fa-shirt fallback-icon"></i>
+                    <span class="fallback-text">Photo Not Available</span>
+                </div>
+            `;
+            setupZoomLens();
+        }
+
+        // Header info
+        modalBrand.textContent = brand.toUpperCase() + ' COLLECTION';
+        modalTitle.textContent = productName;
+        modalBarcodeText.textContent = barcode;
+        modalSkuChip.dataset.barcode = barcode;
+
+        // Stock status badge
+        modalStockBadge.className = 'card-status-badge';
+        if (qty === 0) {
+            modalStockBadge.classList.add('badge-out');
+            modalStockBadge.innerHTML = '<span class="badge-dot dot-out"></span> Out of Stock';
+        } else if (qty <= 5) {
+            modalStockBadge.classList.add('badge-low');
+            modalStockBadge.innerHTML = `<span class="badge-dot dot-low"></span> Low: ${qty.toFixed(0)} units`;
+        } else {
+            modalStockBadge.classList.add('badge-instock');
+            modalStockBadge.innerHTML = `<span class="badge-dot dot-in"></span> ${qty.toFixed(0)} units in stock`;
+        }
+
+        // Discount pill
+        if (discount > 0) {
+            modalDiscountPill.style.display = 'inline-flex';
+            modalDiscountPill.textContent = `${discount.toFixed(0)}% OFF`;
+        } else {
+            modalDiscountPill.style.display = 'none';
+        }
+
+        // Pricing
+        modalSellingPrice.textContent = sellingPrice;
+        if (discount > 0) {
+            modalMrpCrossed.style.display = 'inline';
+            modalMrpCrossed.textContent = 'MRP ' + mrp;
+            modalSavingsBadge.style.display = 'inline-block';
+            modalSavingsBadge.textContent = `${discount.toFixed(0)}% Off`;
+        } else {
+            modalMrpCrossed.style.display = 'none';
+            modalSavingsBadge.style.display = 'none';
+        }
+        modalStockDetails.innerHTML = `Available: <strong>${qty.toFixed(0)} units</strong>`;
+
+        // Specs
+        modalCategory.textContent = category;
+        modalMaterial.textContent = material;
+        modalColor.textContent = color;
+        modalSize.textContent = size;
+
+        // Action links
+        modalDownloadBtn.href = originalUrl;
+        modalVariantLink.href = variantUrl;
+
+        // Counter
+        modalCounter.textContent = `${currentModalIndex + 1} / ${renderedCards.length}`;
+
+        // Nav arrow visibility
+        modalPrevBtn.style.display = renderedCards.length > 1 ? 'flex' : 'none';
+        modalNextBtn.style.display = renderedCards.length > 1 ? 'flex' : 'none';
+    }
+
+    // Zoom inspection on hover
+    function setupZoomLens() {
+        const img = modalMediaContainer.querySelector('img');
+        if (!img) return;
+
+        modalCanvas.onmousemove = function(e) {
+            const rect = modalCanvas.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            img.style.transformOrigin = `${x}% ${y}%`;
+            img.style.transform = 'scale(1.8)';
+        };
+
+        modalCanvas.onmouseleave = function() {
+            img.style.transform = 'scale(1)';
+            img.style.transformOrigin = 'center center';
+        };
+    }
+
+    // Modal Events
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeStudioModal);
+    if (modalPrevBtn) modalPrevBtn.addEventListener('click', () => navigateStudioModal(-1));
+    if (modalNextBtn) modalNextBtn.addEventListener('click', () => navigateStudioModal(1));
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeStudioModal();
+    });
+
+    if (modalSkuChip) {
+        modalSkuChip.addEventListener('click', function() {
+            copyBarcodeText(this.dataset.barcode, this);
+        });
+    }
+
+    // Global Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+        if (!modal.classList.contains('active')) return;
+        if (e.key === 'Escape') {
+            closeStudioModal();
+        } else if (e.key === 'ArrowLeft') {
+            navigateStudioModal(-1);
+        } else if (e.key === 'ArrowRight') {
+            navigateStudioModal(1);
+        }
+    });
+
+    // ── Initial Load ──
+    fetchGallery();
+})();
+</script>
+{% endblock %}

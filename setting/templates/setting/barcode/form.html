@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    {{ page_title }}
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">{{ page_title }}</h1>
+        <div class="page-actions">
+            <a href="{% url 'setting:barcode_config_list' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    <div class="form-container">
+        <div class="form-card">
+            <form method="post" class="details-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <!-- Basic Configuration -->
+                <div class="form-section">
+                    <h3 class="section-title">Basic Configuration</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.config_name.errors %}has-error{% endif %}">
+                                <label for="{{ form.config_name.id_for_label }}" class="form-label">
+                                    {{ form.config_name.label }}
+                                    {% if form.config_name.field.required %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                {{ form.config_name }}
+                                <small class="form-help">
+                                    {% if form.config_name.errors %}
+                                        {% for error in form.config_name.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if form.config_name.help_text %}<span class="form-help-text">{{ form.config_name.help_text }}</span>{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.barcode_type.errors %}has-error{% endif %}">
+                                <label for="{{ form.barcode_type.id_for_label }}" class="form-label">{{ form.barcode_type.label }}</label>
+                                {{ form.barcode_type }}
+                                <small class="form-help">{{ form.barcode_type.errors }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.label_size.errors %}has-error{% endif %}">
+                                <label for="{{ form.label_size.id_for_label }}" class="form-label">{{ form.label_size.label }}</label>
+                                {{ form.label_size }}
+                                <small class="form-help">{{ form.label_size.errors }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.paper_size.errors %}has-error{% endif %}">
+                                <label for="{{ form.paper_size.id_for_label }}" class="form-label">{{ form.paper_size.label }}</label>
+                                {{ form.paper_size }}
+                                <small class="form-help">{{ form.paper_size.errors }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Custom Size Fields (Hidden by default) -->
+                    <div id="custom-size-fields" class="row hidden">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.custom_label_width.errors %}has-error{% endif %}">
+                                <label for="{{ form.custom_label_width.id_for_label }}" class="form-label">{{ form.custom_label_width.label }}</label>
+                                {{ form.custom_label_width }}
+                                <small class="form-help">
+                                    {% if form.custom_label_width.errors %}
+                                        {% for error in form.custom_label_width.errors %}<span class="form-error-inline">{{ error }}</span>{% endfor %}
+                                    {% endif %}
+                                    {% if form.custom_label_width.help_text %}
+                                        <span class="form-help-text">{{ form.custom_label_width.help_text }}</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.custom_label_height.errors %}has-error{% endif %}">
+                                <label for="{{ form.custom_label_height.id_for_label }}" class="form-label">
+                                    {{ form.custom_label_height.label }}
+                                </label>
+                                {{ form.custom_label_height }}
+                                <small class="form-help">
+                                    {% if form.custom_label_height.errors %}
+                                        {% for error in form.custom_label_height.errors %}<span class="form-error-inline">{{ error }}</span>{% endfor %}
+                                    {% endif %}
+                                    {% if form.custom_label_height.help_text %}
+                                        <span class="form-help-text">{{ form.custom_label_height.help_text }}</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Heading Settings -->
+                <div class="form-section">
+                    <h3 class="section-title">Heading Settings</h3>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_heading }}
+                                    <label for="{{ form.show_heading.id_for_label }}">{{ form.show_heading.label }}</label>
+                                </div>
+                                {% if form.show_heading.help_text %}<small class="form-help-text">{{ form.show_heading.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row" id="heading-text-group">
+                        <div class="col-md-12">
+                            <div class="form-group {% if form.heading_text.errors %}has-error{% endif %}">
+                                <label for="{{ form.heading_text.id_for_label }}" class="form-label">{{ form.heading_text.label }}</label>
+                                {{ form.heading_text }}
+                                <small class="form-help">
+                                    {% if form.heading_text.errors %}
+                                        {% for error in form.heading_text.errors %}<span class="form-error-inline">{{ error }}</span>{% endfor %}
+                                    {% endif %}
+                                    {% if form.heading_text.help_text %}<span class="form-help-text">{{ form.heading_text.help_text }}</span>{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Layout Settings -->
+                <div class="form-section">
+                    <h3 class="section-title">Layout Settings</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.labels_per_row.errors %}has-error{% endif %}">
+                                <label for="{{ form.labels_per_row.id_for_label }}" class="form-label">{{ form.labels_per_row.label }}</label>
+                                {{ form.labels_per_row }}
+                                <small class="form-help">{{ form.labels_per_row.errors }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Display Options -->
+                <div class="form-section">
+                    <h3 class="section-title">Display Options</h3>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_product_name }}
+                                    <label for="{{ form.show_product_name.id_for_label }}">{{ form.show_product_name.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_product_code }}
+                                    <label for="{{ form.show_product_code.id_for_label }}">{{ form.show_product_code.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_mrp }}
+                                    <label for="{{ form.show_mrp.id_for_label }}">{{ form.show_mrp.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_price }}
+                                    <label for="{{ form.show_price.id_for_label }}">{{ form.show_price.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_discount }}
+                                    <label for="{{ form.show_discount.id_for_label }}">{{ form.show_discount.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.show_shop_logo }}
+                                    <label for="{{ form.show_shop_logo.id_for_label }}">{{ form.show_shop_logo.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Shop & Status -->
+                <div class="form-section">
+                    <h3 class="section-title">Shop & Status</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.shop.errors %}has-error{% endif %}">
+                                <label for="{{ form.shop.id_for_label }}" class="form-label">{{ form.shop.label }}</label>
+                                {{ form.shop }}
+                                <small class="form-help">{{ form.shop.errors }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.is_default }}
+                                    <label for="{{ form.is_default.id_for_label }}">{{ form.is_default.label }}</label>
+                                </div>
+                                {% if form.is_default.help_text %}<small class="form-help-text">{{ form.is_default.help_text }}</small>{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <div class="checkbox-wrapper">
+                                    {{ form.is_active }}
+                                    <label for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {{ form_action }} Configuration
+                    </button>
+                    <div class="cart-options-row">
+                        <a class="cart-option-btn text-danger" href="{% url 'setting:barcode_config_list' %}" title="Cancel">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Custom Size visibility
+        const labelSizeSelect = document.getElementById('{{ form.label_size.auto_id }}');
+        const customSizeFields = document.getElementById('custom-size-fields');
+        
+        function toggleCustomSize() {
+            if (labelSizeSelect.value === 'CUSTOM') {
+                customSizeFields.style.display = 'flex'; // Changed to flex for row
+            } else {
+                customSizeFields.style.display = 'none';
+            }
+        }
+
+        if (labelSizeSelect) {
+            labelSizeSelect.addEventListener('change', toggleCustomSize);
+            toggleCustomSize(); // Initial check
+        }
+
+        // Handle Heading Text visibility
+        const showHeadingCheckbox = document.getElementById('{{ form.show_heading.auto_id }}');
+        const headingTextGroup = document.getElementById('heading-text-group');
+
+        function toggleHeadingText() {
+            if (showHeadingCheckbox.checked) {
+                headingTextGroup.style.display = 'flex'; // Changed to flex for row
+            } else {
+                headingTextGroup.style.display = 'none';
+            }
+        }
+
+        if (showHeadingCheckbox) {
+            showHeadingCheckbox.addEventListener('change', toggleHeadingText);
+            toggleHeadingText(); // Initial check
+        }
+    });
+    </script>
+{% endblock content %}

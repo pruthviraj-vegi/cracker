@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Delete Audit Session - {{ audit_table.title }}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Delete Audit Session</h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:audit_detail' audit_table.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Details
+            </a>
+            <a href="{% url 'invoice:audit_home' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i>
+                Back to List
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:audit_home' %}" class="breadcrumb-item">Audit Tables</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:audit_detail' audit_table.id %}" class="breadcrumb-item">{{ audit_table.title }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Delete</span>
+    </nav>
+    
+    <!-- Delete Confirmation -->
+    <div class="form-container col-md-6">
+        <div class="form-card">
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Warning!</strong> This action cannot be undone.
+            </div>
+            
+            <div class="form-section">
+                <h5 class="section-title">Confirm Deletion</h5>
+                <p>Are you sure you want to delete the following audit session?</p>
+                
+                <div class="content-item">
+                    <i class="fas fa-tag"></i>
+                    <div>
+                        <strong>Title:</strong> {{ audit_table.title }}
+                    </div>
+                </div>
+                <div class="content-item">
+                    <i class="fas fa-cog"></i>
+                    <div>
+                        <strong>Type:</strong> {{ audit_table.get_audit_type_display }}
+                    </div>
+                </div>
+                <div class="content-item">
+                    <i class="fas fa-flag"></i>
+                    <div>
+                        <strong>Status:</strong> {{ audit_table.status }}
+                    </div>
+                </div>
+                <div class="content-item">
+                    <i class="fas fa-calendar"></i>
+                    <div>
+                        <strong>Date Range:</strong> {{ audit_table.start_date|date:"M d, Y" }} - {{ audit_table.end_date|date:"M d, Y" }}
+                    </div>
+                </div>
+                <div class="content-item">
+                    <i class="fas fa-list"></i>
+                    <div>
+                        <strong>Total Changes:</strong> {{ audit_table.total_changes }} invoice(s)
+                    </div>
+                </div>
+                
+                {% if audit_table.total_changes > 0 %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Note:</strong> This audit session contains {{ audit_table.total_changes }} invoice change record(s). 
+                    Deleting this session will also remove all associated change records.
+                </div>
+                {% endif %}
+                
+                <form method="post" class="form-actions">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i>
+                        Delete Audit Session
+                    </button>
+                    <a href="{% url 'invoice:audit_detail' audit_table.id %}" class="btn btn-secondary">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

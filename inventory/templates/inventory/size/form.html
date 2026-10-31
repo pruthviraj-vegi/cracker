@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if size %}
+    Edit Size
+  {% else %}
+    Create Size
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">
+      {% if size %}
+        Edit Size
+      {% else %}
+        Create New Size
+      {% endif %}
+    </h2>
+    <div class="page-actions">
+      {% if size %}
+        <a href="{% url 'inventory:size_home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to List
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:size_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to Sizes
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:size_home' %}" class="breadcrumb-item">Sizes</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if size %}
+      <span class="breadcrumb-item">{{ size.name }}</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Size Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Size Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-ruler-combined"></i> Size Details</h5>
+          
+          <!-- Name Field -->
+          <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+            {{ form.name }}
+            <small class="form-help {% if form.name.errors %}has-error{% endif %}">
+              {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">e.g., S, M, L, XL, XXL, 32, 34, 36</span>
+            </small>
+          </div>
+          
+          <!-- Description Field -->
+          <div class="form-group {% if form.description.errors %}has-error{% endif %}">
+            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            <small class="form-help {% if form.description.errors %}has-error{% endif %}">
+              {% if form.description.errors %}
+                {% for error in form.description.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">e.g., Small size, fits chest 36-38 inches</span>
+            </small>
+          </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if size %}
+              Update Size
+            {% else %}
+              Create Size
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:size_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

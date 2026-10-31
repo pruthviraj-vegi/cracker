@@ -1,0 +1,419 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Credit Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Credit Management</h2>
+        <div class="page-actions">
+            {% if perms.customer.export_customers %}
+                <a href="#" id="downloadBtn" class="btn btn-primary">
+                    <i class="fas fa-download"></i>
+                    Download
+                </a>
+            {% endif %}
+            {% if perms.customer.add_customer %}
+                <a href="{% url 'customer:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    New Customer
+                </a>
+            {% endif %}
+            {% if perms.customer.add_payment %}
+                <a href="{% url 'customer:payment_create' %}" class="btn btn-secondary">
+                    <i class="fas fa-credit-card"></i>
+                    Add Payment
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Credit</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Credit Customers</span>
+        </nav>
+
+        <form method="get"
+              class="search-filter-form"
+              id="searchForm"
+              autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search credit customers by name, phone, email, or address..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+
+            <!-- Funnel Button with Active Count & Hover Preview Popover -->
+            <div class="filter-funnel-wrapper" id="filterFunnelWrapper">
+                <button type="button" class="filter-funnel-btn" id="openFilterDrawerBtn" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer" aria-controls="filterDrawer" title="Open Filters Drawer">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <span class="filter-btn-text d-none d-sm-inline">Filters</span>
+                    <span id="activeFilterBadge" class="filter-count-badge d-none">0</span>
+                </button>
+
+                <!-- Floating Hover Preview (shows active filter names and values on hover) -->
+                <div class="filter-hover-preview d-none d-md-block" id="filterHoverPreview" role="tooltip" aria-hidden="true">
+                    <div class="filter-hover-header">
+                        <span class="filter-hover-title">
+                            <i class="fas fa-filter me-1 text-primary"></i> Active Filters
+                        </span>
+                        <span class="filter-hover-count" id="filterHoverCount">0</span>
+                    </div>
+                    <div class="filter-hover-list" id="filterHoverList">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                    <div class="filter-hover-footer">
+                        <button type="button" class="filter-hover-clear-btn" id="filterHoverClearAll">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                        <span class="filter-hover-hint">Click button to edit</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+
+            <!-- Slide-over Filter Offcanvas Drawer (Right Side) -->
+            <div class="offcanvas offcanvas-end filter-drawer" tabindex="-1" id="filterDrawer" aria-labelledby="filterDrawerLabel">
+                <div class="offcanvas-header border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="filter-header-icon me-2">
+                            <i class="fas fa-sliders-h text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="offcanvas-title font-weight-bold mb-0" id="filterDrawerLabel">Filter Credit Customers</h5>
+                            <small class="text-muted">Filter by status, overdue, balance &amp; credit</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-3">
+                    <!-- Section 1: Debt & Account Status -->
+                    <div class="filter-section-group mb-3">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-user-shield text-primary me-2"></i>Account &amp; Debt Status
+                        </h6>
+                        <div class="mb-3">
+                            <label for="statusFilter" class="form-label font-weight-bold">Balance Status</label>
+                            <select name="status" class="form-select" id="statusFilter">
+                                <option value="">All Balances</option>
+                                <option value="outstanding">Outstanding Debt (&gt; 0)</option>
+                                <option value="cleared">Cleared / Zero Balance (= 0)</option>
+                                <option value="advance">In Advance / Credit (&lt; 0)</option>
+                            </select>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            <!-- Overdue Accounts Toggle -->
+                            <label class="custom-toggle-switch">
+                                <input type="checkbox" name="is_overdue" id="isOverdueCheck" value="1">
+                                <span class="custom-toggle-slider"></span>
+                                <span class="custom-toggle-label">Overdue Accounts Only</span>
+                            </label>
+                            <!-- Unpaid Invoices Toggle -->
+                            <label class="custom-toggle-switch">
+                                <input type="checkbox" name="has_unpaid" id="hasUnpaidCheck" value="1">
+                                <span class="custom-toggle-slider"></span>
+                                <span class="custom-toggle-label">Unpaid Invoices Only</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Outstanding Balance Range with Dual Range Slider -->
+                    <div class="filter-section-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="filter-group-heading mb-0">
+                                <i class="fas fa-coins text-primary me-2"></i>Balance Amount Range
+                            </h6>
+                            <span class="range-display-badge" id="balanceRangeDisplay">0.00 - {{ slider_max_balance|default:"100000" }}.00</span>
+                        </div>
+
+                        <!-- Dual Range Slider for Balance -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-track"></div>
+                            <div class="range-slider-progress" id="balanceRangeProgress"></div>
+                            <input type="range" class="range-slider-input" id="minBalanceRange" min="0" max="{{ slider_max_balance|default:"100000" }}" step="500" value="0">
+                            <input type="range" class="range-slider-input" id="maxBalanceRange" min="0" max="{{ slider_max_balance|default:"100000" }}" step="500" value="{{ slider_max_balance|default:"100000" }}">
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <label for="minBalanceFilter" class="form-label text-muted small mb-1">Min Balance</label>
+                                <input type="number"
+                                       name="min_balance"
+                                       id="minBalanceFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="0.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="{{ slider_max_balance|default:"100000" }}">
+                            </div>
+                            <div class="col-6">
+                                <label for="maxBalanceFilter" class="form-label text-muted small mb-1">Max Balance</label>
+                                <input type="number"
+                                       name="max_balance"
+                                       id="maxBalanceFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="{{ slider_max_balance|default:"100000" }}.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="{{ slider_max_balance|default:"100000" }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Total Credit Range with Dual Range Slider -->
+                    <div class="filter-section-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="filter-group-heading mb-0">
+                                <i class="fas fa-file-invoice-dollar text-primary me-2"></i>Total Credit Range
+                            </h6>
+                            <span class="range-display-badge" id="creditRangeDisplay">0.00 - {{ slider_max_credit|default:"200000" }}.00</span>
+                        </div>
+
+                        <!-- Dual Range Slider for Total Credit -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-track"></div>
+                            <div class="range-slider-progress" id="creditRangeProgress"></div>
+                            <input type="range" class="range-slider-input" id="minCreditRange" min="0" max="{{ slider_max_credit|default:"200000" }}" step="1000" value="0">
+                            <input type="range" class="range-slider-input" id="maxCreditRange" min="0" max="{{ slider_max_credit|default:"200000" }}" step="1000" value="{{ slider_max_credit|default:"200000" }}">
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <label for="minCreditFilter" class="form-label text-muted small mb-1">Min Credit</label>
+                                <input type="number"
+                                       name="min_credit"
+                                       id="minCreditFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="0.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="{{ slider_max_credit|default:"200000" }}">
+                            </div>
+                            <div class="col-6">
+                                <label for="maxCreditFilter" class="form-label text-muted small mb-1">Max Credit</label>
+                                <input type="number"
+                                       name="max_credit"
+                                       id="maxCreditFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="{{ slider_max_credit|default:"200000" }}.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="{{ slider_max_credit|default:"200000" }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Activity & Date Ranges -->
+                    <div class="filter-section-group mb-3">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>Activity Dates
+                        </h6>
+                        <div class="mb-3">
+                            <label class="form-label font-weight-bold mb-1">Last Invoice Date</label>
+                            <!-- Quick Date Presets -->
+                            <div class="date-preset-group">
+                                <button type="button" class="date-preset-btn" data-preset="today" data-from="#lastInvoiceFromFilter" data-to="#lastInvoiceToFilter">Today</button>
+                                <button type="button" class="date-preset-btn" data-preset="this_month" data-from="#lastInvoiceFromFilter" data-to="#lastInvoiceToFilter">This Month</button>
+                                <button type="button" class="date-preset-btn" data-preset="last_month" data-from="#lastInvoiceFromFilter" data-to="#lastInvoiceToFilter">Last Month</button>
+                                <button type="button" class="date-preset-btn" data-preset="this_fy" data-from="#lastInvoiceFromFilter" data-to="#lastInvoiceToFilter">This FY</button>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="date"
+                                           name="last_invoice_from"
+                                           id="lastInvoiceFromFilter"
+                                           class="form-control form-control-sm"
+                                           title="Last invoice from date">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date"
+                                           name="last_invoice_to"
+                                           id="lastInvoiceToFilter"
+                                           class="form-control form-control-sm"
+                                           title="Last invoice to date">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label font-weight-bold mb-1">Last Payment Date</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="date"
+                                           name="last_payment_from"
+                                           id="lastPaymentFromFilter"
+                                           class="form-control form-control-sm"
+                                           title="Last payment from date">
+                                </div>
+                                <div class="col-6">
+                                    <input type="date"
+                                           name="last_payment_to"
+                                           id="lastPaymentToFilter"
+                                           class="form-control form-control-sm"
+                                           title="Last payment to date">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawer Actions (Sticky Footer) -->
+                <div class="offcanvas-footer p-3 border-top d-flex gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" id="resetModalFiltersBtn">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </button>
+                    <button type="button" class="btn btn-primary flex-fill" id="applyModalFiltersBtn">
+                        <i class="fas fa-check me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable" data-sort="name">Customer</th>
+                    <th class="sortable mobile-hide" data-sort="phone_number">Phone No</th>
+                    <th class="sortable mobile-hide" data-sort="credit_amount">Total Credit</th>
+                    <th class="sortable mobile-hide" data-sort="debit_amount">Total Debit</th>
+                    <th class="sortable" data-sort="balance_amount">Balance</th>
+                    <th class="mobile-hide">Last Payment</th>
+                    <th class="sortable mobile-hide" data-sort="last_date">Last Invoice</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-2">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading credit customers...
+                        </div>
+                        <br>
+                        <br>
+                        <button type="button" class="btn btn-sm" onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "customer:credit_fetch" %}',
+            suggestions: '{% url "suggestions:customer_all" %}',
+            credit_customers_pdf: '{% url "report:credit_customers_pdf" %}',
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Maximum bounds from server
+            const maxBalanceVal = parseFloat("{{ slider_max_balance|default:'100000' }}") || 100000;
+            const maxCreditVal = parseFloat("{{ slider_max_credit|default:'200000' }}") || 200000;
+
+            // Initialize Dual Range Slider for Outstanding Balance
+            const balanceSlider = initDualRangeSlider({
+                minRange: '#minBalanceRange',
+                maxRange: '#maxBalanceRange',
+                progress: '#balanceRangeProgress',
+                minInput: '#minBalanceFilter',
+                maxInput: '#maxBalanceFilter',
+                display: '#balanceRangeDisplay',
+                min: 0,
+                max: maxBalanceVal,
+                step: 500,
+                gap: 500,
+                format: 'decimal'
+            });
+
+            // Initialize Dual Range Slider for Total Credit
+            const creditSlider = initDualRangeSlider({
+                minRange: '#minCreditRange',
+                maxRange: '#maxCreditRange',
+                progress: '#creditRangeProgress',
+                minInput: '#minCreditFilter',
+                maxInput: '#maxCreditFilter',
+                display: '#creditRangeDisplay',
+                min: 0,
+                max: maxCreditVal,
+                step: 1000,
+                gap: 1000,
+                format: 'decimal'
+            });
+
+            // Declarative Filter Drawer Controller
+            initFilterDrawer({
+                drawerId: 'filterDrawer',
+                formId: 'searchForm',
+                tableId: 'data_table',
+                syncUrl: true,
+                filters: [
+                    { id: 'statusFilter', key: 'status', label: 'Status', type: 'select' },
+                    { id: 'isOverdueCheck', key: 'is_overdue', label: 'Accounts', type: 'checkbox', text: 'Overdue Only' },
+                    { id: 'hasUnpaidCheck', key: 'has_unpaid', label: 'Invoices', type: 'checkbox', text: 'Unpaid Only' },
+                    { slider: balanceSlider, key: 'balance', minKey: 'min_balance', maxKey: 'max_balance', label: 'Balance', type: 'slider', format: 'decimal' },
+                    { slider: creditSlider, key: 'credit', minKey: 'min_credit', maxKey: 'max_credit', label: 'Credit', type: 'slider', format: 'decimal' },
+                    { fromId: 'lastInvoiceFromFilter', toId: 'lastInvoiceToFilter', key: 'last_invoice_date', label: 'Last Inv', type: 'daterange' },
+                    { fromId: 'lastPaymentFromFilter', toId: 'lastPaymentToFilter', key: 'last_payment_date', label: 'Last Pay', type: 'daterange' }
+                ]
+            });
+        });
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize word suggestion on search input - jQuery-like syntax!
+            $('#searchInput').wordSuggestion({
+                url: urls.suggestions,
+                placeholder: 'Type to search customers...',
+                minLength: 2,
+                onSelect: function(suggestion, input) {
+                    // Auto-reload table when suggestion is selected
+                    reloadTable('data_table');
+                }
+            });
+            
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading customers...',
+                includeInputs: false,
+                sortable: true
+            });
+            initTableSorting('data_table');
+
+            // Setup download button using fetchData.js helper functions
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    downloadTablePDF('searchForm', 'data_table', urls.credit_customers_pdf);
+                });
+            }
+        });
+    </script>
+{% endblock extra_js %}

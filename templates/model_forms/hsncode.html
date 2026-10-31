@@ -1,0 +1,136 @@
+<div class="modal fade" id="new_hsn_code" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title text-center">New HSN Code</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Simple HSN Code Form for AJAX Modal -->
+          <form method="#" id="add_new_hsn_code" autocomplete="off">
+            {% csrf_token %}
+            <!-- Form Errors -->
+            {% if form.non_field_errors %}
+              <div class="form-errors">
+                {% for error in form.non_field_errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+            
+            <!-- HSN Code Field -->
+            <div class="form-group {% if gst_hsn_form.code.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.code.id_for_label }}" class="form-label">HSN Code</label>
+              {{ gst_hsn_form.code }}
+              <small class="form-help"><span class="form-help-text">e.g., 61091000 (6-8 digits)</span></small>
+              {% if gst_hsn_form.code.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.code.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- GST Percentage Field -->
+            <div class="form-group {% if gst_hsn_form.gst_percentage.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.gst_percentage.id_for_label }}" class="form-label">GST Percentage</label>
+              {{ gst_hsn_form.gst_percentage }}
+              <small class="form-help"><span class="form-help-text">e.g., 12.00 (0.00 - 40.00)</span></small>
+              {% if gst_hsn_form.gst_percentage.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.gst_percentage.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Cess Rate Field -->
+            <div class="form-group {% if gst_hsn_form.cess_rate.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.cess_rate.id_for_label }}" class="form-label">Cess Rate</label>
+              {{ gst_hsn_form.cess_rate }}
+              <small class="form-help"><span class="form-help-text">e.g., 0.00 (0.00 - 25.00)</span></small>
+              {% if gst_hsn_form.cess_rate.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.cess_rate.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+
+            <!-- Effective From Field -->
+            <div class="form-group {% if gst_hsn_form.effective_from.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.effective_from.id_for_label }}" class="form-label">Effective From</label>
+              {{ gst_hsn_form.effective_from }}
+              <small class="form-help"><span class="form-help-text">Date from which this HSN code is effective</span></small>
+              {% if gst_hsn_form.effective_from.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.effective_from.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Is Active Field -->
+            <div class="form-group {% if gst_hsn_form.is_active.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.is_active.id_for_label }}">
+                {{ gst_hsn_form.is_active }}
+                Is Active
+              </label>
+              <small class="form-help"><span class="form-help-text">Whether this HSN code is active or not</span></small>
+              {% if gst_hsn_form.is_active.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.is_active.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Description Field -->
+            <div class="form-group {% if gst_hsn_form.description.errors %}has-error{% endif %}">
+              <label for="{{ gst_hsn_form.description.id_for_label }}">Description (Optional)</label>
+              {{ gst_hsn_form.description }}
+              <small class="form-help"><span class="form-help-text">Optional description of the HSN code</span></small>
+              {% if gst_hsn_form.description.errors %}
+                <div class="field-errors">
+                  {% for error in gst_hsn_form.description.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary">Add HSN Code</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div> 

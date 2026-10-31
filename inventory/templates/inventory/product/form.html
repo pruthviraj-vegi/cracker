@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      {% if product %}
+        <a href="{% url 'inventory_products:details' product.id %}"
+           class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Details
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory_products:home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to List
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Products</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if product %}
+      <a href="{% url 'inventory_products:details' product.id %}"
+         class="breadcrumb-item">{{ product.name }}</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Product Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="details-form" autocomplete="off" data-prevent-double-submit>
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Product Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-box"></i> Product Details</h5>
+          <!-- Row 1: Brand and Name -->
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Brand Field -->
+              <div class="form-group {% if form.brand.errors %}has-error{% endif %}">
+                <label for="{{ form.brand.id_for_label }}" class="form-label">{{ form.brand.label }}</label>
+                {{ form.brand }}
+                <small class="form-help"><span class="form-help-text">e.g., Nike, Adidas, Levi's, Zara</span></small>
+                {% if form.brand.errors %}
+                  <div class="field-errors">
+                    {% for error in form.brand.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="col-md-6">
+              <!-- Name Field -->
+              <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                <small class="form-help"><span class="form-help-text">e.g., Cotton T-Shirt, Denim Jeans, Silk Dress</span></small>
+                {% if form.name.errors %}
+                  <div class="field-errors">
+                    {% for error in form.name.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Row 2: Category and Cloth Type -->
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Category Field -->
+              <div class="form-group {% if form.category.errors %}has-error{% endif %}">
+                <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                {{ form.category }}
+                <small class="form-help"><span class="form-help-text">Select the appropriate category for this product</span></small>
+                {% if form.category.errors %}
+                  <div class="field-errors">
+                    {% for error in form.category.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+             <div class="col-md-6">
+              <!-- Cloth Type Field -->
+              <div class="form-group {% if form.cloth_type.errors %}has-error{% endif %}">
+                <label for="{{ form.cloth_type.id_for_label }}" class="form-label">{{ form.cloth_type.label }}</label>
+                {{ form.cloth_type }}
+                <small class="form-help"><span class="form-help-text">e.g., Cotton, Silk, Polyester, Denim</span></small>
+                {% if form.cloth_type.errors %}
+                  <div class="field-errors">
+                    {% for error in form.cloth_type.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div> 
+          </div>
+          <!-- Row 3: UOM and GST Percentage -->
+          <div class="row">
+            <div class="col-md-6">
+              <!-- UOM Field -->
+              <div class="form-group {% if form.uom.errors %}has-error{% endif %}">
+                <label for="{{ form.uom.id_for_label }}" class="form-label">{{ form.uom.label }}</label>
+                {{ form.uom }}
+                <small class="form-help"><span class="form-help-text">e.g., pcs, doz, m</span></small>
+                {% if form.uom.errors %}
+                  <div class="field-errors">
+                    {% for error in form.uom.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          <!-- Row 3: HSN Code and GST Percentage -->
+            <div class="col-md-6">
+              <!-- HSN Code Field -->
+              <div class="form-group {% if form.hsn_code.errors %}has-error{% endif %}">
+                <label for="{{ form.hsn_code.id_for_label }}" class="form-label">{{ form.hsn_code.label }}</label>
+                {{ form.hsn_code }}
+                <small class="form-help"><span class="form-help-text">e.g., 5208, 6104 (4-8 digits)</span></small>
+                {% if form.hsn_code.errors %}
+                  <div class="field-errors">
+                    {% for error in form.hsn_code.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            
+          </div>
+          <!-- Row 4: Description (Full Width) -->
+          <div class="form-group {% if form.description.errors %}has-error{% endif %}">
+            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+            <small class="form-help"><span class="form-help-text">e.g., High-quality cotton t-shirt with comfortable fit</span></small>
+            {% if form.description.errors %}
+              <div class="field-errors">
+                {% for error in form.description.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if product %}
+              Update Product
+            {% else %}
+              Create Product
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory_products:home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% include "model_forms/category.html" %}
+  {% include "model_forms/cloth.html" %}
+  {% include "model_forms/uom.html" %}
+  {% include "model_forms/hsncode.html" %}
+
+{% endblock content %}
+<!-- Simple Modal System (20 lines total!) -->
+{% block extra_js %}
+  <script src="{% static 'js/modelSetup.js' %}"></script>
+  <script src="{% static 'js/wordSuggestion.js' %}"></script>
+  <script>
+    const urls = {
+      suggestions: '{% url "suggestions:product_all" %}'
+    }
+
+    $(document).ready(function() {
+
+      setupModal('id_category', 'Category', 'new_category', '#add_new_category', '{% url "inventory:category_create_ajax" %}');
+      setupModal('id_cloth_type', 'Cloth Type', 'new_cloth_type', '#add_new_cloth_type', '{% url "inventory:cloth_create_ajax" %}');
+      setupModal('id_uom', 'UOM', 'new_uom', '#add_new_uom', '{% url "inventory:uom_create_ajax" %}');
+      setupModal('id_hsn_code', 'HSN Code', 'new_hsn_code', '#add_new_hsn_code', '{% url "inventory:gst_hsn_create_ajax" %}');
+     
+      // Intentionally minimal JS to mirror customer form behavior
+      Select2Helper.init('#id_cloth_type, #id_uom, #id_hsn_code');
+
+      setTimeout(function() {
+        Select2Helper.init('#id_category');
+      }, 100);
+
+      $('#id_brand').wordSuggestion({
+        url: urls.suggestions
+      });
+
+      $('#id_name').wordSuggestion({
+        url: urls.suggestions
+      });
+    });
+  </script>
+{% endblock extra_js %}

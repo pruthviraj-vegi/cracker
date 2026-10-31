@@ -1,0 +1,307 @@
+{% load custom_filters %}
+{# AJAX Loaded Item Form with Standard App Base Layout (matches product_create.html) #}
+<div class="bulk-item-form-stepper" data-item-id="{{ item.id }}">
+  <div class="row">
+
+    <!-- LEFT COLUMN: Product & Variant Details (col-lg-9 col-md-8 col-12 mb-3) -->
+    <div class="col-lg-9 col-md-8 col-12 form-main-column mb-3">
+      <div class="form-card">
+
+        <!-- Item Header in Card -->
+        <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary" style="font-size: 0.75rem;">Item #{{ item.sort_order }}</span>
+            <h5 class="mb-0 fw-bold" style="color: var(--text-primary);">
+              {% if item.variant %}
+                {{ item.variant.product.name }}
+                {% if item.variant.size or item.variant.color %}
+                  <span class="text-secondary fw-normal">({{ item.variant.size.name|default:'' }}{% if item.variant.size and item.variant.color %}/{% endif %}{{ item.variant.color.name|default:'' }})</span>
+                {% endif %}
+              {% elif item.product %}
+                {% if item.product.brand %}{{ item.product.brand }} — {% endif %}{{ item.product.name }}
+              {% else %}
+                {% if item.brand %}{{ item.brand }} — {% endif %}{{ item.name|default:"New Item" }}
+              {% endif %}
+            </h5>
+          </div>
+          {% if item.is_committed %}
+            <span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Committed</span>
+          {% else %}
+            <span class="badge bg-warning text-dark"><i class="fas fa-edit me-1"></i>Draft</span>
+          {% endif %}
+        </div>
+
+        <!-- Section 1: Product & Variant Linking -->
+        <div class="form-section">
+          <h5 class="section-title">
+            <i class="fas fa-link me-2" style="color: var(--primary);"></i>Product & Variant Linking
+          </h5>
+          <div class="row">
+            <div class="col-md-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Link Existing Product</label>
+                <select class="form-input inp-product"
+                        data-selected-id="{{ item.product_id|default:'' }}"
+                        data-selected-text="{% if item.product %}{{ item.product.brand }} — {{ item.product.name }}{% endif %}">
+                  <option value="">-- Create New Product --</option>
+                  {% if item.product %}
+                    <option value="{{ item.product.id }}" selected>{{ item.product.brand }} — {{ item.product.name }}</option>
+                  {% endif %}
+                </select>
+                <small class="form-help">
+                  <span class="form-help-text">Select existing master product or leave blank to create new</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Link Existing Variant</label>
+                <select class="form-input inp-variant"
+                        data-selected-id="{{ item.variant_id|default:'' }}"
+                        data-selected-text="{% if item.variant %}{{ item.variant.product.name }} [{{ item.variant.barcode }}]{% endif %}">
+                  <option value="">-- Create New Variant --</option>
+                  {% if item.variant %}
+                    <option value="{{ item.variant.id }}" selected>{{ item.variant.product.name }} [{{ item.variant.barcode }}]</option>
+                  {% endif %}
+                </select>
+                <small class="form-help">
+                  <span class="form-help-text">Select existing variant or leave blank to create new</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Master Product Details -->
+        <div class="form-section">
+          <h5 class="section-title">
+            <i class="fas fa-box me-2" style="color: var(--primary);"></i>Master Product Details
+          </h5>
+          <div class="row">
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Brand</label>
+                <input type="text" class="form-input inp-brand" value="{{ item.brand }}" placeholder="e.g. Nike, Levi's">
+                <small class="form-help"><span class="form-help-text">Brand name</span></small>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Product Name *</label>
+                <input type="text" class="form-input inp-name" value="{{ item.name }}" placeholder="Product Name">
+                <small class="form-help"><span class="form-help-text">Item / product title</span></small>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-input inp-category">
+                  <option value="">-- Category --</option>
+                  {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if item.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">Select category</span></small>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">HSN Code</label>
+                <select class="form-input inp-hsn">
+                  <option value="">-- HSN Code --</option>
+                  {% for hsn in hsn_codes %}
+                    <option value="{{ hsn.id }}" {% if item.hsn_code_id == hsn.id %}selected{% endif %}>{{ hsn.code }} ({{ hsn.gst_percentage }}%)</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">GST HSN code</span></small>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Cloth Type</label>
+                <select class="form-input inp-cloth">
+                  <option value="">-- Cloth Type --</option>
+                  {% for cloth in cloth_types %}
+                    <option value="{{ cloth.id }}" {% if item.cloth_type_id == cloth.id %}selected{% endif %}>{{ cloth.name }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">Fabric / cloth type</span></small>
+              </div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">UOM (Unit)</label>
+                <select class="form-input inp-uom">
+                  <option value="">-- UOM --</option>
+                  {% for uom in uoms %}
+                    <option value="{{ uom.id }}" {% if item.uom_id == uom.id %}selected{% endif %}>{{ uom.name }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">Unit of measure</span></small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 3: Variant Attributes & Stock Pricing -->
+        <div class="form-section mb-0">
+          <h5 class="section-title">
+            <i class="fas fa-tags me-2" style="color: var(--primary);"></i>Variant Details & Pricing
+          </h5>
+          <div class="row">
+            <!-- Row 1: Quantity, Purchase Price, Selling Price, Discount % -->
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Quantity *</label>
+                <input type="number" class="form-input inp-qty" value="{{ item.quantity|floatformat:0 }}" min="1" step="1" style="font-weight: 600;">
+                <small class="form-help"><span class="form-help-text">Stock quantity</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Purchase Price (Cost)</label>
+                <input type="number" class="form-input inp-purch" value="{{ item.purchase_price|floatformat:2 }}" min="0" step="0.01" style="font-weight: 600;">
+                <small class="form-help"><span class="form-help-text">Cost price</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Selling Price / MRP</label>
+                <input type="number" class="form-input inp-mrp" value="{{ item.mrp|floatformat:2 }}" min="0" step="0.01" style="font-weight: 600;">
+                <small class="form-help"><span class="form-help-text">MRP per unit</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Discount %</label>
+                <input type="number" class="form-input inp-disc" value="{{ item.discount_percentage }}" min="0" max="100" step="1">
+                <small class="form-help"><span class="form-help-text">Discount percentage</span></small>
+              </div>
+            </div>
+
+            <!-- Row 2: Commission %, Min Stock Qty, Size, Color -->
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Commission %</label>
+                <input type="number" class="form-input inp-comm" value="{{ item.commission_percentage|default:'0' }}" min="0" max="100" step="1">
+                <small class="form-help"><span class="form-help-text">Commission percentage</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Min Stock Qty</label>
+                <input type="number" class="form-input inp-min-qty" value="{{ item.minimum_quantity|floatformat:0 }}" min="0" step="1">
+                <small class="form-help"><span class="form-help-text">Alert threshold</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Size</label>
+                <select class="form-input inp-size">
+                  <option value="">-- Size --</option>
+                  {% for sz in sizes %}
+                    <option value="{{ sz.id }}" {% if item.size_id == sz.id %}selected{% endif %}>{{ sz.name }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">e.g. S, M, L, XL</span></small>
+              </div>
+            </div>
+            <div class="col-md-3 col-sm-6 col-12">
+              <div class="form-group">
+                <label class="form-label">Color</label>
+                <select class="form-input inp-color">
+                  <option value="">-- Color --</option>
+                  {% for col in colors %}
+                    <option value="{{ col.id }}" {% if item.color_id == col.id %}selected{% endif %}>{{ col.name }}</option>
+                  {% endfor %}
+                </select>
+                <small class="form-help"><span class="form-help-text">e.g. Red, Black</span></small>
+              </div>
+            </div>
+
+            <!-- Row 3: Description / Notes -->
+            <div class="col-12">
+              <div class="form-group mb-0">
+                <label class="form-label">Description / Notes</label>
+                <input type="text" class="form-input inp-desc" value="{{ item.description|default:'' }}" placeholder="Optional description or notes">
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Calculations & Actions (col-lg-3 col-md-4 col-12) -->
+    <div class="col-lg-3 col-md-4 col-12 form-sidebar-column">
+      <div class="form-card sticky-summary-card">
+
+        <!-- Calculations Section -->
+        <div class="form-section mb-0">
+          <h5 class="section-title">Calculations</h5>
+          <div class="total-amount-display">
+            <div class="total-row">
+              <span class="total-label">Quantity:</span>
+              <span class="total-value item-calc-qty fw-bold">0</span>
+            </div>
+            <div class="total-row">
+              <span class="total-label">Purchase Total:</span>
+              <span class="total-value item-calc-purch-total font-monospace">0.00</span>
+            </div>
+            <div class="total-row">
+              <span class="total-label">Selling Total:</span>
+              <span class="total-value item-calc-sell-total font-monospace">0.00</span>
+            </div>
+            <div class="total-row">
+              <span class="total-label">After Discount:</span>
+              <span class="total-value item-calc-after-disc font-monospace">0.00</span>
+            </div>
+            <div class="total-row">
+              <span class="total-label">Profit:</span>
+              <span class="total-value item-calc-profit text-success font-monospace">0.00</span>
+            </div>
+            <div class="total-row total-final">
+              <span class="total-label">Margin %:</span>
+              <span class="total-value item-calc-margin-pct">0.00%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions d-flex flex-column gap-2 mt-3 pt-3 border-top">
+          <div class="d-flex align-items-center justify-content-between px-1 mb-1">
+            <span class="small text-secondary fw-semibold">Status:</span>
+            {% if item.is_committed %}
+              <span class="badge bg-success item-action-status"><i class="fas fa-check-circle me-1"></i>Committed</span>
+            {% else %}
+              <span class="badge bg-warning text-dark item-action-status"><i class="fas fa-edit me-1"></i>Draft</span>
+            {% endif %}
+          </div>
+
+          {% if item.is_committed %}
+            {% if item.variant %}
+              <a href="{% url 'inventory_variant:details' item.variant.id %}" target="_blank" class="btn btn-outline-primary w-100 justify-content-center">
+                <i class="fas fa-external-link-alt me-1"></i> View Variant
+              </a>
+              <a href="{% url 'report:barcode' item.variant.id %}" target="_blank" class="btn btn-secondary w-100 justify-content-center">
+                <i class="fas fa-barcode me-1"></i> Print Barcode
+              </a>
+            {% endif %}
+          {% else %}
+            <button type="button" class="btn btn-success w-100 justify-content-center btn-commit-item" data-item-id="{{ item.id }}">
+              <i class="fas fa-check-circle me-1"></i> Save to Inventory
+            </button>
+            <button type="button" class="btn btn-primary w-100 justify-content-center btn-save-item" data-item-id="{{ item.id }}">
+              <i class="fas fa-save me-1"></i> Save Draft
+            </button>
+            <button type="button" class="btn btn-outline-danger w-100 justify-content-center btn-del-item" data-item-id="{{ item.id }}">
+              <i class="fas fa-trash-alt me-1"></i> Delete Item
+            </button>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

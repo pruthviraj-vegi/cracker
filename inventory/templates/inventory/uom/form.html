@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if uom %}
+    Edit UOM
+  {% else %}
+    Create UOM
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">
+      {% if uom %}
+        Edit UOM
+      {% else %}
+        Create New UOM
+      {% endif %}
+    </h2>
+    <div class="page-actions">
+      {% if uom %}
+        <a href="{% url 'inventory:uom_home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to List
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:uom_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to UOMs
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:uom_home' %}" class="breadcrumb-item">UOMs</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if uom %}
+      <span class="breadcrumb-item">{{ uom.name }}</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Edit Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="row" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- Name Field -->
+        <div class="col-md-6 {% if form.name.errors %}has-error{% endif %}">
+          <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+          {{ form.name }}
+          <small class="form-help {% if form.name.errors %}has-error{% endif %}">
+            {% if form.name.errors %}
+              {% for error in form.name.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., Piece, Dozen, Meter, Kilogram</span>
+          </small>
+        </div>
+        
+        <!-- Short Code Field -->
+        <div class="col-md-6 {% if form.short_code.errors %}has-error{% endif %}">
+          <label for="{{ form.short_code.id_for_label }}" class="form-label">{{ form.short_code.label }}</label>
+          {{ form.short_code }}
+          <small class="form-help {% if form.short_code.errors %}has-error{% endif %}">
+            {% if form.short_code.errors %}
+              {% for error in form.short_code.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., pcs, doz, m, kg</span>
+          </small>
+        </div>
+        
+        <!-- Category Field -->
+        <div class="col-md-6 {% if form.category.errors %}has-error{% endif %}">
+          <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+          {{ form.category }}
+          <small class="form-help {% if form.category.errors %}has-error{% endif %}">
+            {% if form.category.errors %}
+              {% for error in form.category.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., Quantity, Weight, Length, Volume</span>
+          </small>
+        </div>
+        
+        <!-- Conversion Factor Field -->
+        <div class="col-md-6 {% if form.conversion_factor.errors %}has-error{% endif %}">
+          <label for="{{ form.conversion_factor.id_for_label }}" class="form-label">{{ form.conversion_factor.label }}</label>
+          {{ form.conversion_factor }}
+          <small class="form-help {% if form.conversion_factor.errors %}has-error{% endif %}">
+            {% if form.conversion_factor.errors %}
+              {% for error in form.conversion_factor.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., 12 for dozen (1 dozen = 12 pieces)</span>
+          </small>
+        </div>
+        
+        <!-- Base Unit Field -->
+        <div class="col-md-6 {% if form.base_unit.errors %}has-error{% endif %}">
+          <label for="{{ form.base_unit.id_for_label }}" class="form-label">
+            {{ form.base_unit }}
+            {{ form.base_unit.label }}
+          </label>
+          <small class="form-help {% if form.base_unit.errors %}has-error{% endif %}">
+            {% if form.base_unit.errors %}
+              {% for error in form.base_unit.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">Mark if this is the base unit for conversions</span>
+          </small>
+        </div>
+        
+        <!-- Is Active Field -->
+        <div class="col-md-6 {% if form.is_active.errors %}has-error{% endif %}">
+          <label for="{{ form.is_active.id_for_label }}" class="form-label">
+            {{ form.is_active }}
+            {{ form.is_active.label }}
+          </label>
+          <small class="form-help {% if form.is_active.errors %}has-error{% endif %}">
+            {% if form.is_active.errors %}
+              {% for error in form.is_active.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">Whether this UOM is active or not</span>
+          </small>
+        </div>
+        
+        <!-- Description Field -->
+        <div class="col-md-12 {% if form.description.errors %}has-error{% endif %}">
+          <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+          {{ form.description }}
+          <small class="form-help {% if form.description.errors %}has-error{% endif %}">
+            {% if form.description.errors %}
+              {% for error in form.description.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">Optional notes about this UOM</span>
+          </small>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if uom %}
+              Update UOM
+            {% else %}
+              Create UOM
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:uom_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

@@ -1,0 +1,70 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for supplier in page_obj %}
+        <tr>
+            <td>
+                <div class="product-info">
+                    <a href="{% url 'inventory:supplier_inventory_analysis' supplier.id %}"
+                       class="fw-bold text-primary"
+                       title="View Full Supplier Analysis">
+                        {{ supplier.name }}
+                    </a>
+                    {% if supplier.phone %}
+                        <small class="text-muted d-block">{{ supplier.phone }}</small>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-count" title="{{ supplier.invoices_count }} invoice(s) with stock">
+                    {{ supplier.invoices_count }} inv
+                </span>
+            </td>
+            <td>{{ supplier.total_invoiced|currency }}</td>
+            <td>
+                <strong>{{ supplier.stock_in_quantity|floatformat:0 }}</strong>
+            </td>
+            <td>{{ supplier.sales_quantity|floatformat:0 }}</td>
+            <td>
+                {% if supplier.damage_quantity > 0 %}
+                    <span class="badge bg-danger text-white">{{ supplier.damage_quantity|floatformat:0 }}</span>
+                {% else %}
+                    <span class="text-muted">0</span>
+                {% endif %}
+            </td>
+            <td>
+                <strong class="{% if supplier.remaining_quantity <= 0 %}text-muted{% elif supplier.remaining_quantity <= 10 %}text-warning{% else %}text-success{% endif %}">
+                    {{ supplier.remaining_quantity|floatformat:0 }}
+                </strong>
+            </td>
+            <td>
+                <span class="badge {% if supplier.sold_percentage >= 90 %}badge-success{% elif supplier.sold_percentage >= 50 %}badge-info{% elif supplier.sold_percentage > 0 %}badge-warning{% else %}badge-secondary{% endif %}">
+                    {{ supplier.sold_percentage|floatformat:1 }}%
+                </span>
+            </td>
+            <td>
+                <span class="{% if supplier.profit > 0 %}text-success{% elif supplier.profit < 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">
+                    {{ supplier.profit|currency }}
+                </span>
+            </td>
+            <td class="text-right">
+                <div class="action-buttons">
+                    <a href="{% url 'inventory:supplier_inventory_analysis' supplier.id %}"
+                       class="btn-action btn-view"
+                       title="View {{ supplier.name }} Inventory Analysis">
+                        <i class="fas fa-chart-pie"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="10" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-building"></i>
+                <h4>No Suppliers Found</h4>
+                <p>No suppliers with active inventory match your criteria.</p>
+            </div>
+        </td>
+    </tr>
+{% endif %}

@@ -1,0 +1,697 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Calendar Analytics — Billing System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/fontawesom.min.css' %}" />
+<link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}" />
+{% endblock extra_css %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header page-header-sticky">
+  <div class="d-flex align-items-center gap-2 flex-wrap">
+    <h2 class="page-title mb-0">Calendar Analytics</h2>
+    <span class="live-store-badge">
+      <span class="live-pulse-dot"></span>
+      <span id="detailsDayBadge">Period Analytics</span>
+    </span>
+  </div>
+  <div class="page-actions dash-actions-group">
+    <!-- Dashboard Date Filter Dropdown -->
+    {% include "common/_date_filter.html" with hide_this_finance=True hide_last_finance=True hide_full_date=True %}
+  </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<nav class="breadcrumb breadcrumb-right">
+  <a href="{% url 'base:home' %}" class="breadcrumb-item">Home</a>
+  <span class="breadcrumb-separator">/</span>
+  <a href="{% url 'base:calendar' %}" class="breadcrumb-item">Calendar</a>
+  <span class="breadcrumb-separator">/</span>
+  <span class="breadcrumb-active">Analytics</span>
+</nav>
+
+<div id="dashboardContent" class="dashboardContent">
+
+  <!-- Loading State -->
+  <div id="detailsLoading" class="loading-container hidden" style="display:none;">
+    <div class="loading">
+      <i class="fa-solid fa-spinner fa-spin me-1"></i>
+      <span>Loading analytics data...</span>
+    </div>
+  </div>
+
+  <!-- ── DASHBOARD HERO TIER: NET REVENUE & OPERATIONAL HEALTH ── -->
+  <div class="dash-hero-grid mb-3">
+    <!-- Hero Card 1: Net Revenue & Profit Command Center -->
+    <div class="dash-hero-card">
+      <div>
+        <div class="hero-card-header">
+          <span class="hero-card-title">
+            <i class="fa-solid fa-chart-line"></i>
+            Net Realized Revenue
+          </span>
+          <span class="hero-tag">Selected Range</span>
+        </div>
+        <div class="hero-val-display">
+          <span class="hero-number-lg counting-number" id="kpiNetAmount" data-count="0">0</span>
+        </div>
+        <div class="stat-label-small">
+          Net realized revenue after discounts &amp; refunds
+        </div>
+      </div>
+
+      <div class="hero-submetrics">
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Gross Profit</span>
+          <div class="hero-submetric-val profit-val">
+            <span class="counting-number" id="kpiGrossProfit" data-count="0">0</span>
+          </div>
+        </div>
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Net Profit</span>
+          <div class="hero-submetric-val profit-val">
+            <span class="counting-number" id="kpiNetProfit" data-count="0">0</span>
+          </div>
+        </div>
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Profit Margin</span>
+          <div class="hero-submetric-val profit-val">
+            <span class="margin-pill" id="kpiMargin" data-count="0">0%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero Card 2: Sales Volume & Operational Health -->
+    <div class="dash-hero-card">
+      <div>
+        <div class="hero-card-header">
+          <span class="hero-card-title">
+            <i class="fa-solid fa-scale-balanced"></i>
+            Sales Volume &amp; Efficiency
+          </span>
+          <span class="hero-tag">Ticket Health</span>
+        </div>
+      </div>
+
+      <!-- Health Highlights Boxes: Single Row -->
+      <div class="health-highlights-row three-boxes">
+        <div class="health-box">
+          <span class="health-box-label">
+            <i class="fa-solid fa-receipt text-primary"></i>
+            Total Invoices
+          </span>
+          <div class="health-box-val">
+            <span class="counting-number" id="kpiTotalInvoices" data-count="0">0</span>
+          </div>
+          <span class="health-box-sub">Avg <span id="kpiAvgInvoicesPerDay">0</span> bills / day</span>
+        </div>
+        <div class="health-box">
+          <span class="health-box-label">
+            <i class="fa-solid fa-basket-shopping text-success"></i>
+            Avg Ticket (AOV)
+          </span>
+          <div class="health-box-val">
+            <span class="counting-number" id="kpiAvgInvoiceAmount" data-count="0">0</span>
+          </div>
+          <span class="health-box-sub">Average invoice size</span>
+        </div>
+        <div class="health-box">
+          <span class="health-box-label">
+            <i class="fa-solid fa-file-invoice text-secondary"></i>
+            Gross Billed
+          </span>
+          <div class="health-box-val">
+            <span class="counting-number" id="kpiTotalAmount" data-count="0">0</span>
+          </div>
+          <span class="health-box-sub">Pre-discount total</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PRIMARY REVENUE TRAJECTORY CHART (DASHBOARD-GRADE) ── -->
+  <div class="chart-card revenue-chart-card mb-3">
+    <div class="chart-header">
+      <h3 class="chart-title">
+        <i class="fa-solid fa-chart-line me-1"></i>
+        Revenue &amp; Profit Trajectory
+      </h3>
+      <div class="chart-summary-stats">
+        <div class="stat-item">
+          <span class="stat-label-small">
+            <span class="legend-dot text-primary"></span>
+            Revenue
+          </span>
+          <span class="stat-value-small" id="chartTotalRevenue">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label-small">
+            <span class="legend-dot text-success"></span>
+            Profit
+          </span>
+          <span class="stat-value-small" id="chartTotalProfit">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label-small">
+            <span class="legend-dot" style="background: #8b5cf6;"></span>
+            Profit %
+          </span>
+          <span class="stat-change" id="chartAvgMargin">0%</span>
+        </div>
+      </div>
+    </div>
+    <div class="chart-container-compact position-relative">
+      <canvas id="dailyTrendChart"></canvas>
+      <div id="dailyTrendEmpty" class="d-none align-items-center justify-content-center h-100 text-muted" style="font-size:0.75rem;">
+        No revenue trend data for selected range
+      </div>
+    </div>
+  </div>
+
+  <!-- ── THREE BALANCED BREAKDOWN DONUT CHARTS (DASHBOARD-GRADE) ── -->
+  <div class="charts-three-col-grid mb-3">
+    <!-- Chart 1: Payment Status Breakdown -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="fa-solid fa-receipt me-1"></i>
+          Payment Status
+        </h3>
+      </div>
+      <div class="chart-row">
+        <div class="donut-wrap">
+          <canvas id="paymentDoughnutChart" width="220" height="220"></canvas>
+          <div class="center-info">
+            <div class="center-label">TOTAL</div>
+            <div class="center-val">0</div>
+            <div class="center-pct">100%</div>
+          </div>
+        </div>
+        <div class="legend" id="paymentDoughnutLegend"></div>
+      </div>
+    </div>
+
+    <!-- Chart 2: Category Distribution -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="fa-solid fa-layer-group me-1"></i>
+          Top Categories
+        </h3>
+      </div>
+      <div class="chart-row">
+        <div class="donut-wrap">
+          <canvas id="categoryDoughnutChart" width="220" height="220"></canvas>
+          <div class="center-info">
+            <div class="center-label">TOTAL</div>
+            <div class="center-val">0</div>
+            <div class="center-pct">100%</div>
+          </div>
+        </div>
+        <div class="legend" id="categoryDoughnutLegend"></div>
+      </div>
+    </div>
+
+    <!-- Chart 3: Top Customers by Sales -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="fa-solid fa-users me-1"></i>
+          Top Customers
+        </h3>
+      </div>
+      <div class="chart-row">
+        <div class="donut-wrap">
+          <canvas id="customersDoughnutChart" width="220" height="220"></canvas>
+          <div class="center-info">
+            <div class="center-label">TOTAL</div>
+            <div class="center-val">0</div>
+            <div class="center-pct">100%</div>
+          </div>
+        </div>
+        <div class="legend" id="customersDoughnutLegend"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/plugins/chart/chart-4.5.js' %}"></script>
+<script src="{% static 'js/modern-charts.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var loadEl = document.getElementById("detailsLoading");
+  var dashContent = document.getElementById("dashboardContent");
+  var dayBadge = document.getElementById("detailsDayBadge");
+
+  var urlParams = new URLSearchParams(window.location.search);
+  var rawStart = urlParams.get("start");
+  var rawEnd = urlParams.get("end");
+  var rawFilter = urlParams.get("date_filter");
+
+  var lastDashboardData = null;
+
+  function parseISODate(isoStr) {
+    if (!isoStr) return new Date();
+    if (isoStr instanceof Date) return isoStr;
+    var parts = String(isoStr).split("-").map(function (n) { return parseInt(n, 10); });
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    var d = new Date(isoStr);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+
+  function formatNumberSafe(amount) {
+    if (typeof formatNumber === "function") {
+      return formatNumber(amount);
+    }
+    return Number(amount || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  // Chart instances
+  var trendCanvas = document.getElementById("dailyTrendChart");
+  var paymentCanvas = document.getElementById("paymentDoughnutChart");
+  var categoryCanvas = document.getElementById("categoryDoughnutChart");
+  var customerCanvas = document.getElementById("customersDoughnutChart");
+
+  var trendChart = null;
+  var paymentChart = null;
+  var categoryChart = null;
+  var customerChart = null;
+
+  function destroyCharts() {
+    [trendChart, paymentChart, categoryChart, customerChart].forEach(function(c) {
+      if (c) {
+        try { c.destroy(); } catch (e) { /* ignore */ }
+      }
+    });
+    trendChart = null;
+    paymentChart = null;
+    categoryChart = null;
+    customerChart = null;
+  }
+
+  function fetchDashboardData(filterParam) {
+    if (loadEl) loadEl.style.display = "flex";
+    if (dashContent) dashContent.style.opacity = "0.75";
+
+    var url = "/calendar/details-api/?";
+    if (typeof filterParam === "string" && filterParam) {
+      url += "date_filter=" + encodeURIComponent(filterParam);
+      rawStart = null;
+      rawEnd = null;
+    } else if (filterParam && typeof filterParam === "object") {
+      var fVal = filterParam.date_filter || filterParam.value || "this_month";
+      url += "date_filter=" + encodeURIComponent(fVal);
+      var fromD = filterParam.from_date || filterParam.fromDate;
+      var toD = filterParam.to_date || filterParam.toDate;
+      if (fromD && toD) {
+        url += "&start=" + encodeURIComponent(fromD) + "&end=" + encodeURIComponent(toD);
+      }
+      rawStart = null;
+      rawEnd = null;
+    } else if (rawStart && rawEnd) {
+      url += "start=" + encodeURIComponent(rawStart) + "&end=" + encodeURIComponent(rawEnd);
+    } else {
+      url += "date_filter=" + encodeURIComponent(rawFilter || "this_month");
+    }
+
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (loadEl) loadEl.style.display = "none";
+        if (dashContent) dashContent.style.opacity = "1";
+        if (!data || !data.success) return;
+
+        lastDashboardData = data;
+
+        if (dayBadge && data.date_range) {
+          var sDt = parseISODate(data.date_range.start);
+          var eDt = parseISODate(data.date_range.end);
+          var dayDiff = Math.round((eDt.getTime() - sDt.getTime()) / 86400000) + 1;
+          dayBadge.textContent = dayDiff + " day" + (dayDiff !== 1 ? "s" : "");
+          dayBadge.style.display = "inline";
+
+          var newUrl = window.location.pathname + "?start=" + encodeURIComponent(data.date_range.start) + "&end=" + encodeURIComponent(data.date_range.end);
+          window.history.replaceState({ path: newUrl }, "", newUrl);
+        }
+
+        renderDashboard(data);
+      })
+      .catch(function (err) {
+        console.error("Dashboard fetch error:", err);
+        if (loadEl) loadEl.style.display = "none";
+        if (dashContent) dashContent.style.opacity = "1";
+      });
+  }
+
+  function renderDashboard(data) {
+    destroyCharts();
+    updateKPIs(data.stats);
+    renderTrendLine(data.daily_trend);
+    renderPaymentDonut(data.payment_status_breakdown);
+    renderCategoryDonut(data.categories);
+    renderCustomerDonut(data.top_customers);
+  }
+
+  function updateKPIs(stats) {
+    if (!stats) return;
+
+    if (typeof updateAllCounters === "function") {
+      updateAllCounters({
+        kpiNetAmount: stats.net_amount || 0,
+        kpiGrossProfit: stats.gross_profit || 0,
+        kpiNetProfit: stats.net_profit || 0,
+        kpiTotalInvoices: stats.total_invoices || 0,
+        kpiAvgInvoicesPerDay: stats.avg_invoices_per_day || 0,
+        kpiAvgInvoiceAmount: stats.avg_invoice_amount || 0,
+        kpiTotalAmount: stats.total_amount || 0,
+      });
+    } else {
+      var setText = function (id, text) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = text;
+      };
+      setText("kpiNetAmount", formatNumberSafe(stats.net_amount || 0));
+      setText("kpiGrossProfit", formatNumberSafe(stats.gross_profit || 0));
+      setText("kpiNetProfit", formatNumberSafe(stats.net_profit || 0));
+      setText("kpiTotalInvoices", stats.total_invoices || 0);
+      setText("kpiAvgInvoicesPerDay", stats.avg_invoices_per_day || 0);
+      setText("kpiAvgInvoiceAmount", formatNumberSafe(stats.avg_invoice_amount || 0));
+      setText("kpiTotalAmount", formatNumberSafe(stats.total_amount || 0));
+    }
+
+    var marginEl = document.getElementById("kpiMargin");
+    if (marginEl) {
+      marginEl.textContent = (stats.margin || 0) + "%";
+    }
+  }
+
+  function renderTrendLine(trend) {
+    if (!trendCanvas) return;
+    var emptyEl = document.getElementById("dailyTrendEmpty");
+
+    var existing = typeof Chart !== "undefined" ? Chart.getChart(trendCanvas) : null;
+    if (existing) {
+      try { existing.destroy(); } catch (e) { /* ignore */ }
+    }
+
+    if (!trend || trend.length === 0) {
+      trendCanvas.style.display = "none";
+      if (emptyEl) {
+        emptyEl.classList.remove("d-none");
+        emptyEl.classList.add("d-flex");
+      }
+      var rEl = document.getElementById("chartTotalRevenue");
+      var pEl = document.getElementById("chartTotalProfit");
+      var mEl = document.getElementById("chartAvgMargin");
+      if (rEl) rEl.textContent = "0.00";
+      if (pEl) pEl.textContent = "0.00";
+      if (mEl) mEl.textContent = "0.0%";
+      return;
+    }
+
+    trendCanvas.style.display = "block";
+    if (emptyEl) {
+      emptyEl.classList.remove("d-flex");
+      emptyEl.classList.add("d-none");
+    }
+
+    var colors = ModernCharts.getColors();
+    var ctx = trendCanvas.getContext("2d");
+
+    var revGradient = ctx.createLinearGradient(0, 0, 0, 240);
+    revGradient.addColorStop(0, "rgba(59, 130, 246, 0.25)");
+    revGradient.addColorStop(1, "rgba(59, 130, 246, 0.0)");
+
+    var profGradient = ctx.createLinearGradient(0, 0, 0, 240);
+    profGradient.addColorStop(0, "rgba(16, 185, 129, 0.2)");
+    profGradient.addColorStop(1, "rgba(16, 185, 129, 0.0)");
+
+    var labels = trend.map(function (t) {
+      var d = new Date(t.date + "T00:00:00");
+      return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+    });
+
+    var revData = trend.map(function (t) { return t.amount || 0; });
+    var profData = trend.map(function (t) { return t.profit || 0; });
+    var pctData = trend.map(function (t) {
+      if (t.profit_percentage !== undefined) return t.profit_percentage;
+      return t.amount > 0 ? Math.round((t.profit / t.amount) * 1000) / 10 : 0;
+    });
+
+    var totalRev = revData.reduce(function (a, b) { return a + b; }, 0);
+    var totalProf = profData.reduce(function (a, b) { return a + b; }, 0);
+    var avgMargin = totalRev > 0 ? ((totalProf / totalRev) * 100).toFixed(1) : "0.0";
+
+    var revEl = document.getElementById("chartTotalRevenue");
+    var profEl = document.getElementById("chartTotalProfit");
+    var marginEl = document.getElementById("chartAvgMargin");
+
+    if (revEl) revEl.textContent = formatNumberSafe(totalRev);
+    if (profEl) profEl.textContent = formatNumberSafe(totalProf);
+    if (marginEl) marginEl.textContent = avgMargin + "%";
+
+    var blueColor = colors.blue || "#3b82f6";
+    var greenColor = colors.green || "#10b981";
+    var purpleColor = "#8b5cf6";
+    var isSinglePoint = (labels.length === 1);
+
+    trendChart = new Chart(trendCanvas, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Revenue",
+            data: revData,
+            borderColor: blueColor,
+            backgroundColor: revGradient,
+            borderWidth: 2,
+            pointBackgroundColor: colors.tooltipBg,
+            pointBorderColor: blueColor,
+            pointBorderWidth: 2,
+            pointRadius: isSinglePoint ? 6 : 4,
+            pointHoverRadius: isSinglePoint ? 9 : 7,
+            pointStyle: "circle",
+            fill: true,
+            tension: 0.4,
+            order: 3,
+            yAxisID: "y",
+          },
+          {
+            label: "Profit",
+            data: profData,
+            borderColor: greenColor,
+            backgroundColor: profGradient,
+            borderWidth: 2,
+            pointBackgroundColor: colors.tooltipBg,
+            pointBorderColor: greenColor,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointStyle: "circle",
+            fill: true,
+            tension: 0.4,
+            order: 2,
+            yAxisID: "y",
+          },
+          {
+            label: "Profit %",
+            data: pctData,
+            borderColor: purpleColor,
+            backgroundColor: "transparent",
+            borderWidth: 2,
+            borderDash: [4, 4],
+            pointBackgroundColor: colors.tooltipBg,
+            pointBorderColor: purpleColor,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 7,
+            pointStyle: "circle",
+            fill: false,
+            tension: 0.4,
+            order: 1,
+            yAxisID: "y1",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: true,
+            backgroundColor: colors.tooltipBg,
+            titleColor: colors.textPrimary,
+            bodyColor: colors.textPrimary,
+            borderColor: colors.grid,
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            usePointStyle: true,
+            boxWidth: 8,
+            boxHeight: 8,
+            callbacks: {
+              label: function (context) {
+                var label = context.dataset.label || "";
+                if (context.dataset.yAxisID === "y1") {
+                  return label + ": " + (context.parsed.y || 0).toFixed(1) + "%";
+                } else {
+                  return label + ": " + formatNumberSafe(context.parsed.y || 0);
+                }
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            ticks: { color: colors.textSecondary, font: { size: 10 }, maxRotation: 45 },
+            grid: { display: false },
+          },
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
+            grid: { color: colors.grid },
+            ticks: {
+              color: colors.textSecondary,
+              font: { size: 10 },
+              callback: function (val) {
+                if (typeof ModernCharts.formatIndianCurrency === "function") {
+                  return ModernCharts.formatIndianCurrency(val);
+                }
+                return formatNumberSafe(val);
+              },
+            },
+          },
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: purpleColor,
+              font: { size: 10 },
+              callback: function (val) {
+                return (val || 0).toFixed(0) + "%";
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  function renderPaymentDonut(breakdown) {
+    if (!paymentCanvas) return;
+    var existing = typeof Chart !== "undefined" ? Chart.getChart(paymentCanvas) : null;
+    if (existing) {
+      try { existing.destroy(); } catch (e) { /* ignore */ }
+    }
+    paymentChart = ModernCharts.initDoughnut(paymentCanvas);
+
+    var colorMap = {
+      "Paid": { fill: "rgba(52, 211, 153, 0.45)", stroke: "#34d399" },
+      "Unpaid": { fill: "rgba(248, 113, 113, 0.45)", stroke: "#f87171" },
+      "Partially Paid": { fill: "rgba(251, 191, 36, 0.45)", stroke: "#fbbf24" },
+    };
+
+    ModernCharts.updateDoughnut(
+      paymentChart,
+      "paymentDoughnutLegend",
+      breakdown || [],
+      { label: "status", count: "count", amount: "amount", percentage: "percentage" },
+      colorMap
+    );
+  }
+
+  function renderCategoryDonut(categories) {
+    if (!categoryCanvas) return;
+    var existing = typeof Chart !== "undefined" ? Chart.getChart(categoryCanvas) : null;
+    if (existing) {
+      try { existing.destroy(); } catch (e) { /* ignore */ }
+    }
+    categoryChart = ModernCharts.initDoughnut(categoryCanvas);
+
+    ModernCharts.updateDoughnut(
+      categoryChart,
+      "categoryDoughnutLegend",
+      categories || [],
+      { label: "name", count: "count", amount: "amount", percentage: "percentage" }
+    );
+  }
+
+  function renderCustomerDonut(customers) {
+    if (!customerCanvas) return;
+    var existing = typeof Chart !== "undefined" ? Chart.getChart(customerCanvas) : null;
+    if (existing) {
+      try { existing.destroy(); } catch (e) { /* ignore */ }
+    }
+    customerChart = ModernCharts.initDoughnut(customerCanvas);
+
+    var items = [];
+    if (customers && customers.length > 0) {
+      var top8 = customers.slice(0, 8);
+      var othersAmt = 0;
+      var othersCount = 0;
+      for (var i = 8; i < customers.length; i++) {
+        othersAmt += customers[i].amount;
+        othersCount += (customers[i].count || 1);
+      }
+      items = top8.map(function (c) {
+        return { name: c.name, amount: c.amount, count: c.count || 1 };
+      });
+      if (othersAmt > 0) {
+        items.push({ name: "Others", amount: othersAmt, count: othersCount });
+      }
+    }
+
+    ModernCharts.updateDoughnut(
+      customerChart,
+      "customersDoughnutLegend",
+      items,
+      { label: "name", count: "count", amount: "amount" }
+    );
+  }
+
+  // Initialize topbar date filter dropdown
+  if (typeof initDateFilter === "function") {
+    initDateFilter("dateFilter", {
+      showCustomDates: true,
+      onChange: function (filterData) {
+        fetchDashboardData(filterData);
+      },
+    });
+  }
+
+  // Initial load
+  if (rawStart && rawEnd) {
+    fetchDashboardData({ from_date: rawStart, to_date: rawEnd, value: "custom" });
+  } else {
+    fetchDashboardData(rawFilter || "this_month");
+  }
+
+  // Instant chart re-render on theme toggle (zero network requests)
+  document.addEventListener("themeChanged", function () {
+    requestAnimationFrame(function () {
+      if (lastDashboardData) {
+        renderDashboard(lastDashboardData);
+      }
+    });
+  });
+});
+</script>
+{% endblock extra_js %}

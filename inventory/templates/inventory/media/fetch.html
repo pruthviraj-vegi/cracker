@@ -1,0 +1,123 @@
+{% load static %}{% load custom_filters %}
+{% if page_obj %}
+<div class="gallery-grid" id="galleryGridContainer">
+    {% for media in page_obj %}
+    <article class="gallery-card"
+             style="--delay: {{ forloop.counter0 }};"
+             data-media-id="{{ media.id }}"
+             data-variant-id="{{ media.variant.id }}"
+             data-variant-url="{% url 'inventory_variant:details' media.variant.id %}"
+             data-variant-name="{{ media.variant.full_name_slash|escapejs }}"
+             data-barcode="{{ media.variant.barcode|escapejs }}"
+             data-brand="{{ media.variant.product.brand|escapejs }}"
+             data-product-name="{{ media.variant.product.name|default:'-'|escapejs }}"
+             data-color="{{ media.variant.color.name|default_if_none:''|escapejs }}"
+             data-size="{{ media.variant.size.name|default_if_none:''|escapejs }}"
+             data-material="{{ media.variant.product.cloth_type.name|default_if_none:''|escapejs }}"
+             data-category="{{ media.variant.product.category.name|default_if_none:''|escapejs }}"
+             data-quantity="{{ media.variant.quantity }}"
+             data-purchase-price="{{ media.variant.purchase_price|default:'0' }}"
+             data-selling-price="{{ media.variant.final_price|default:'0' }}"
+             data-mrp="{{ media.variant.mrp|default:'0' }}"
+             data-discount="{{ media.variant.discount_percentage|default:'0' }}"
+             data-purchase-price-display="{{ media.variant.purchase_price|currency }}"
+             data-selling-price-display="{{ media.variant.final_price|currency }}"
+             data-mrp-display="{{ media.variant.mrp|currency }}"
+             data-media-type="{{ media.media_type }}"
+             data-file-size="{{ media.file_size_display }}"
+             data-thumbnail="{{ media.gallery_url }}"
+             data-original="{{ media.original_url }}"
+             tabindex="0"
+             role="button"
+             aria-label="{{ media.variant.product.brand }} - {{ media.variant.product.name }}">
+
+        <!-- Hero Media Container (Big Image & Floating Controls) -->
+        <div class="gallery-card-image-box">
+            <!-- Floating Top Badges & Actions -->
+            <div class="card-overlay-top">
+                {% if media.variant.discount_percentage > 0 %}
+                    <span class="card-discount-badge" title="{{ media.variant.discount_percentage|floatformat:0 }}% Off">
+                        {{ media.variant.discount_percentage|floatformat:0 }}%
+                    </span>
+                {% else %}
+                    <span></span>
+                {% endif %}
+
+                <div class="card-overlay-actions">
+                    <!-- Expand Action Button -->
+                    <button type="button"
+                            class="card-action-icon-btn card-expand-btn"
+                            title="Expand & Inspect Image"
+                            aria-label="Expand image">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <!-- Edit/Profile Action Button -->
+                    <a href="{% url 'inventory_variant:details' media.variant.id %}"
+                       class="card-action-icon-btn"
+                       title="Edit / Open Variant Details"
+                       onclick="event.stopPropagation();"
+                       aria-label="Open Variant">
+                        <i class="fas fa-pen"></i>
+                    </a>
+                </div>
+            </div>
+
+            {% if media.is_video %}
+                <video src="{{ media.gallery_url }}"
+                       class="gallery-card-img"
+                       muted
+                       preload="metadata"
+                       playsinline></video>
+                <span class="card-video-pill"><i class="fas fa-play"></i> Video</span>
+            {% else %}
+                <img src="{{ media.gallery_url }}"
+                     alt="{{ media.alt_text|default:media.variant.product.name|default:'Product Photo' }}"
+                     class="gallery-card-img"
+                     loading="lazy"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <div class="gallery-img-fallback" style="display:none;">
+                    <i class="fas fa-shirt fallback-icon"></i>
+                    <span class="fallback-text">Photo Not Available</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Two Lines of Details Below -->
+        <div class="gallery-card-footer">
+            <!-- Line 1: Name -->
+            <h3 class="gallery-card-title" title="{{ media.variant.product.brand }} - {{ media.variant.product.name }}">
+                {% if media.variant.product.name and media.variant.product.name != '-' %}
+                    {{ media.variant.product.name }}
+                {% else %}
+                    {{ media.variant.product.brand|default:'Garment' }}
+                {% endif %}
+            </h3>
+            <!-- Line 2: SKU (left) & Price (right) -->
+            <div class="gallery-card-meta-row">
+                <span class="gallery-card-sku" title="Barcode / SKU: {{ media.variant.barcode }}">
+                    {{ media.variant.barcode|default:media.variant.product.brand|default:'-' }}
+                </span>
+                {% if media.variant.final_price %}
+                    <span class="gallery-card-price">
+                        {{ media.variant.final_price|currency }}
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% else %}
+<div class="gallery-empty-state">
+    <div class="empty-icon-wrapper">
+        <i class="fas fa-photo-film"></i>
+    </div>
+    <h3 class="empty-title">No Media Found</h3>
+    <p class="empty-description">
+        No photographed items match your search or filter criteria.
+    </p>
+    <button type="button" class="btn btn-outline-primary btn-sm reset-filters-action" id="resetGalleryFiltersBtn">
+        <i class="fas fa-arrow-rotate-left"></i> Reset Filters
+    </button>
+</div>
+{% endif %}

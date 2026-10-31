@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }} - Stock Management
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'inventory:stock_management_home' %}"
+         class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Stock Management
+      </a>
+      <a href="{% url 'inventory:stock_in' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        Stock In
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'inventory:stock_management_home' %}"
+       class="breadcrumb-item">Stock Management</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ title }}</span>
+  </nav>
+  <!-- Stock Adjustment Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <!-- Info Summary -->
+      <div class="info-summary">
+        <h4>{{ subtitle }}</h4>
+        <p>Add stock to existing variants and optionally update their pricing information.</p>
+      </div>
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Product Variant Selection -->
+        <div class="form-section">
+          <h5 class="section-title">Product Variant</h5>
+          <div class="row">
+            <div class="form-group {% if form.product_variant.errors %}has-error{% endif %}">
+              <label for="{{ form.product_variant.id_for_label }}" class="form-label">{{ form.product_variant.label }}</label>
+              {{ form.product_variant }}
+              <small class="form-help {% if form.product_variant.errors %}has-error{% endif %}">
+                {% if form.product_variant.errors %}
+                  {% for error in form.product_variant.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Select the product variant to adjust stock for</span>
+              </small>
+            </div>
+          </div>
+          <!-- Current Variant Info (will be populated via JavaScript) -->
+          <div id="variant-info" class="variant-info field-disabled hidden">
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Current Stock:</strong>
+                <span id="current-stock">-</span>
+              </div>
+              <div class="info-item">
+                <strong>Purchase Price:</strong>
+                <span id="current-purchase-price">-</span>
+              </div>
+              <div class="info-item">
+                <strong>Selling Price:</strong>
+                <span id="current-selling-price">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Stock Details -->
+        <div class="form-section">
+          <h5 class="section-title">Stock Details</h5>
+          <div class="row">
+            <div class="form-group {% if form.quantity.errors %}has-error{% endif %}">
+              <label for="{{ form.quantity.id_for_label }}" class="form-label">{{ form.quantity.label }}</label>
+              {{ form.quantity }}
+              <small class="form-help {% if form.quantity.errors %}has-error{% endif %}">
+                {% if form.quantity.errors %}
+                  {% for error in form.quantity.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Enter the quantity of stock to add</span>
+              </small>
+            </div>
+          </div>
+        </div>
+        <!-- Price Update Options -->
+        <div class="form-section">
+          <h5 class="section-title">Price Update Options</h5>
+          <div class="row">
+            <div class="form-group">
+              <label for="{{ form.update_prices.id_for_label }}" class="checkbox-label">
+                {{ form.update_prices }}
+                <span>{{ form.update_prices.label }}</span>
+              </label>
+              <small class="form-help">
+                <span class="form-help-text">Check this to update purchase price and MRP for this variant</span>
+              </small>
+            </div>
+          </div>
+          <div id="price-update-fields" class="field-disabled hidden">
+            <div class="row">
+              <div class="form-group {% if form.new_purchase_price.errors %}has-error{% endif %}">
+                <label for="{{ form.new_purchase_price.id_for_label }}" class="form-label">{{ form.new_purchase_price.label }}</label>
+                {{ form.new_purchase_price }}
+                <small class="form-help {% if form.new_purchase_price.errors %}has-error{% endif %}">
+                  {% if form.new_purchase_price.errors %}
+                    {% for error in form.new_purchase_price.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the new purchase price per unit</span>
+                </small>
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group {% if form.new_mrp.errors %}has-error{% endif %}">
+                <label for="{{ form.new_mrp.id_for_label }}" class="form-label">{{ form.new_mrp.label }}</label>
+                {{ form.new_mrp }}
+                <small class="form-help {% if form.new_mrp.errors %}has-error{% endif %}">
+                  {% if form.new_mrp.errors %}
+                    {% for error in form.new_mrp.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the new MRP (Maximum Retail Price) per unit</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Notes -->
+        <div class="form-section">
+          <h5 class="section-title">Additional Information</h5>
+          <div class="row">
+            <div class="form-group {% if form.notes.errors %}has-error{% endif %}">
+              <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+              {{ form.notes }}
+              <small class="form-help {% if form.notes.errors %}has-error{% endif %}">
+                {% if form.notes.errors %}
+                  {% for error in form.notes.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Optional: Enter any additional notes about this stock adjustment</span>
+              </small>
+            </div>
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            Adjust Stock
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:stock_management_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const updatePricesCheckbox = document.getElementById('{{ form.update_prices.id_for_label }}')
+      const priceFields = document.getElementById('price-update-fields')
+      const variantSelect = document.getElementById('{{ form.product_variant.id_for_label }}')
+      const variantInfo = document.getElementById('variant-info')
+      const newPurchasePriceField = document.getElementById('{{ form.new_purchase_price.id_for_label }}')
+      const newSellingPriceField = document.getElementById('{{ form.new_mrp.id_for_label }}')
+      
+      // Show/hide price update fields based on checkbox
+      if (updatePricesCheckbox) {
+        updatePricesCheckbox.addEventListener('change', function () {
+          if (this.checked) {
+            priceFields.style.display = 'block'
+            priceFields.classList.remove('field-disabled')
+          } else {
+            priceFields.style.display = 'none'
+            priceFields.classList.add('field-disabled')
+          }
+        })
+      }
+      
+      // Show variant info when variant is selected
+      if (variantSelect) {
+        variantSelect.addEventListener('change', function () {
+          const selectedOption = this.options[this.selectedIndex]
+          
+          if (selectedOption && selectedOption.value) {
+            // You can add AJAX call here to fetch variant details
+            // For now, we'll show the info section
+            if (variantInfo) {
+              variantInfo.style.display = 'block'
+            }
+            
+            // Focus on quantity field
+            const quantityField = document.getElementById('{{ form.quantity.id_for_label }}')
+            if (quantityField) {
+              quantityField.focus()
+            }
+          } else {
+            if (variantInfo) {
+              variantInfo.style.display = 'none'
+            }
+          }
+        })
+      }
+      
+      // Auto-populate new selling price based on new purchase price
+      if (newPurchasePriceField && newSellingPriceField) {
+        newPurchasePriceField.addEventListener('input', function () {
+          const newPurchasePrice = parseFloat(this.value) || 0
+          
+          if (newPurchasePrice > 0 && !newSellingPriceField.value) {
+            const suggestedSellingPrice = newPurchasePrice * 1.3 // 30% markup
+            newSellingPriceField.value = suggestedSellingPrice.toFixed(2)
+          }
+        })
+      }
+      
+      // Form validation
+      const form = document.querySelector('form')
+      if (form) {
+        form.addEventListener('submit', function (e) {
+          if (updatePricesCheckbox && updatePricesCheckbox.checked) {
+            const newPurchasePrice = parseFloat(newPurchasePriceField ? newPurchasePriceField.value : 0) || 0
+            const newSellingPrice = parseFloat(newSellingPriceField ? newSellingPriceField.value : 0) || 0
+            
+            if (newSellingPrice > 0 && newSellingPrice <= newPurchasePrice) {
+              e.preventDefault()
+              alert('New selling price must be greater than new purchase price.')
+              return false
+            }
+          }
+        })
+      }
+    })
+  </script>
+  <style>
+    .variant-info {
+      background-color: var(--bg-surface-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      background-color: var(--bg-surface);
+      border-radius: 4px;
+    }
+    
+    .info-item strong {
+      color: var(--text-secondary);
+    }
+    
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+    }
+    
+    .form-checkbox {
+      margin: 0;
+    }
+  </style>
+{% endblock extra_js %}

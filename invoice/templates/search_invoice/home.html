@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Search Invoices
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Search Invoices</h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:home' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Invoices
+            </a>
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Invoices</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Search Invoices</span>
+        </nav>
+
+        <form method="#"
+              class="search-filter-form"
+              id="searchForm"
+              autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search invoices by number, customer name, phone, or notes..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="invoice_number">Invoice #</th>
+                    <th class="sortable" data-sort="customer__name">Customer</th>
+                    <th class="sortable mobile-hide" data-sort="payment_type">Type</th>
+                    <th class="sortable" data-sort="amount">Total Amount</th>
+                    <th class="sortable mobile-hide" data-sort="payment_status">Quantity</th>
+                    <th class="sortable mobile-hide" data-sort="invoice_date">MRP</th>
+                    <th class="sortable mobile-hide" data-sort="due_date">Price</th>
+                    <th class="sortable mobile-hide" data-sort="created_by__username">Sold By</th>
+                    <th class="sortable mobile-hide" data-sort="created_by__username">Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-2">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Loading invoices...
+                        <br>
+                        <br>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot id="table_footer">
+                <!-- Pagination will be loaded here via AJAX -->
+            </tfoot>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "invoice:fetch_search_invoices" %}',
+        }
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading invoices...',
+                includeInputs: false
+            });
+        });
+
+    </script>
+{% endblock extra_js %}

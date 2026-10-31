@@ -1,0 +1,28 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for audit in page_obj %}
+        <tr>
+            <td>
+                <a href="{% url 'invoice:detail' audit.invoice.id %}" target="_blank">{{ audit.invoice.invoice_number }}</a>
+            </td>
+            <td>{{ audit.old_invoice_no|default:"-" }}</td>
+            <td>{{ audit.new_invoice_no }}</td>
+            <td>
+                <span class="badge badge-info">{{ audit.get_change_type_display }}</span>
+            </td>
+            <td>{{ audit.reason }}</td>
+            <td>{{ audit.changed_by.full_name|default:"System" }}</td>
+            <td>{{ audit.created_at|date:"M d, Y H:i" }}</td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="6" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-file-invoice"></i>
+                <h4>No Audit Details Found</h4>
+                <p>No audit details have been recorded for this invoice yet.</p>
+            </div>
+        </td>
+    </tr>
+{% endif %}

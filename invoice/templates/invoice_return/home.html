@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Return Invoices Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Return Invoices Management</h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:return_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                New Return
+            </a>
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Return Invoices</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm" autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search returns by number, customer, phone, invoice #, or notes..."
+                       id="searchInput"
+                       value="{{ request.GET.search|default:'' }}"
+                       autofocus>
+            </div>
+            <select name="status" class="filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}"
+                            {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="refund_type" class="filter-select" id="refundTypeFilter">
+                <option value="">All Types</option>
+                {% for value, label in refund_type_choices %}
+                    <option value="{{ value }}"
+                            {% if request.GET.refund_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="financial_year" class="filter-select" id="financialYearFilter">
+                <option value="">All Years</option>
+                {% for year in financial_years %}
+                    <option value="{{ year }}"
+                            {% if request.GET.financial_year == year %}selected{% endif %}>{{ year }}</option>
+                {% endfor %}
+            </select>
+            <select name="date_filter" class="filter-select" id="dateFilter">
+                <option value="" {% if not request.GET.date_filter %}selected{% endif %}>All Dates</option>
+                <option value="today" {% if request.GET.date_filter == "today" %}selected{% endif %}>Today</option>
+                <option value="yesterday" {% if request.GET.date_filter == "yesterday" %}selected{% endif %}>Yesterday</option>
+                <option value="this_month" {% if request.GET.date_filter == "this_month" %}selected{% endif %}>This Month</option>
+                <option value="last_month" {% if request.GET.date_filter == "last_month" %}selected{% endif %}>Last Month</option>
+                <option value="this_quarter" {% if request.GET.date_filter == "this_quarter" %}selected{% endif %}>This Quarter</option>
+                <option value="last_quarter" {% if request.GET.date_filter == "last_quarter" %}selected{% endif %}>Last Quarter</option>
+                <option value="this_finance" {% if request.GET.date_filter == "this_finance" %}selected{% endif %}>This Financial Year</option>
+                <option value="last_finance" {% if request.GET.date_filter == "last_finance" %}selected{% endif %}>Last Financial Year</option>
+                <option value="custom" {% if request.GET.date_filter == "custom" %}selected{% endif %}>Custom Range</option>
+            </select>
+            <!-- Custom Date Inputs (shown dynamically when Custom Range is selected) -->
+            <div class="custom-date-inline-group {% if request.GET.date_filter != 'custom' %}d-none{% endif %}" id="customDateGroup">
+                <div class="filter-date-item">
+                    <input type="date"
+                           name="date_from"
+                           class="filter-date-input"
+                           id="dateFromFilter"
+                           placeholder="From Date"
+                           value="{{ request.GET.date_from|default:'' }}"
+                           data-datepicker-time="false">
+                </div>
+                <span class="date-separator text-muted">to</span>
+                <div class="filter-date-item">
+                    <input type="date"
+                           name="date_to"
+                           class="filter-date-input"
+                           id="dateToFilter"
+                           placeholder="To Date"
+                           value="{{ request.GET.date_to|default:'' }}"
+                           data-datepicker-time="false">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+            <button type="button" class="btn btn-outline-secondary" id="resetFiltersBtn" title="Reset Filters">
+                <i class="fas fa-undo"></i>
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="return_number">Return #</th>
+                    <th class="sortable" data-sort="customer__name">Customer</th>
+                    <th class="sortable mobile-hide" data-sort="invoice__invoice_number">Original Invoice</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th class="sortable mobile-hide" data-sort="refund_type">Refund Type</th>
+                    <th class="sortable" data-sort="total_amount">Total Amount</th>
+                    <th class="sortable mobile-hide" data-sort="return_date">Return Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-3">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Loading return invoices...
+                        <br>
+                        <br>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot id="table_footer">
+                <!-- Pagination will be loaded here -->
+            </tfoot>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "invoice:fetch_return_invoices" %}',
+            suggestions: '{% url "suggestions:invoice_all" %}',
+        }
+        main_data = {
+            csrfToken: "{{ csrf_token }}",
+        }
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateFilterSelect = document.getElementById('dateFilter');
+            const customDateGroup = document.getElementById('customDateGroup');
+            const dateFromInput = document.getElementById('dateFromFilter');
+            const dateToInput = document.getElementById('dateToFilter');
+            const resetBtn = document.getElementById('resetFiltersBtn');
+
+            // Handle date filter preset changes
+            if (dateFilterSelect && customDateGroup) {
+                if (dateFilterSelect.value === 'custom') {
+                    customDateGroup.classList.remove('d-none');
+                }
+
+                dateFilterSelect.addEventListener('change', function() {
+                    if (this.value === 'custom') {
+                        customDateGroup.classList.remove('d-none');
+                    } else {
+                        customDateGroup.classList.add('d-none');
+                        if (dateFromInput) dateFromInput.value = '';
+                        if (dateToInput) dateToInput.value = '';
+                    }
+                });
+            }
+
+            // Reset filters button
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    const form = document.getElementById('searchForm');
+                    if (form) {
+                        form.reset();
+                        if (customDateGroup) customDateGroup.classList.add('d-none');
+                        if (dateFromInput) dateFromInput.value = '';
+                        if (dateToInput) dateToInput.value = '';
+                        reloadTable('data_table');
+                    }
+                });
+            }
+
+            // Safe vanilla JS initialization for word suggestion
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && typeof window.initWordSuggestion === 'function' && urls.suggestions) {
+                window.initWordSuggestion(searchInput, urls.suggestions, {
+                    placeholder: 'Type to search...',
+                    minQueryLength: 2,
+                    onSuggestionSelected: function() {
+                        reloadTable('data_table');
+                    }
+                });
+            }
+
+            // Initialize table AJAX on search form
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading return invoices...',
+                includeInputs: true
+            });
+        });
+    </script>
+    <script>
+        function delete_invoice(id){
+            // Confirm deletion with user
+            if (!confirm('Are you sure you want to delete this return invoice? This action cannot be undone.')) {
+                return;
+            }
+
+            // Build URL from Django pattern
+            const deleteUrl = '{% url "invoice:delete_return_invoice" 0 %}'.replace('/0/', '/' + id + '/');
+
+            // Send DELETE request to backend
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': main_data.csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    reloadTable('data_table');
+                    showNotification(data.message || 'Return invoice deleted successfully', "success");
+                } else {
+                    showNotification(data.error || 'Failed to delete return invoice', "error");
+                }
+            })
+            .catch(error => {
+                showNotification('An error occurred while deleting the return invoice. Please try again.', "error");
+            });
+        }
+    </script>
+{% endblock extra_js %}
+

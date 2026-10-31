@@ -1,0 +1,126 @@
+{% load custom_filters %}
+{% if page_obj %}
+  {% for invoice in page_obj %}
+    <tr>
+      <td>
+        <div class="invoice-number">
+          <strong>{{ invoice.invoice_number }}</strong>
+          {% if invoice.notes %}<small class="text-muted">{{ invoice.notes|truncatechars:30 }}</small>{% endif %}
+        </div>
+      </td>
+      <td class="mobile-hide">{{ invoice.invoice_date|date:'M j, Y' }}</td>
+      <td class="mobile-hide">
+        {{ invoice.get_invoice_type_display }}
+        {% if invoice.gst_type %}
+          <br />
+          <small class="secondary-text">{{ invoice.get_gst_type_display }}</small>
+        {% endif %}
+      </td>
+      <td class="mobile-hide">{{ invoice.sub_total|currency }}</td>
+      <td class="mobile-hide">
+        {% if invoice.invoice_type == 'GST_APPLICABLE' %}
+          {% if invoice.gst_type == 'CGST_SGST' %}
+            {{ invoice.cgst_amount|add:invoice.cgst_amount|currency }}
+          {% else %}
+            {{ invoice.igst_amount|currency }}
+          {% endif %}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td>
+        <strong>{{ invoice.total_amount|currency }}</strong>
+        {% if invoice.adjustment_amount != 0 %}
+          <br />
+          <small class="secondary-text">Adj: {{ invoice.adjustment_amount|currency }}</small>
+        {% endif %}
+      </td>
+      <td>
+        <span class="{% if invoice.status == 'PAID' %}text-success{% elif invoice.status == 'PARTIALLY_PAID' %}text-warning{% else %}text-danger{% endif %}">
+          {{ invoice.get_status_display }}
+        </span>
+        {% if invoice.paid_amount > 0 %}
+          <br />
+          <small class="secondary-text">Paid: {{ invoice.paid_amount|currency }}</small>
+        {% endif %}
+      </td>
+      <td>
+        <div class="action-buttons">
+          {% if invoice.media_count == 1 %}
+            {% with invoice.media_files.all|first as single_media %}
+              {% if single_media.is_image %}
+                <a href="{{ single_media.media_file.url }}"
+                   class="btn-action btn-view media-lightbox-trigger"
+                   data-media-url="{{ single_media.media_file.url }}"
+                   data-media-name="{{ single_media.original_filename }}"
+                   title="View Image"><i class="fas fa-eye"></i></a>
+              {% else %}
+                <a href="{{ single_media.media_file.url }}"
+                   target="_blank"
+                   class="btn-action btn-view"
+                   title="View Attachment"><i class="fas fa-eye"></i></a>
+              {% endif %}
+            {% endwith %}
+          {% elif invoice.media_count > 1 %}
+            <div class="dropdown d-inline-block">
+              <a href="#"
+                 class="btn-action btn-view"
+                 role="button"
+                 data-bs-toggle="dropdown"
+                 aria-expanded="false"
+                 title="View Attachments ({{ invoice.media_count }})">
+                <i class="fas fa-eye"></i>
+                <span class="media-badge">{{ invoice.media_count }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {% for media in invoice.media_files.all %}
+                  <li>
+                    {% if media.is_image %}
+                      <a class="dropdown-item media-lightbox-trigger"
+                         href="{{ media.media_file.url }}"
+                         data-media-url="{{ media.media_file.url }}"
+                         data-media-name="{{ media.original_filename }}">
+                        <i class="fas fa-file-image me-2"></i>
+                        {{ media.original_filename|truncatechars:25 }}
+                      </a>
+                    {% else %}
+                      <a class="dropdown-item" href="{{ media.media_file.url }}" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        {{ media.original_filename|truncatechars:25 }}
+                      </a>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          {% if perms.supplier.change_supplierinvoice %}
+            <a href="{% url 'supplier:edit_invoice' supplier.pk invoice.pk %}"
+               class="btn-action btn-edit"
+               title="Edit Invoice"><i class="fas fa-edit"></i></a>
+          {% endif %}
+          {% if perms.supplier.delete_supplierinvoice %}
+            <a href="{% url 'supplier:delete_invoice' supplier.pk invoice.pk %}"
+               class="btn-action btn-delete"
+               title="Delete Invoice"><i class="fas fa-trash"></i></a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="100" class="text-center p-2">
+      <div class="empty-state">
+        <i class="fas fa-file-invoice"></i>
+        <h4>No Invoices Found</h4>
+        <p>No invoices have been created for this supplier yet.</p>
+        <a href="{% url 'supplier:create_invoice' supplier.pk %}"
+           class="btn btn-primary">
+          <i class="fas fa-plus"></i>
+          Create First Invoice
+        </a>
+      </div>
+    </td>
+  </tr>
+{% endif %}

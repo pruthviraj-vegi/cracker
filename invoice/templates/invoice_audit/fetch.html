@@ -1,0 +1,93 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for audit_table in page_obj %}
+        <tr>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary">{{ audit_table.title }}</span>
+                    {% if audit_table.description %}
+                        <br>
+                        <small class="text-muted">{{ audit_table.description|truncatechars:50 }}</small>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-info">{{ audit_table.get_audit_type_display }}</span>
+            </td>
+            <td>
+                {% if audit_table.status == 'PENDING' %}
+                    <span class="badge badge-warning">
+                        <i class="fas fa-clock"></i>
+                        Pending
+                    </span>
+                {% elif audit_table.status == 'IN_PROGRESS' %}
+                    <span class="badge badge-primary">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        In Progress
+                    </span>
+                {% elif audit_table.status == 'COMPLETED' %}
+                    <span class="badge badge-success">
+                        <i class="fas fa-check-circle"></i>
+                        Completed
+                    </span>
+                {% elif audit_table.status == 'CANCELLED' %}
+                    <span class="badge badge-danger">
+                        <i class="fas fa-times-circle"></i>
+                        Cancelled
+                    </span>
+                {% else %}
+                    <span class="badge badge-secondary">{{ audit_table.status }}</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">
+                {% if audit_table.financial_year %}
+                    <span class="text-muted">{{ audit_table.financial_year }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ audit_table.start_date|date:"M d, Y" }}</td>
+            <td class="mobile-hide">{{ audit_table.end_date|date:"M d, Y" }}</td>
+            <td class="mobile-hide">
+                {% if audit_table.created_by %}
+                    <span class="text-muted">{{ audit_table.created_by.full_name }}</span>
+                {% else %}
+                    <span class="text-muted">System</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ audit_table.created_at|date:"M d, Y H:i" }}</td>
+            <td>
+                <div class="action-buttons">
+                    <a href="{{ audit_table.get_absolute_url }}"
+                       class="btn-action btn-view"
+                       title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="{% url 'invoice:audit_delete' audit_table.id %}"
+                       class="btn-action btn-delete"
+                       title="Delete Audit Session">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="9" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <h4>No Audit Sessions Found</h4>
+                <p>No audit sessions match your search criteria. Try adjusting your filters or create a new audit session.</p>
+                <a href="{% url 'invoice:audit_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Create First Audit Session
+                </a>
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

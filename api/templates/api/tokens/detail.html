@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ token.name }} - API Token Detail{% endblock title %}
+{% block content %}
+<div class="page-header">
+    <h2 class="page-title">{{ token.name }}</h2>
+    <div class="page-actions">
+        <a href="{% url 'api_tokens:home' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i>
+            Back to Tokens
+        </a>
+        {% if token.is_active %}
+            <button type="button" class="btn btn-danger" id="revokeBtn">
+                <i class="fas fa-ban"></i>
+                Revoke Token
+            </button>
+        {% endif %}
+    </div>
+</div>
+<nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'api_tokens:home' %}" class="breadcrumb-item">API Tokens</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ token.name }}</span>
+</nav>
+
+<div class="col d-flex flex-row">
+    <div class="col-md-2 d-flex flex-column gap-2">
+        <div class="column details-column">
+            <div class="column-header">
+                <h3><i class="fas fa-key"></i> Token Details</h3>
+            </div>
+            <div class="details-info-compact">
+                <div class="detail-name-compact">
+                    <h4>{{ token.name }}</h4>
+                    <span class="detail-status {% if token.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        {% if token.is_active %}Active{% else %}Revoked{% endif %}
+                    </span>
+                </div>
+                <div class="detail-contact-compact">
+                    <div class="contact-item">
+                        <i class="fas fa-tag"></i>
+                        <span>Prefix: <code>{{ token.prefix }}</code></span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Created: {{ token.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="contact-item">
+                        <i class="fas fa-calendar-times"></i>
+                        <span>Expires: {{ token.expires_at|date:"M d, Y" }}</span>
+                    </div>
+                    {% if token.last_used_at %}
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Last Used: {{ token.last_used_at|date:"M d, Y H:i" }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-globe"></i>
+                            <span>Last IP: {{ token.last_used_ip }}</span>
+                        </div>
+                    {% else %}
+                        <div class="contact-item">
+                            <i class="fas fa-clock"></i>
+                            <span>Last Used: Never</span>
+                        </div>
+                    {% endif %}
+                    <div class="contact-item">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Created by: {{ token.created_by.full_name|default:token.created_by.phone_number }}</span>
+                    </div>
+                    {% if token.purpose %}
+                        <div class="contact-item">
+                            <i class="fas fa-info-circle"></i>
+                            <span>{{ token.purpose }}</span>
+                        </div>
+                    {% endif %}
+                    {% if not token.is_active %}
+                        <div class="contact-item">
+                            <i class="fas fa-ban"></i>
+                            <span>Revoked: {{ token.revoked_at|date:"M d, Y H:i" }}
+                            {% if token.revoked_by %}by {{ token.revoked_by.full_name|default:token.revoked_by.phone_number }}{% endif %}</span>
+                        </div>
+                    {% endif %}
+                    {% if token.allowed_ips %}
+                        <div class="contact-item">
+                            <i class="fas fa-lock"></i>
+                            <span>Allowed IPs: {{ token.allowed_ips|join:", " }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card-compact" id="requestSummaryCard">
+            <div class="summary-icon-compact">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="summary-content-compact">
+                <h4>Request Summary</h4>
+                <div class="summary-stats-compact">
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="request_count"
+                              data-count="{{ total_requests|default:0 }}">0</span>
+                        <span class="stat-label-compact">Total</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="request_success"
+                              data-count="{{ success_rate|default:0 }}">0</span>
+                        <span class="stat-label-compact">Success %</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="request_avg_ms"
+                              data-count="{{ avg_response_ms|default:0 }}">0</span>
+                        <span class="stat-label-compact">Avg ms</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-card-compact" id="errorSummaryCard">
+            <div class="summary-icon-compact">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="summary-content-compact">
+                <h4>Error Breakdown</h4>
+                <div class="summary-stats-compact">
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="error_rate"
+                              data-count="{{ error_rate|default:0 }}">0</span>
+                        <span class="stat-label-compact">Error %</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="success_rate"
+                              data-count="{{ success_rate|default:0 }}">0</span>
+                        <span class="stat-label-compact">Success %</span>
+                    </div>
+                    <div class="stat-item-compact">
+                        <span class="stat-number-compact counting-number"
+                              id="total_req"
+                              data-count="{{ total_requests|default:0 }}">0</span>
+                        <span class="stat-label-compact">Requests</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-10 d-flex flex-column gap-2 ps-1" id="logsSection">
+        <div class="table-section">
+            <div class="table-header">
+                <h3><i class="fas fa-history"></i> Recent Requests</h3>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Endpoint</th>
+                            <th>Status</th>
+                            <th class="mobile-hide">IP Address</th>
+                            <th class="mobile-hide">Response Time</th>
+                            <th class="mobile-hide">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if logs %}
+                            {% for log in logs %}
+                                <tr>
+                                    <td><strong>{{ log.method }}</strong></td>
+                                    <td>{{ log.endpoint }}</td>
+                                    <td>
+                                        {% if log.response_status >= 200 and log.response_status < 300 %}
+                                            <span class="status-badge status-active">{{ log.response_status }}</span>
+                                        {% elif log.response_status >= 400 and log.response_status < 500 %}
+                                            <span class="status-badge status-pending">{{ log.response_status }}</span>
+                                        {% else %}
+                                            <span class="status-badge status-inactive">{{ log.response_status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="mobile-hide">{{ log.ip_address }}</td>
+                                    <td class="mobile-hide">{% if log.response_time_ms %}{{ log.response_time_ms }}ms{% else %}—{% endif %}</td>
+                                    <td class="mobile-hide">{{ log.requested_at|date:"M d, H:i" }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center p-2 text-muted">No requests logged yet.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('requestSummaryCard')?.addEventListener('click', function () {
+        document.getElementById('logsSection')?.scrollIntoView({ behavior: 'smooth' });
+    });
+    document.getElementById('errorSummaryCard')?.addEventListener('click', function () {
+        document.getElementById('logsSection')?.scrollIntoView({ behavior: 'smooth' });
+    });
+});
+
+document.getElementById('revokeBtn')?.addEventListener('click', function() {
+    if (!confirm('Revoke "{{ token.name|escapejs }}"? This cannot be undone.')) return;
+    fetch("{% url 'api_tokens:revoke' token.id %}", {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': csrfToken
+        }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to revoke token');
+        }
+    });
+});
+</script>
+{% endblock extra_js %}

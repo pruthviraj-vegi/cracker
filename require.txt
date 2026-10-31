@@ -1,0 +1,13 @@
+boto3==1.37.38
+celery==5.6.3
+Django==5.2
+django-redis==6.0.0
+num2words==0.5.14
+psycopg2-binary==2.9.11
+python-barcode==0.15.1
+python-decouple==3.8
+qrcode==8.0
+RapidFuzz==3.14.3
+redis==7.4.0
+requests==2.32.5
+weasyprint==63.1

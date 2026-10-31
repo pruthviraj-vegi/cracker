@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    Delete Salary - {{ user.full_name }}
+{% endblock title %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Delete Salary Record</h2>
+        <div class="page-actions">
+            <a href="{% url 'user:detail' user.id %}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i>
+                Back to User
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'user:detail' user.id %}" class="breadcrumb-item">{{ user.full_name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Delete Salary</span>
+    </nav>
+
+    <!-- Delete Confirmation -->
+    <div class="delete-container">
+        <div class="delete-warning">
+            <div class="warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Are you sure you want to delete this salary record?</h3>
+            <p class="warning-text">
+                This action cannot be undone. The salary record will be permanently removed.
+            </p>
+        </div>
+
+        <!-- Salary Information -->
+        <div class="user-info">
+            <h4>Salary Details:</h4>
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Amount:</span>
+                    <span class="info-value">{{ salary.amount|floatformat:2 }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Commission:</span>
+                    <span class="info-value">
+                        {% if salary.commission %}
+                            <span class="badge badge-success">Yes</span>
+                        {% else %}
+                            <span class="badge badge-secondary">No</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Effective From:</span>
+                    <span class="info-value">{{ salary.effective_from|date:"F d, Y" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Effective To:</span>
+                    <span class="info-value">
+                        {% if salary.effective_to %}
+                            {{ salary.effective_to|date:"F d, Y" }}
+                        {% else %}
+                            <span class="badge badge-success">Current</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created At:</span>
+                    <span class="info-value">{{ salary.created_at|date:"F d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Notes -->
+        <div class="important-notes">
+            <h4>Important Notes:</h4>
+            <ul>
+                <li>This action will permanently delete the salary record</li>
+                <li>If this is the current salary (no effective_to date), the user will have no active salary</li>
+                <li>Consider editing the salary instead if you want to modify it</li>
+            </ul>
+        </div>
+
+        <!-- Delete Actions -->
+        <div class="delete-actions">
+            <form method="post" class="delete-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Delete Salary Permanently
+                </button>
+            </form>
+            <a href="{% url 'user:detail' user.id %}" class="btn btn-outline">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+        </div>
+
+        <!-- Alternative Actions -->
+        <div class="alternative-actions">
+            <h4>Alternative Actions:</h4>
+            <div class="action-buttons">
+                <a href="{% url 'user:salary_edit' user.id salary.id %}" class="btn btn-outline">
+                    <i class="fas fa-edit"></i>
+                    Edit Salary
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+

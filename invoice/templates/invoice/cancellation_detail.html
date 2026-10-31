@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+  Cancellation Record - {{ invoice.invoice_number }}
+{% endblock title %}
+
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="heading page-title">Cancellation: {{ invoice.invoice_number }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'invoice:cancelled_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Cancelled Invoices
+      </a>
+      <a href="{% url 'invoice:detail' invoice.id %}" class="btn btn-primary">
+        <i class="fas fa-file-invoice"></i>
+        Invoice Details
+      </a>
+    </div>
+  </div>
+
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'invoice:cancelled_list' %}" class="breadcrumb-item">Cancelled Invoices</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ invoice.invoice_number }}</span>
+  </nav>
+
+  <!-- Cancellation Card -->
+  <div class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3><i class="fas fa-ban text-danger"></i> Cancellation Summary</h3>
+      </div>
+      <div class="p-3">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <strong>Invoice Number:</strong> {{ invoice.invoice_number }}
+          </div>
+          <div class="col-md-6">
+            <strong>Customer:</strong> {{ invoice.customer.name }}
+          </div>
+          <div class="col-md-6">
+            <strong>Invoice Amount:</strong> {{ invoice.amount|floatformat:2 }}
+          </div>
+          <div class="col-md-6">
+            <strong>Invoice Date:</strong> {{ invoice.invoice_date|date:"d M Y" }}
+          </div>
+          <div class="col-md-6">
+            <strong>Cancelled Date:</strong> {{ invoice.cancelled_at|date:"d M Y, H:i"|default:"-" }}
+          </div>
+          <div class="col-md-6">
+            <strong>Cancelled By:</strong> {{ invoice.cancelled_by.username|default:"-" }}
+          </div>
+          <div class="col-12 mt-3">
+            <strong>Reason for Cancellation:</strong>
+            <div class="alert alert-warning mt-1">
+              {{ invoice.cancellation_reason|default:cancellation_record.reason|default:"No reason recorded." }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

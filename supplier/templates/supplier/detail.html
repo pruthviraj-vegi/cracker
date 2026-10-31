@@ -1,0 +1,477 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  {{ supplier.name }} - Supplier Details
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ supplier.name }}</h2>
+    <div class="page-actions">
+      {% if perms.supplier.download_report %}
+        <a href="{% url 'supplier:report' supplier.pk %}" class="btn btn-info">
+          <i class="fas fa-chart-line"></i>
+          View Report
+        </a>
+      {% endif %}
+      {% if perms.inventory.view_supplier_invoice %}
+        <a href="{% url 'inventory:supplier_inventory_analysis' supplier.pk %}" class="btn btn-primary">
+          <i class="fas fa-boxes"></i>
+          Stock Analysis
+        </a>
+      {% endif %}
+      {% if perms.supplier.view_supplierinvoice or perms.supplier.view_supplierpayment %}
+        <a href="{% url 'supplier:auto_reallocate' supplier.pk %}"
+           class="btn btn-warning"
+           id="autoReallocateBtn"
+           onclick="return confirmAutoReallocate()">
+          <i class="fas fa-sync-alt"></i>
+          Auto Reallocate
+        </a>
+      {% endif %}
+      {% if perms.supplier.change_supplier %}
+        <a href="{% url 'supplier:edit' supplier.pk %}" class="btn btn-primary">
+          <i class="fas fa-edit"></i>
+          Edit Supplier
+        </a>
+      {% endif %}
+      {% if perms.supplier.delete_supplier %}
+        <a href="{% url 'supplier:delete' supplier.pk %}" class="btn btn-danger">
+          <i class="fas fa-trash"></i>
+          Delete Supplier
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'supplier:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:home' %}" class="breadcrumb-item">Suppliers</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ supplier.name }}</span>
+  </nav>
+  <!-- Main Layout -->
+  <div class="col d-flex flex-row detail-layout two-column-layout">
+    <!-- Left Column - Supplier Details and Summary -->
+    <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+      <!-- Supplier Details Column -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-user"></i> Supplier Details
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="detail-name-compact">
+            <h4>{{ supplier.name }}</h4>
+            <span class="detail-status {% if not supplier.is_deleted %}status-active{% else %}status-inactive{% endif %}">
+              {% if supplier.is_deleted %}
+                Inactive
+              {% else %}
+                Active
+              {% endif %}
+            </span>
+          </div>
+          <div class="detail-contact-compact">
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>{{ supplier.phone|phone_number }}</span>
+            </div>
+            {% if supplier.email %}
+              <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>{{ supplier.email }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.contact_person %}
+              <div class="contact-item">
+                <i class="fas fa-user"></i>
+                <span>{{ supplier.contact_person }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.gstin %}
+              <div class="contact-item">
+                <i class="fas fa-id-card"></i>
+                <span>{{ supplier.gstin }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.address %}
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ supplier.address|truncatechars:50 }}</span>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Summary Cards -->
+      <div class="sidebar-card" id="invoiceSummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-file-invoice"></i> Invoice Summary
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="invoice_count"
+                    data-count="{{ invoice_count }}">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="invoice_amount"
+                    data-count="{{ total_invoice_amount }}">0</span>
+              <span class="stat-label">Amount</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="unpaid_invoice_count"
+                    data-count="{{ unpaid_invoices_count }}">0</span>
+              <span class="stat-label">Unpaid</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-card" id="paymentSummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-credit-card"></i> Payment Summary
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="payment_count"
+                    data-count="{{ payment_count }}">0</span>
+              <span class="stat-label">Total</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="payment_amount"
+                    data-count="{{ total_payment_amount }}">0</span>
+              <span class="stat-label">Amount</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number counting-number"
+                    id="outstanding_amount"
+                    data-count="{{ outstanding_amount }}">0</span>
+              <span class="stat-label">Outstanding</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column - Tables -->
+    <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+      <!-- Invoices Table -->
+      <div class="table-section" id="invoicesSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-file-invoice"></i> Invoices
+          </h3>
+          {% if perms.supplier.add_supplierinvoice %}
+            <a href="{% url 'supplier:create_invoice' supplier.pk %}"
+               class="btn btn-sm btn-primary">
+              <i class="fas fa-plus"></i>
+              Add Invoice
+            </a>
+          {% endif %}
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="invoices_table" data-sort="-invoice_date">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="invoice_number">Invoice #</th>
+                <th class="sortable mobile-hide" data-sort="invoice_date">Date</th>
+                <th class="mobile-hide">Type</th>
+                <th class="sortable mobile-hide" data-sort="sub_total">Sub Total</th>
+                <th class="mobile-hide">GST</th>
+                <th class="sortable" data-sort="total_amount">Total Amount</th>
+                <th class="sortable" data-sort="status">Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="invoices_table_body">
+              <tr>
+                <td colspan="8" class="text-center p-2">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading invoices...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Payments Table -->
+      <div class="table-section" id="paymentsSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-credit-card"></i> Payments
+          </h3>
+          {% if perms.supplier.add_supplierpayment %}
+            <a href="{% url 'supplier:create_payment' supplier.pk %}"
+               class="btn btn-sm btn-primary">
+              <i class="fas fa-plus"></i>
+              Add Payment
+            </a>
+          {% endif %}
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="payments_table" data-sort="-payment_date">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="id">Payment #</th>
+                <th class="sortable mobile-hide" data-sort="payment_date">Date</th>
+                <th class="sortable" data-sort="amount">Amount</th>
+                <th class="sortable mobile-hide" data-sort="method">Method</th>
+                <th class="mobile-hide">Reference</th>
+                <th class="mobile-hide">Allocated</th>
+                <th class="sortable mobile-hide" data-sort="unallocated_amount">Unallocated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="payments_table_body">
+              <tr>
+                <td colspan="8" class="text-center p-2">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading payments...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Media Lightbox -->
+  <div id="supplierMediaLightbox" class="supplier-media-lightbox">
+    <button class="media-lb-close" aria-label="Close">&times;</button>
+    <a href="#" class="media-lb-download" download>
+      <i class="fas fa-download"></i> Download
+    </a>
+    <div class="media-lb-content">
+      <img src="" alt="" id="mediaLbImage">
+    </div>
+    <div class="media-lb-caption" id="mediaLbCaption"></div>
+  </div>
+{% endblock content %}
+{% block extra_css %}
+  <style>
+    .supplier-media-lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 3000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .supplier-media-lightbox.active {
+      display: flex;
+    }
+    .media-lb-close {
+      position: absolute;
+      top: 0.75rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 3002;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .media-lb-close:hover {
+      opacity: 1;
+    }
+    .media-lb-download {
+      position: absolute;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      color: #fff;
+      background: var(--primary, #3b82f6);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 3002;
+      transition: background 0.2s;
+    }
+    .media-lb-download:hover {
+      background: var(--primary-hover, #2563eb);
+      color: #fff;
+    }
+    .media-lb-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: 95vw;
+      max-height: 80vh;
+    }
+    .media-lb-content img {
+      max-width: 95vw;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: 0.25rem;
+    }
+    .media-lb-caption {
+      position: absolute;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      color: rgba(255, 255, 255, 0.75);
+      font-size: 0.8rem;
+      z-index: 3002;
+      max-width: calc(100% - 8rem);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @media (max-width: 768px) {
+      .media-lb-content {
+        max-width: 100vw;
+        max-height: 85vh;
+      }
+      .media-lb-content img {
+        max-width: 100vw;
+        max-height: 85vh;
+      }
+      .media-lb-close {
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 1.75rem;
+      }
+      .media-lb-download {
+        bottom: 0.75rem;
+        right: 0.75rem;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+      }
+      .media-lb-caption {
+        bottom: 0.75rem;
+        left: 0.75rem;
+        font-size: 0.75rem;
+        max-width: calc(100% - 7rem);
+      }
+    }
+  </style>
+{% endblock extra_css %}
+{% block extra_js %}
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Summary card click handlers
+      const invoiceSummaryCard = document.getElementById('invoiceSummaryCard')
+      const paymentSummaryCard = document.getElementById('paymentSummaryCard')
+      const invoicesSection = document.getElementById('invoicesSection')
+      const paymentsSection = document.getElementById('paymentsSection')
+    
+      invoiceSummaryCard.addEventListener('click', function () {
+        invoicesSection.scrollIntoView({ behavior: 'smooth' })
+      })
+    
+      paymentSummaryCard.addEventListener('click', function () {
+        paymentsSection.scrollIntoView({ behavior: 'smooth' })
+      })
+      // Initialize AJAX tables
+      const urls = {
+        invoices: '{% url "supplier:fetch_invoices" supplier.pk %}',
+        payments: '{% url "supplier:fetch_payments" supplier.pk %}'
+      }
+
+      // Initialize table without form (form is now optional)
+      initTableAjax(null, 'invoices_table', urls.invoices, { autoLoad: true });
+      initTableSorting('invoices_table');
+
+      initTableAjax(null, 'payments_table', urls.payments, { autoLoad: true });
+      initTableSorting('payments_table');
+    })
+    
+    function confirmAutoReallocate() {
+      const confirmed = confirm('⚠️ WARNING: This action will:\n\n' + '• Delete ALL existing payment allocations\n' + '• Reapply payments using FIFO method (oldest invoices first)\n' + '• This action cannot be undone\n\n' + 'Are you sure you want to continue?')
+    
+      if (confirmed) {
+        const btn = document.getElementById('autoReallocateBtn')
+        const originalText = btn.innerHTML
+        const originalClass = btn.className
+    
+        // Show loading state
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Reallocating...'
+        btn.className = 'btn btn-warning disabled'
+        btn.style.pointerEvents = 'none'
+    
+        // Re-enable after a short delay (in case of errors)
+        setTimeout(() => {
+          btn.innerHTML = originalText
+          btn.className = originalClass
+          btn.style.pointerEvents = 'auto'
+        }, 10000)
+    
+        return true
+      }
+    
+      return false
+    }
+
+    // --- Media Lightbox ---
+    (function () {
+      const lightbox = document.getElementById('supplierMediaLightbox')
+      const lbImage = document.getElementById('mediaLbImage')
+      const lbCaption = document.getElementById('mediaLbCaption')
+      const lbDownload = lightbox.querySelector('.media-lb-download')
+      const lbClose = lightbox.querySelector('.media-lb-close')
+
+      function openLightbox(url, name) {
+        lbImage.src = url
+        lbImage.alt = name
+        lbCaption.textContent = name
+        lbDownload.href = url
+        lbDownload.download = name
+        lightbox.classList.add('active')
+        document.body.style.overflow = 'hidden'
+      }
+
+      function closeLightbox() {
+        lightbox.classList.remove('active')
+        document.body.style.overflow = ''
+        lbImage.src = ''
+      }
+
+      // Event delegation for AJAX-loaded content
+      document.addEventListener('click', function (e) {
+        const trigger = e.target.closest('.media-lightbox-trigger')
+        if (!trigger) return
+        e.preventDefault()
+        const url = trigger.getAttribute('data-media-url')
+        const name = trigger.getAttribute('data-media-name') || 'Image'
+        openLightbox(url, name)
+      })
+
+      lbClose.addEventListener('click', closeLightbox)
+
+      lightbox.addEventListener('click', function (e) {
+        if (e.target === lightbox) closeLightbox()
+      })
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+          closeLightbox()
+        }
+      })
+    })()
+  </script>
+{% endblock extra_js %}

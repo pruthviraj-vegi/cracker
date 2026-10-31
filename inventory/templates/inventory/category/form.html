@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if category %}
+    Edit Category
+  {% else %}
+    Create Category
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">
+      {% if category %}
+        Edit Category
+      {% else %}
+        Create New Category
+      {% endif %}
+    </h2>
+    <div class="page-actions">
+      {% if category %}
+        <a href="{% url 'inventory:category_home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to List
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:category_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to Categories
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:category_home' %}" class="breadcrumb-item">Categories</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if category %}
+      <span class="breadcrumb-item">{{ category.name }}</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Edit Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <form method="post" class="row" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Name Field -->
+        <div class="col-md-12 {% if form.name.errors %}has-error{% endif %}">
+          <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+          {{ form.name }}
+          <small class="form-help {% if form.name.errors %}has-error{% endif %}">
+            {% if form.name.errors %}
+              {% for error in form.name.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., Clothing, Electronics, Books, Home & Garden</span>
+          </small>
+        </div>
+        <!-- Parent Field -->
+        <div class="col-md-12 {% if form.parent.errors %}has-error{% endif %}">
+          <label for="{{ form.parent.id_for_label }}" class="form-label">{{ form.parent.label }}</label>
+          {{ form.parent }}
+          <small class="form-help {% if form.parent.errors %}has-error{% endif %}">
+            {% if form.parent.errors %}
+              {% for error in form.parent.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">Select a parent category if this is a subcategory.</span>
+          </small>
+        </div>
+        <!-- Description Field -->
+        <div class="col-md-12 {% if form.description.errors %}has-error{% endif %}">
+          <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+          {{ form.description }}
+          <small class="form-help {% if form.description.errors %}has-error{% endif %}">
+            {% if form.description.errors %}
+              {% for error in form.description.errors %}
+                <span class="form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </span>
+              {% endfor %}
+            {% endif %}
+            <span class="form-help-text">e.g., All types of clothing and apparel items</span>
+          </small>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if category %}
+              Update Category
+            {% else %}
+              Create Category
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:category_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

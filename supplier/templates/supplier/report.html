@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  {{ supplier.name }} - Transaction Report
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ supplier.name }} - Transaction Report</h2>
+    <div class="page-actions">
+      <!-- Date Filter Dropdown -->
+      {% include "common/_date_filter.html" %}
+      <button type="button" class="btn btn-info ms-2" id="downloadReportBtn">
+        <i class="fas fa-download"></i>
+        Download Report
+      </button>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'supplier:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:home' %}" class="breadcrumb-item">Suppliers</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:detail' supplier.pk %}"
+       class="breadcrumb-item">{{ supplier.name }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Report</span>
+  </nav>
+  <!-- Main Layout -->
+  <div class="col d-flex flex-row detail-layout two-column-layout">
+    <!-- Left Column - Supplier Details and Summary -->
+    <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+      <!-- Supplier Details Column -->
+      <div class="sidebar-card">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-user"></i> Supplier Details
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="detail-name-compact">
+            <h4>{{ supplier.name }}</h4>
+            <span class="detail-status {% if not supplier.is_deleted %}status-active{% else %}status-inactive{% endif %}">
+              {% if supplier.is_deleted %}
+                Inactive
+              {% else %}
+                Active
+              {% endif %}
+            </span>
+          </div>
+          <div class="detail-contact-compact">
+            {% if supplier.phone %}
+              <div class="contact-item">
+                <i class="fas fa-phone"></i>
+                <span>{{ supplier.phone }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.email %}
+              <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>{{ supplier.email }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.contact_person %}
+              <div class="contact-item">
+                <i class="fas fa-user"></i>
+                <span>{{ supplier.contact_person }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.gstin %}
+              <div class="contact-item">
+                <i class="fas fa-id-card"></i>
+                <span>{{ supplier.gstin }}</span>
+              </div>
+            {% endif %}
+            {% if supplier.address %}
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ supplier.address|truncatechars:50 }}</span>
+              </div>
+            {% endif %}
+            <div class="contact-item">
+              <i class="fas fa-calendar"></i>
+              <span>{{ supplier.created_at|date:"M d, Y" }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Summary Cards -->
+      <div class="sidebar-card" id="supplierSummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-file-invoice"></i> Amounts
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number" id="totalInvoiced">0</span>
+              <span class="stat-label"> Invoiced</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number text-success" id="totalPaid">0</span>
+              <span class="stat-label"> Paid</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number" id="outstandingBalance">0</span>
+              <span class="stat-label">Outstanding</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Transaction Summary Card -->
+      <div class="sidebar-card" id="transactionSummaryCard">
+        <div class="sidebar-card-header">
+          <h3 class="sidebar-card-title">
+            <i class="fas fa-list"></i> Transactions
+          </h3>
+        </div>
+        <div class="sidebar-card-body">
+          <div class="summary-stats-grid">
+            <div class="stat-item">
+              <span class="stat-number" id="transactionCount">0</span>
+              <span class="stat-label">Total Count</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Right Column - Transaction Table -->
+    <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+      <!-- Transaction Table -->
+      <div class="table-section" id="reportSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-file-invoice-dollar"></i> Transaction History
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="report_table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th class="mobile-hide">Reference</th>
+                <th class="mobile-hide">Description</th>
+                <th class="text-right">Credit</th>
+                <th class="text-right">Debit</th>
+                <th class="text-right">Running Balance</th>
+                <th class="mobile-hide">Notes</th>
+              </tr>
+            </thead>
+            <tbody id="report_table_body">
+              <tr>
+                <td colspan="8" class="text-center p-4">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading transactions...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination Container -->
+        <div id="report_pagination" class="pagination-container"></div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Summary card click handlers
+      const supplierSummaryCard = document.getElementById('supplierSummaryCard')
+      const transactionSummaryCard = document.getElementById('transactionSummaryCard')
+      const reportSection = document.getElementById('reportSection')
+    
+      supplierSummaryCard.addEventListener('click', function () {
+        reportSection.scrollIntoView({ behavior: 'smooth' })
+      })
+    
+      transactionSummaryCard.addEventListener('click', function () {
+        reportSection.scrollIntoView({ behavior: 'smooth' })
+      })
+
+      // Initialize AJAX table
+      const urls = {
+        report: '{% url "supplier:report_fetch" supplier.pk %}',
+        download_pdf: '{% url "report:supplier_ind_pdf" supplier.pk %}'
+      }
+
+
+      // Custom table loader that handles the backend-rendered HTML
+      async function loadReportTable(tableId, fetchUrl, page = 1) {
+        const table = document.getElementById(tableId)
+        const tbody = table.querySelector('tbody')
+        
+        if (!table || !tbody) {
+          console.error('Table elements not found')
+          return
+        }
+
+        // Show loading state
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center p-4">
+              <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                Loading transactions...
+              </div>
+            </td>
+          </tr>
+        `
+
+        try {
+          // Get date filter value from styled dropdown or regular select
+          const styledRef = window.dateFilter_styled
+          const dateFilter = styledRef?.hiddenSelect || document.getElementById('dateFilter') || document.getElementById('dateFilter_hidden')
+          const dateFilterValue = dateFilter ? dateFilter.value : 'this_month'
+
+          // Build URL with query parameters
+          const params = new URLSearchParams({
+            date_filter: dateFilterValue,
+            page: page
+          })
+
+          // If custom date, add from_date and to_date parameters
+          if (dateFilterValue === 'custom' && dateFilter) {
+            const fromDate = dateFilter.getAttribute('data-from-date')
+            const toDate = dateFilter.getAttribute('data-to-date')
+            if (fromDate) params.append('from_date', fromDate)
+            if (toDate) params.append('to_date', toDate)
+          }
+
+          const url = `${fetchUrl}?${params.toString()}`
+
+          const response = await fetch(url)
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+          
+          const data = await response.json()
+          if (!data.success) throw new Error(data.error || 'Failed to load')
+
+          // Update summary cards
+          const totalInvoiced = document.getElementById('totalInvoiced')
+          const totalPaid = document.getElementById('totalPaid')
+          const outstandingBalance = document.getElementById('outstandingBalance')
+          const transactionCount = document.getElementById('transactionCount')
+
+          if (totalInvoiced) totalInvoiced.textContent = formatCurrency(data.total_invoiced)
+          if (totalPaid) totalPaid.textContent = formatCurrency(data.total_paid)
+          if (transactionCount) transactionCount.textContent = data.transaction_count || 0
+
+          if (outstandingBalance) {
+            outstandingBalance.textContent = formatCurrency(data.outstanding_balance)
+            outstandingBalance.className = 'stat-number ' + (data.outstanding_balance > 0 ? 'text-danger' : 'text-success')
+          }
+
+          // Insert table HTML from backend
+          if (data.table_html) {
+            tbody.innerHTML = data.table_html
+          } else {
+            throw new Error('No table HTML received')
+          }
+
+          // Insert pagination HTML if available
+          const paginationContainer = document.getElementById('report_pagination')
+          if (paginationContainer) {
+            paginationContainer.innerHTML = data.pagination || ''
+            
+            // Add click handlers to pagination links
+            if (data.pagination) {
+              const paginationLinks = paginationContainer.querySelectorAll('.page-link')
+              paginationLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                  e.preventDefault()
+                  const page = this.getAttribute('data-page')
+                  if (page) {
+                    loadReportTableWithPage(tableId, fetchUrl, page)
+                  }
+                })
+              })
+            }
+          }
+
+        } catch (error) {
+          console.error('Error loading report:', error)
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center p-4">
+                <div class="error-state">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  <p>Failed to load transactions. Please try again.</p>
+                </div>
+              </td>
+            </tr>
+          `
+        }
+      }
+
+      // Initialize styled dropdown for date filter
+      initDateFilter('dateFilter', {
+        onChange: function(data) {
+          loadReportTable('report_table', urls.report);
+        }
+      });
+
+      // Helper function to load table with specific page
+      function loadReportTableWithPage(tableId, fetchUrl, page) {
+        loadReportTable(tableId, fetchUrl, page)
+      }
+
+      // Download Report function
+      function downloadReport() {
+        // Get date filter value from styled dropdown or regular select
+        const styledRef = window.dateFilter_styled
+        const dateFilter = styledRef?.hiddenSelect || document.getElementById('dateFilter') || document.getElementById('dateFilter_hidden')
+        const dateFilterValue = dateFilter ? dateFilter.value : 'this_month'
+
+        // Build URL with query parameters
+        const params = new URLSearchParams({
+          date_filter: dateFilterValue
+        })
+
+        // If custom date, add from_date and to_date parameters
+        if (dateFilterValue === 'custom' && dateFilter) {
+          const fromDate = dateFilter.getAttribute('data-from-date')
+          const toDate = dateFilter.getAttribute('data-to-date')
+          if (fromDate) params.append('from_date', fromDate)
+          if (toDate) params.append('to_date', toDate)
+        }
+
+        // Build download URL
+        const downloadUrl = `${urls.download_pdf}?${params.toString()}`
+
+        // Open PDF in new tab
+        window.open(downloadUrl, '_blank')
+      }
+
+      // Download report button handler
+      const downloadReportBtn = document.getElementById('downloadReportBtn')
+      if (downloadReportBtn) {
+        downloadReportBtn.addEventListener('click', downloadReport)
+      }
+
+      // Load table on page load
+      loadReportTable('report_table', urls.report)
+    })
+  </script>
+{% endblock extra_js %}

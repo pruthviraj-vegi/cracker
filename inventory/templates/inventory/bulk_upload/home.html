@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Bulk Upload Batches
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Bulk Upload Batches</h2>
+        <div class="page-actions">
+            <a href="{% url 'inventory_bulk_upload:sample_csv' %}" class="btn btn-secondary me-2">
+                <i class="fas fa-download me-1"></i>
+                Sample CSV
+            </a>
+            {% if perms.inventory.add_bulkupload %}
+                <a href="{% url 'inventory_bulk_upload:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>
+                    New Batch
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Bulk Upload</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Batches</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search batches by invoice number or status..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable" data-sort="supplier_invoice__invoice_number">Invoice</th>
+                    <th class="mobile-hide">Invoice Amount</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th class="mobile-hide">Items</th>
+                    <th class="mobile-hide">Qty</th>
+                    <th class="mobile-hide">Purchase Amount</th>
+                    <th class="mobile-hide">Created By</th>
+                    <th class="sortable mobile-hide" data-sort="created_at">Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <tr>
+                    <td colspan="100" class="text-center p-3">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading batches...
+                        </div>
+                        <br>
+                        <br>
+                        <button type="button" class="btn btn-sm" onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "inventory_bulk_upload:fetch" %}',
+        }
+    </script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading batches...',
+                includeInputs: false
+            });
+        });
+    </script>
+{% endblock extra_js %}

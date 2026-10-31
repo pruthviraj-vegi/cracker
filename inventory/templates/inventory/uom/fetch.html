@@ -1,0 +1,87 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for uom in page_obj %}
+        <tr>
+            <td class="mobile-hide">{{ uom.id }}</td>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary">{{ uom.name }}</span>
+                </div>
+            </td>
+            <td class="mobile-hide">
+                <span class="badge badge-info">{{ uom.short_code }}</span>
+            </td>
+            <td class="mobile-hide">
+                <span class="text-muted">{{ uom.category }}</span>
+            </td>
+            <td class="mobile-hide">
+                {% if uom.base_unit %}
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check"></i>
+                        Yes
+                    </span>
+                {% else %}
+                    <span class="status-badge status-inactive">
+                        <i class="fas fa-times"></i>
+                        No
+                    </span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">
+                <span class="text-muted">{{ uom.conversion_factor }}</span>
+            </td>
+            <td>
+                {% if uom.is_active %}
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check"></i>
+                        Active
+                    </span>
+                {% else %}
+                    <span class="status-badge status-inactive">
+                        <i class="fas fa-times"></i>
+                        Inactive
+                    </span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ uom.created_at|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    {% if perms.inventory.change_uom %}
+                        <a href="{% url 'inventory:uom_edit' uom.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit UOM">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.inventory.delete_uom %}
+                        <a href="{% url 'inventory:uom_delete' uom.id %}"
+                           class="btn-action btn-delete"
+                           title="Delete UOM">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="100" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-ruler"></i>
+                <h4>No UOMs Found</h4>
+                <p>No UOMs match your search criteria. Try adjusting your filters or add a new UOM.</p>
+                {% if perms.inventory.add_uom %}
+                    <a href="{% url 'inventory:uom_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add First UOM
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

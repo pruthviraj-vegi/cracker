@@ -1,0 +1,118 @@
+<div class="modal fade" id="new_customer" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h4 class="modal-title text-center">New Customer</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Simple Category Form for AJAX Modal -->
+          <form method="#" id="add_new_customer" class="details-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                <!-- Form Errors -->
+                {% if customer_form.non_field_errors %}
+                <div class="form-errors">
+                    {% for error in customer_form.non_field_errors %}
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ error }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <!-- Customer Details Section -->
+                <div class="form-section">
+                <h5 class="section-title"><i class="fas fa-user"></i> Customer Details</h5>
+                <!-- Name Field -->
+                <div class="form-group {% if customer_form.name.errors %}has-error{% endif %}">
+                    <label for="{{ customer_form.name.id_for_label }}" class="form-label">{{ customer_form.name.label }}</label>
+                    {{ customer_form.name }}
+                    {% if form.name.help_text %}<small class="form-help"><span class="form-help-text">{{ form.name.help_text }}</span></small>{% endif %}
+                    {% if customer_form.name.errors %}
+                    <div class="field-errors">
+                        {% for error in customer_form.name.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Phone Number Field -->
+                <div class="form-group {% if customer_form.phone_number.errors %}has-error{% endif %}">
+                    <label for="{{ customer_form.phone_number.id_for_label }}" class="form-label">{{ customer_form.phone_number.label }}</label>
+                    {{ customer_form.phone_number }}
+                    <small class="form-help"><span class="form-help-text">Enter exactly 10 digits (e.g., 9876543210)</span></small>
+                    {% if customer_form.phone_number.errors %}
+                    <div class="field-errors">
+                        {% for error in customer_form.phone_number.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Email Field -->
+                <div class="form-group {% if customer_form.email.errors %}has-error{% endif %}">
+                    <label for="{{ customer_form.email.id_for_label }}" class="form-label">{{ customer_form.email.label }}</label>
+                    {{ customer_form.email }}
+                    {% if form.email.help_text %}<small class="form-help"><span class="form-help-text">{{ form.email.help_text }}</span></small>{% endif %}
+                    {% if customer_form.email.errors %}
+                    <div class="field-errors">
+                        {% for error in customer_form.email.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Address Field -->
+                <div class="form-group {% if customer_form.address.errors %}has-error{% endif %}">
+                    <label for="{{ customer_form.address.id_for_label }}" class="form-label">{{ customer_form.address.label }}</label>
+                    {{ customer_form.address }}
+                    {% if form.address.help_text %}<small class="form-help"><span class="form-help-text">{{ form.address.help_text }}</span></small>{% endif %}
+                    {% if form.address.errors %}
+                    <div class="field-errors">
+                        {% for error in form.address.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Referred By Field -->
+                <div class="form-group {% if customer_form.referred_by.errors %}has-error{% endif %}">
+                    <label for="{{ customer_form.referred_by.id_for_label }}" class="form-label">{{ customer_form.referred_by.label }}</label>
+                    {{ customer_form.referred_by }}
+                    <small class="form-help"><span class="form-help-text">Optional: type to search and select who referred this customer</span></small>
+                    {% if form.referred_by.errors %}
+                    <div class="field-errors">
+                        {% for error in customer_form.referred_by.errors %}
+                        <div class="error-message">
+                            <i class="fas fa-exclamation-circle"></i>
+                            {{ error }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i>
+                        Create Customer
+                    </button>
+                </div>
+                </div>
+            </form>
+        </div>
+      </div>
+    </div>
+  </div> 

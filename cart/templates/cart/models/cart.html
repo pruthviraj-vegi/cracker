@@ -1,0 +1,204 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Data Table -->
+<div class="col d-flex flex-row cart-detail-layout two-column-layout">
+    <!-- LEFT: Cart Items Table -->
+    <div class="col-md-9 d-flex flex-column gap-2 layout-main-column">
+        <div class="table-container" data-cart-id="{{ cart.id }}">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="mobile-hide">Barcode</th>
+                        <th>Product</th>
+                        <th class="mobile-hide">Variant</th>
+                        <th class="text-end" id="priceColumnHeader">Mrp</th>
+                        <th class="text-end">Quantity</th>
+                        <th class="text-end">Price</th>
+                        <th class="mobile-hide text-end">Discount (%)</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="cartItemsBody">
+                    {% for data in cart_list %}
+                        {% include "cart/models/item_fetch.html" with item=data %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- RIGHT: Sticky Summary Sidebar -->
+    <div class="col-md-3 d-flex flex-column gap-2 ps-1 cart-sidebar-column layout-sidebar-column">
+        <!-- Card 1: Cart Summary Card -->
+        <div class="sidebar-card cart-summary-card">
+            <div class="sidebar-card-header">
+                <h3 class="sidebar-card-title">
+                    <!-- Receipt Icon -->
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="header-icon">
+                        <path d="M18 17H6V15H18V17ZM18 13H6V11H18V13ZM18 9H6V7H18V9ZM3 22L4.5 20.5L6 22L7.5 20.5L9 22L10.5 20.5L12 22L13.5 20.5L15 22L16.5 20.5L18 22L19.5 20.5L21 22V2L19.5 3.5L18 2L16.5 3.5L15 2L13.5 3.5L12 2L10.5 3.5L9 2L7.5 3.5L6 2L4.5 3.5L3 2V22Z"/>
+                    </svg>
+                    Cart Summary
+                </h3>
+            </div>
+
+            <div class="sidebar-card-body">
+                <!-- Hidden element for JavaScript total_amount tracking -->
+                <span id="totalAmount" style="display: none;" data-count="{{ cart.total_amount }}">{{ cart.total_amount|currency }}</span>
+
+                <div class="summary-row">
+                    <span class="summary-label">Items</span>
+                    <span class="summary-value counting-number" id="totalItems" data-count="{{ cart_list|length }}">{{ cart_list|length }}</span>
+                </div>
+
+                <div class="summary-row">
+                    <span class="summary-label">Remaining Stock</span>
+                    <span class="summary-value" id="remainingStock">—</span>
+                </div>
+
+                <div class="summary-row">
+                    <span class="summary-label">Amount</span>
+                    <span class="summary-value counting-number" id="totalSellingPrice" data-decimals="2" data-count="{{ total_selling_price }}">{{ total_selling_price|currency }}</span>
+                </div>
+                {% if cart.advance_payment > 0 %}
+                <div class="summary-row">
+                    <span class="summary-label">Advance</span>
+                    <span class="summary-value" id="advancePayment" data-advance="{{ cart.advance_payment }}">{{ cart.advance_payment|currency }}</span>
+                </div>
+                {% endif %}
+
+                <div class="summary-row discount-summary-row">
+                    <span class="summary-label">Discounted Amount</span>
+                    <span class="summary-value text-danger counting-number" id="discountedAmount" data-decimals="2" data-count="{{ total_selling_price|sub:cart.total_amount }}">{{ total_selling_price|sub:cart.total_amount|currency }}</span>
+                </div>
+
+                <div class="summary-row profit-summary-row" id="profitRow" style="display: none !important; cursor: pointer;">
+                    <span class="summary-label">Estimated Profit</span>
+                    <span class="summary-value text-success counting-number" id="estimatedProfit" data-decimals="2" data-count="{{ cart.total_profit }}">{{ cart.total_profit|currency }}</span>
+                </div>
+
+                <!-- Final Amount placed at the bottom without label, highlighted in big font -->
+                <div class="summary-row total-row final-amount-row" title="Final Amount">
+                    <span class="summary-value counting-number final-amount-value" id="netAmount" data-decimals="2" data-count="{{ cart.net_amount }}" aria-label="Final Amount">{{ cart.net_amount|currency }}</span>
+                </div>
+            </div>
+
+            <div class="cart-sidebar-actions">
+                <!-- Options row with highlighted background -->
+                <div class="cart-options-row">
+                    <a class="cart-option-btn" href="{% url 'cart:edit_cart' cart.id %}" title="Edit Cart">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a class="cart-option-btn"
+                       href="#"
+                       id="clearCartBtn"
+                       data-cart-id="{{ cart.id }}" title="Clear Cart">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                    {% if shop_details.is_direct_print_enabled %}
+                    <a class="cart-option-btn"
+                       href="#"
+                       id="directPrintEstimateBtn"
+                       data-url="{% url 'report:direct_print_estimate' cart.id %}"
+                       title="Print (Direct)">
+                        <i class="fas fa-print"></i>
+                    </a>
+                    <a class="cart-option-btn"
+                       href="{% url 'report:estimate_pdf' cart.id %}"
+                       target="_blank" title="View PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </a>
+                    {% else %}
+                    <a class="cart-option-btn"
+                       href="{% url 'report:estimate_pdf' cart.id %}"
+                       target="_blank" title="Print (PDF)">
+                        <i class="fas fa-print"></i>
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Checkout is the solid primary button -->
+                <a href="{% url 'invoice:create_invoice' cart.id %}"
+                   class="btn btn-primary submit-cart-btn"
+                   tabindex="-1">
+                    Checkout
+                    <!-- Forward Arrow Icon -->
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="btn-icon">
+                        <path d="M12 4L10.59 5.41L16.17 11H4V13H16.17L10.59 18.59L12 20L20 12L12 4Z"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 2: Categories Summary Card -->
+        <div class="sidebar-card categories-card" id="categoriesCard">
+            <div class="sidebar-card-header">
+                <h3 class="sidebar-card-title">
+                    <i class="fas fa-tags"></i>
+                    Categories Summary
+                </h3>
+            </div>
+            <div class="sidebar-card-body categories-info-body" id="categoriesBody">
+                {% for cat in category_counts %}
+                <div class="summary-row category-summary-row" data-category="{{ cat.category_name }}">
+                    <span class="summary-label">{{ cat.category_name }}</span>
+                    <span class="summary-value">{{ cat.total_qty }}</span>
+                </div>
+                {% empty %}
+                <div class="summary-row">
+                    <span class="summary-label text-muted">No items</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barcode Scanner Dialog -->
+<dialog id="barcodeScannerDialog" class="scanner-dialog">
+    <div class="scanner-dialog-header">
+        <h3 class="scanner-dialog-title">
+            <i class="fas fa-barcode"></i>
+            Scan Barcode
+        </h3>
+        <button type="button" class="scanner-close-btn" id="scannerCloseBtn"
+                aria-label="Close scanner">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="scanner-viewfinder-wrapper">
+        <div id="scannerViewfinder"></div>
+        <div class="scanner-overlay-guide">
+            <div class="scanner-guide-box">
+                <span class="guide-corner guide-tl"></span>
+                <span class="guide-corner guide-tr"></span>
+                <span class="guide-corner guide-bl"></span>
+                <span class="guide-corner guide-br"></span>
+            </div>
+            <p class="scanner-hint">Point camera at a barcode</p>
+        </div>
+    </div>
+    <div class="scanner-dialog-footer">
+        <span class="scanner-status" id="scannerStatus">Initializing camera...</span>
+    </div>
+</dialog>
+
+    <!-- Global variables for JavaScript -->
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+    // Make Django template variables available to external JavaScript
+    window.CART_DATA = {
+        csrfToken: "{{ csrf_token }}",
+        cartId: "{{ cart.id }}",
+        urls: {
+            scanBarcode: "{% url 'cart:scan_barcode' %}",
+            manageItem: "{% url 'cart:manage_cart_item' 0 %}",
+            archiveCart: "{% url 'cart:archive_cart' cart.id %}",
+            clearCart: "{% url 'cart:clear_cart' cart.id %}",
+            barcodeSuggestions: "{% url 'cart:barcode_suggestions' %}",
+        }
+    };
+    </script>
+    <!-- External Cart JavaScript -->
+    <script src="{% static 'js/html5-qrcode.min.js' %}"></script>
+    <script src="{% static 'js/cart.js' %}"></script>

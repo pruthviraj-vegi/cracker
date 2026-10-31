@@ -1,0 +1,81 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for customer in page_obj %}
+        <tr>
+            <td class="mobile-hide">{{ customer.id }}</td>
+            <td>
+                <div class="customer-info">
+                    <strong>{{ customer.name }}</strong>
+                    {% if customer.address %}
+                        <br>
+                        <small class="text-muted">{{ customer.address|truncatechars:30 }}</small>
+                    {% endif %}
+                </div>
+            </td>
+            <td class="mobile-hide">{{ customer.phone_number|phone_number }}</td>
+            <td class="mobile-hide">{{ customer.credit_amount|currency }}</td>
+            <td class="mobile-hide">{{ customer.debit_amount|currency }}</td>
+            <td>
+                <span class="amount-display {% if customer.credit_summary.balance_amount > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ customer.credit_summary.balance_amount|currency }}
+                </span>
+            </td>
+            <td class="mobile-hide">{{ customer.credit_summary.last_payment_date|date:"M d, Y" |default:"N/A" }}</td>
+            <td class="mobile-hide">
+                {% if customer.credit_summary.last_invoice_date %}
+                    <span class="{% if customer.credit_summary.is_overdue %} text-danger {% endif %}">{{ customer.credit_summary.last_invoice_date|timesince }}</span>
+                    <br>
+                    <small class="text-muted">{{ customer.credit_summary.last_invoice_date|date:"M d, Y" }}</small>
+                {% else %}
+                    <span class="text-muted">N/A</span>
+                {% endif %}
+            </td>
+            <td>
+                <div class="action-buttons">
+                    {% if perms.customer.view_customercreditsummary %}
+                        <a href="{% url 'customer:credit_detail' customer.id %}"
+                           class="btn-action btn-view"
+                           title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.customer.add_payment %}
+                        <a href="{% url 'customer:credit_create' customer.id %}"
+                           class="btn-action btn-payment"
+                           title="Add Payment">
+                            <i class="fas fa-credit-card"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.customer.change_customer %}
+                        <a href="{% url 'customer:edit' customer.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit Customer">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.customer.view_customercreditsummary %}
+                        <a href="{% url 'customer:credit_auto_reallocate' customer.id %}"
+                           class="btn-action btn-refresh"
+                           title="Reallocate Payments">
+                            <i class="fas fa-sync-alt"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="100" class="text-center p-2">
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h4>No Credit Customers Found</h4>
+                <p>No customers with credit invoices or payments found.</p>
+                <a href="{% url 'customer:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add Customer
+                </a>
+            </div>
+        </td>
+    </tr>
+{% endif %}

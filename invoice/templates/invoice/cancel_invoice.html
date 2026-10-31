@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    Cancel Invoice - {{ invoice.invoice_number }}
+{% endblock title %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Cancel Invoice</h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:detail' invoice.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Invoice
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:detail' invoice.id %}" class="breadcrumb-item">{{ invoice.invoice_number }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Cancel</span>
+    </nav>
+
+    <!-- Main Invoice Form Layout -->
+    <div class="form-container invoice-form-container">
+        <form method="post" class="invoice-form" novalidate>
+            {% csrf_token %}
+
+            <div class="row">
+                <!-- LEFT COLUMN: Main Form Card (col-lg-8 col-md-7) -->
+                <div class="col-lg-8 col-md-7 col-12 mb-3">
+                    <div class="form-card">
+                        
+                        <!-- Form Section: Cancellation Details -->
+                        <div class="form-section mb-3">
+                            <h5 class="section-title">
+                                <i class="fas fa-ban text-danger"></i> Cancellation Details
+                            </h5>
+                            
+                            {% if form.non_field_errors %}
+                                <div class="form-errors mb-3">
+                                    {% for error in form.non_field_errors %}
+                                        <div class="error-message">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+
+                            <!-- Cancellation Reason Field -->
+                            <div class="form-group {% if form.cancellation_reason.errors %}has-error{% endif %} mb-3">
+                                <label for="{{ form.cancellation_reason.id_for_label }}" class="form-label">
+                                    {{ form.cancellation_reason.label }}
+                                </label>
+                                {{ form.cancellation_reason }}
+                                <small class="form-help {% if form.cancellation_reason.errors %}has-error{% endif %}">
+                                    {% if form.cancellation_reason.errors %}
+                                        {% for error in form.cancellation_reason.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="form-help-text">{{ form.cancellation_reason.help_text }}</span>
+                                    {% endif %}
+                                </small>
+                            </div>
+
+                            <!-- Confirmation Checkbox -->
+                            <div class="form-group {% if form.confirm_cancellation.errors %}has-error{% endif %} mb-3">
+                                <div class="form-check">
+                                    {{ form.confirm_cancellation }}
+                                    <label for="{{ form.confirm_cancellation.id_for_label }}" class="form-check-label ms-1" style="cursor: pointer; font-weight: 500; color: var(--text-primary);">
+                                        {{ form.confirm_cancellation.label }}
+                                    </label>
+                                </div>
+                                {% if form.confirm_cancellation.errors %}
+                                    <small class="form-help has-error">
+                                        {% for error in form.confirm_cancellation.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Form Section: Consequences Info -->
+                        <div class="form-section mb-3">
+                            <h5 class="section-title">
+                                <i class="fas fa-info-circle text-primary"></i> What Will Happen
+                            </h5>
+                            <div class="p-3 rounded" style="background: var(--bg-surface-hover); border: 1px solid var(--border-color);">
+                                <ul class="mb-0 ps-3 small text-secondary" style="line-height: 1.7;">
+                                    <li>Invoice status will change to <strong class="text-danger">CANCELLED</strong> and can no longer be edited or deleted.</li>
+                                    {% if invoice.payment_type == 'CREDIT' %}
+                                        <li>All payment allocations (<strong>{{ financial_impact.paid|currency }}</strong>) will be reversed and customer balance recalculated.</li>
+                                    {% endif %}
+                                    <li>A permanent cancellation record and audit trail entry will be recorded.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="form-actions d-flex gap-2 mt-4 pt-3" style="border-top: 1px solid var(--border-color);">
+                            <button type="submit" class="btn btn-danger" id="cancelSubmitBtn" disabled>
+                                <i class="fas fa-ban"></i> Cancel Invoice
+                            </button>
+                            <a href="{% url 'invoice:detail' invoice.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Go Back
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: Sidebar Cards (col-lg-4 col-md-5) -->
+                <div class="col-lg-4 col-md-5 col-12">
+                    
+                    <!-- Invoice Summary Card -->
+                    <div class="form-card mb-3">
+                        <h5 class="section-title mb-3">
+                            <i class="fas fa-file-invoice"></i> Invoice Details
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Invoice Number</span>
+                            <span class="fw-bold" style="color: var(--text-primary);">{{ invoice.invoice_number }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Status</span>
+                            <span class="status-badge status-{{ invoice.payment_status|lower }}">
+                                {{ invoice.get_payment_status_display }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Customer</span>
+                            <span class="fw-semibold text-end" style="color: var(--text-primary); max-width: 60%;">{{ invoice.customer.name }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Date</span>
+                            <span style="color: var(--text-primary);">{{ invoice.invoice_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-secondary small">Payment Type</span>
+                            <span style="color: var(--text-primary);">{{ invoice.get_payment_type_display }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Financial Impact Card -->
+                    <div class="form-card mb-3">
+                        <h5 class="section-title mb-3">
+                            <i class="fas fa-calculator text-warning"></i> Financial Impact
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Original Amount</span>
+                            <span class="fw-semibold" style="color: var(--text-primary);">{{ financial_impact.original_amount|currency_nonDecimal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Net Amount</span>
+                            <span class="fw-semibold" style="color: var(--text-primary);">{{ financial_impact.net_amount|currency_nonDecimal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2" style="border-bottom: 1px solid var(--border-color);">
+                            <span class="text-secondary small">Paid Amount</span>
+                            <span class="fw-bold text-success">{{ financial_impact.paid|currency_nonDecimal }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-secondary small">Remaining Balance</span>
+                            <span class="fw-bold text-danger">{{ financial_impact.remaining|currency_nonDecimal }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Warning Alert -->
+                    <div class="p-3 rounded" style="background: rgba(220, 53, 69, 0.08); border: 1px solid rgba(220, 53, 69, 0.25);">
+                        <div class="d-flex gap-2">
+                            <i class="fas fa-exclamation-triangle text-danger mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold text-danger mb-1" style="font-size: 0.85rem;">Warning</h6>
+                                <p class="mb-0 text-secondary" style="font-size: 0.8rem; line-height: 1.4;">
+                                    This action cannot be undone. Once cancelled, the invoice becomes permanently locked.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </form>
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('.invoice-form');
+        const confirmCheckbox = document.getElementById('{{ form.confirm_cancellation.id_for_label }}');
+        const cancelSubmitBtn = document.getElementById('cancelSubmitBtn');
+
+        if (confirmCheckbox && cancelSubmitBtn) {
+            cancelSubmitBtn.disabled = !confirmCheckbox.checked;
+
+            confirmCheckbox.addEventListener('change', function() {
+                cancelSubmitBtn.disabled = !this.checked;
+            });
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (confirmCheckbox && !confirmCheckbox.checked) {
+                    e.preventDefault();
+                    if (typeof showNotification === 'function') {
+                        showNotification('Please confirm the cancellation by checking the confirmation box', 'error');
+                    } else {
+                        alert('Please confirm the cancellation by checking the confirmation box');
+                    }
+                    return false;
+                }
+
+                if (!confirm('Are you absolutely sure you want to cancel Invoice #{{ invoice.invoice_number|escapejs }}? This action cannot be undone.')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+    });
+    </script>
+{% endblock extra_js %}

@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    Damaged Stock Management
+{% endblock title %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Damaged Stock Management</h2>
+        <div class="page-actions">
+            <a href="{% url 'inventory:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+            <a href="{% url 'report:damaged_stock_pdf' %}"
+               id="downloadPdfBtn"
+               target="_blank"
+               class="btn btn-primary"
+               title="Download Grouped PDF Report">
+                <i class="fas fa-file-pdf"></i>
+                Download PDF
+            </a>
+            <a href="{% url 'inventory_variant:home' %}" class="btn btn-secondary">
+                <i class="fas fa-boxes"></i>
+                All Variants
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats - Identical Architecture to Dashboard Pages -->
+    <div class="stats-grid mb-4" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-icon bg-yellow">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Pending Resolution</span>
+                <h4 class="stat-number">{{ pending_count }}</h4>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-red">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Damaged Units</span>
+                <h4 class="stat-number">{{ total_units_damaged|floatformat:0 }}</h4>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-blue">
+                <i class="fa-solid fa-indian-rupee-sign"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Pending Damage Value</span>
+                <h4 class="stat-number">{{ total_damaged_value|currency }}</h4>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-green">
+                <i class="fa-solid fa-check-double"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Resolved</span>
+                <h4 class="stat-number">{{ returned_count|add:repaired_count|add:written_off_count }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Damaged Stock</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm" autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search product, barcode, supplier, area, or invoice..."
+                       id="searchInput"
+                       autofocus />
+            </div>
+
+            <select name="status" class="filter-select" id="statusFilter">
+                <option value="PENDING" selected>Pending ({{ pending_count }})</option>
+                <option value="ALL">All Statuses ({{ total_records }})</option>
+                <option value="RETURNED">Returned ({{ returned_count }})</option>
+                <option value="REPAIRED">Repaired ({{ repaired_count }})</option>
+                <option value="WRITTEN_OFF">Written Off ({{ written_off_count }})</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Data Table Container -->
+    <div class="table-container">
+        <table class="data-table" id="damagedStockTable" data-sort="-created_at">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable" data-sort="variant">Product Variant</th>
+                    <th class="mobile-hide">Barcode</th>
+                    <th class="sortable" data-sort="quantity">Damaged Qty</th>
+                    <th class="mobile-hide">Purchase Price</th>
+                    <th class="mobile-hide">Total Value</th>
+                    <th>Reason</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th class="sortable mobile-hide" data-sort="supplier">Supplier / Invoice</th>
+                    <th class="sortable mobile-hide" data-sort="created_at">Date</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="100" class="text-center p-3">
+                        <div class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading damaged stock...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const urls = {
+                fetch: '{% url "inventory:damaged_stock_fetch" %}',
+                downloadPdf: '{% url "report:damaged_stock_pdf" %}',
+            };
+
+            initTableAjax('searchForm', 'damagedStockTable', urls.fetch, {
+                loadingText: 'Loading damaged stock...',
+                autoLoad: true,
+            }, true);
+
+            initTableSorting('damagedStockTable');
+
+            function getDownloadUrl(baseUrl) {
+                const form = document.getElementById('searchForm');
+                const params = new URLSearchParams();
+                if (form) {
+                    const formData = new FormData(form);
+                    for (const [key, value] of formData.entries()) {
+                        if (value && value.trim() !== '') {
+                            params.append(key, value.trim());
+                        }
+                    }
+                }
+                const qs = params.toString();
+                return qs ? `${baseUrl}?${qs}` : baseUrl;
+            }
+
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            const searchForm = document.getElementById('searchForm');
+
+            function syncDownloadLinks() {
+                if (downloadPdfBtn) {
+                    downloadPdfBtn.href = getDownloadUrl(urls.downloadPdf);
+                }
+            }
+
+            syncDownloadLinks();
+            if (searchForm) {
+                searchForm.addEventListener('input', syncDownloadLinks);
+                searchForm.addEventListener('change', syncDownloadLinks);
+            }
+
+            if (downloadPdfBtn) {
+                downloadPdfBtn.addEventListener('click', function () {
+                    this.href = getDownloadUrl(urls.downloadPdf);
+                });
+            }
+        });
+    </script>
+{% endblock extra_js %}

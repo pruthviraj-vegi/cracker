@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Downloads{% endblock title %}
+
+{% block content %}
+<div class="page-header">
+  <h2 class="page-title"><i class="fas fa-download"></i> Downloads</h2>
+  <div class="page-actions">
+      <button class="btn btn-outline-secondary" onclick="reloadTable('downloads_table')">
+          <i class="fas fa-sync-alt"></i> Refresh
+      </button>
+  </div>
+</div>
+
+<nav class="breadcrumb breadcrumb-right">
+  <a href="{% url 'base:home' %}" class="breadcrumb-item">Dashboard</a>
+  <span class="breadcrumb-separator">/</span>
+  <span class="breadcrumb-active">Downloads</span>
+</nav>
+
+<div class="col">
+  <div class="table-section" id="downloadsSection">
+    <div class="table-header">
+      <h3>Generated Files</h3>
+    </div>
+    <div class="table-container">
+      <table class="data-table" id="downloads_table" data-sort="-created_at">
+        <thead>
+          <tr>
+            <th>Job Type</th>
+            <th>Requested At</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4" class="text-center p-4">
+              <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                Loading downloads...
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteConfirmModal" style="display: none;">
+  <div class="modal-content text-center">
+    <div class="modal-icon" style="background: var(--danger-bg, #fee2e2); color: var(--danger, #dc3545);">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <h4 class="modal-title">Delete PDF File?</h4>
+    <p class="modal-message">
+      Are you sure you want to delete <strong id="deleteJobTitleText">this PDF</strong>?
+      This will permanently delete the file from storage and the backend.
+    </p>
+    <div class="modal-buttons">
+      <button type="button" class="modal-btn modal-btn-cancel" id="cancelDeleteBtn">Cancel</button>
+      <button type="button" class="modal-btn modal-btn-danger" id="confirmDeleteBtn">
+        <i class="fas fa-trash-alt"></i> Delete
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock content %}
+
+{% block extra_js %}
+<script src="{% static 'js/fetchData.js' %}"></script>
+<script>
+  var pendingJobIdToDelete = null;
+
+  function confirmDeleteJob(jobId, jobTitle) {
+    pendingJobIdToDelete = jobId;
+    var titleElem = document.getElementById('deleteJobTitleText');
+    if (titleElem) {
+      titleElem.textContent = jobTitle || 'this PDF';
+    }
+    var modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      modal.style.display = 'flex';
+    }
+  }
+
+  function closeDeleteModal() {
+    pendingJobIdToDelete = null;
+    var modal = document.getElementById('deleteConfirmModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var cancelBtn = document.getElementById('cancelDeleteBtn');
+    var confirmBtn = document.getElementById('confirmDeleteBtn');
+    var modal = document.getElementById('deleteConfirmModal');
+
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', closeDeleteModal);
+    }
+
+    if (modal) {
+      modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          closeDeleteModal();
+        }
+      });
+    }
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', async function() {
+        if (!pendingJobIdToDelete) return;
+
+        var originalHTML = confirmBtn.innerHTML;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+        confirmBtn.disabled = true;
+
+        try {
+          var csrfToken = (typeof getCsrfToken === 'function' ? getCsrfToken() : null) || window.csrfToken || '{{ csrf_token }}';
+          if (!csrfToken) {
+            showNotification('CSRF token missing. Please reload the page.', 'error');
+            return;
+          }
+          var response = await fetch(`/report/downloads/${pendingJobIdToDelete}/delete/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken
+            }
+          });
+
+          var data = await response.json();
+          if (response.ok && data.success) {
+            showNotification(data.message || 'PDF deleted successfully', 'success');
+            closeDeleteModal();
+            reloadTable('downloads_table');
+          } else {
+            showNotification(data.error || data.message || 'Failed to delete PDF', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          showNotification('Network error while deleting PDF', 'error');
+        } finally {
+          confirmBtn.innerHTML = originalHTML;
+          confirmBtn.disabled = false;
+        }
+      });
+    }
+
+    initTableAjax(null, 'downloads_table', '{% url "report:downloads_fetch" %}', {
+      method: 'GET',
+      loadingText: 'Loading downloads...',
+      autoLoad: true,
+      sortable: false
+    }, false);
+
+    var pollTimer = null;
+    function hasPendingJobs() {
+      var table = document.getElementById('downloads_table');
+      if (!table) return false;
+      return table.querySelector('.status-pending, .status-processing') !== null;
+    }
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = setInterval(function() {
+        reloadTable('downloads_table');
+        setTimeout(function() {
+          if (!hasPendingJobs() && pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+        }, 1500);
+      }, 10000);
+    }
+    var observer = new MutationObserver(function() {
+      if (hasPendingJobs()) {
+        startPolling();
+      }
+    });
+    var tbody = document.querySelector('#downloads_table tbody');
+    if (tbody) {
+      observer.observe(tbody, { childList: true, subtree: true });
+    }
+  });
+</script>
+{% endblock extra_js %}
+

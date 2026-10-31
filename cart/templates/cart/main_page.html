@@ -1,0 +1,736 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+{% load static %}
+{% block title %}
+    {% if cart %}
+        {{ cart.name }}
+    {% else %}
+        Cart Management
+    {% endif %}
+{% endblock title %}
+{% block extra_css %}
+    <style>
+    .cart-navigation {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        max-width: 70%;
+        overflow: hidden;
+    }
+    
+    .nav-arrow {
+        background: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+        z-index: 2;
+    }
+    
+    .nav-arrow:hover {
+        background: var(--primary-hover);
+        transform: scale(1.1);
+    }
+    
+    .nav-arrow:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    
+    .cart-buttons-container {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        flex: 1;
+        padding: 5px 0;
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+        max-width: 100%; /* Limit to viewport container space */
+    }
+    
+    .cart-buttons-container::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    
+    .cart-btn {
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: fit-content;
+        max-width: 200px; /* Limit individual button width */
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        /* Hide the horizontal scroller on mobile */
+        .nav-arrow-left,
+        .nav-arrow-right,
+        .cart-buttons-container {
+            display: none !important;
+        }
+
+        .cart-navigation {
+            max-width: none;
+            gap: 0;
+            overflow: visible;
+        }
+
+        /* Make list button the primary nav element */
+        .list-cart-btn {
+            margin-left: 0;
+            width: auto;
+            height: 32px;
+            border-radius: 0.5rem;
+            padding: 0 0.6rem;
+            font-size: 0.8rem;
+            gap: 0.35rem;
+        }
+    }
+    
+    /* List Cart Button - matches nav-arrow style */
+    .list-cart-btn {
+        margin-left: 10px;
+        gap: 0.5rem;
+    }
+    
+    /* Cart List Modal */
+    .cart-list-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .cart-list-modal.show {
+        display: flex;
+        opacity: 1;
+    }
+    
+    .cart-list-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.4);
+        cursor: pointer;
+        backdrop-filter: blur(2px);
+    }
+    
+    .cart-list-content {
+        position: relative;
+        background: var(--bg-surface, #ffffff);
+        margin: auto;
+        width: 90%;
+        max-width: 600px;
+        max-height: 80vh;
+        border-radius: 0.75rem;
+        box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.1));
+        border: 1px solid var(--border-color, #e2e8f0);
+        display: flex;
+        flex-direction: column;
+        z-index: 1001;
+        animation: slideIn 0.3s ease;
+        overflow: hidden;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .cart-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.7rem 1.2rem;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        background: var(--bg-surface, #ffffff);
+    }
+    
+    .cart-list-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: var(--heading-weight, 600);
+        color: var(--text-primary, #1e293b);
+    }
+    
+    .close-list-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.25rem;
+        color: var(--text-secondary, #64748b);
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+    }
+    
+    .close-list-btn:hover {
+        background-color: var(--bg-surface-hover, #f8fafc);
+        color: var(--primary, #2563eb);
+    }
+    
+    .close-list-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .cart-list-body {
+        overflow-y: auto;
+        flex: 1;
+        padding: 0.5rem 0;
+    }
+    
+    .cart-list-items {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .cart-list-item {
+        margin: 0;
+        padding: 0;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+    }
+    
+    .cart-list-item:last-child {
+        border-bottom: none;
+    }
+    
+    .cart-list-link {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.7rem 1.2rem;
+        text-decoration: none;
+        color: var(--text-primary, #1e293b);
+        transition: all 0.2s ease;
+    }
+    
+    .cart-list-link:hover {
+        background-color: var(--bg-surface-hover, #f8fafc);
+    }
+    
+    .cart-list-item.active .cart-list-link {
+        background-color: rgba(37, 99, 235, 0.08);
+        color: var(--primary, #2563eb);
+        font-weight: 500;
+        border-left: 3px solid var(--primary, #2563eb);
+    }
+    
+    .cart-list-item.keyboard-selected .cart-list-link {
+        background-color: rgba(37, 99, 235, 0.15);
+        outline: 2px solid var(--primary, #2563eb);
+        outline-offset: -2px;
+        border-radius: 0.25rem;
+    }
+    
+    .cart-list-info {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex: 1;
+    }
+    
+    .cart-list-name {
+        font-size: 1rem;
+        font-weight: 500;
+        color: inherit;
+    }
+    
+    .cart-list-amount {
+        font-size: 0.875rem;
+        color: var(--text-secondary, #64748b);
+        font-weight: 600;
+        margin-left: auto;
+    }
+    
+    .cart-list-item.active .cart-list-amount {
+        color: var(--primary, #2563eb);
+    }
+    
+    .cart-list-link i {
+        color: var(--primary, #2563eb);
+        font-size: 1.125rem;
+        margin-left: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    .cart-list-search {
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid var(--border-color, #e2e8f0);
+        background: var(--bg-surface, #ffffff);
+    }
+    .cart-list-search .search-group { width: 100%; }
+    .cart-list-search .search-input {
+        background: var(--bg-body, #f1f5f9);
+        border: 1px solid var(--border-color, #e2e8f0);
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.75rem 0.45rem 2rem;
+        font-size: 0.8rem;
+    }
+    .cart-list-search .search-input:focus {
+        border-color: var(--primary, #2563eb);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+    .cart-list-search .search-icon {
+        left: 0.6rem;
+        font-size: 0.75rem;
+    }
+
+    /* Responsive adjustments for modal */
+    @media (max-width: 768px) {
+        .cart-list-content {
+            width: 95%;
+            max-height: 85vh;
+            border-radius: 0.5rem;
+        }
+        
+        .cart-list-header {
+            padding: 1rem 1.25rem;
+        }
+        
+        .cart-list-header h3 {
+            font-size: 1.125rem;
+        }
+        
+        .cart-list-link {
+            padding: 0.875rem 1.25rem;
+        }
+        
+        .cart-list-name {
+            font-size: 0.9375rem;
+        }
+        
+        .cart-list-amount {
+            font-size: 0.8125rem;
+        }
+    }
+
+    /* Profit row hidden until F9 toggled */
+    #profitRow,
+    .cart-summary-card #profitRow,
+    .cart-summary-sidebar #profitRow {
+        display: none !important;
+        cursor: pointer;
+    }
+    #profitRow.is-visible,
+    .cart-summary-card #profitRow.is-visible,
+    .cart-summary-sidebar #profitRow.is-visible {
+        display: flex !important;
+    }
+
+    /* Discount amount in red colour */
+    .cart-summary-card #discountedAmount,
+    .cart-summary-sidebar #discountedAmount,
+    #discountedAmount,
+    .discount-summary-row .summary-value {
+        color: var(--danger) !important;
+    }
+
+    /* Final amount below highlighted in big font without label */
+    .cart-summary-card .final-amount-row,
+    .cart-summary-sidebar .final-amount-row {
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+        text-align: right !important;
+        background: transparent !important;
+        border: none !important;
+        border-top: 1px solid var(--border-color) !important;
+        border-radius: 0 !important;
+        padding: 0.45rem 0 0.15rem 0 !important;
+        margin-top: 0.35rem !important;
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .cart-summary-card .final-amount-row .final-amount-value,
+    .cart-summary-card .final-amount-row .summary-value,
+    .cart-summary-sidebar .final-amount-row .final-amount-value,
+    .cart-summary-sidebar .final-amount-row .summary-value {
+        font-family: var(--font-heading) !important;
+        font-size: 1.25rem !important;
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+        letter-spacing: -0.01em !important;
+        line-height: 1.2 !important;
+        text-align: right !important;
+        width: auto !important;
+    }
+
+    /* Cart Table column alignment */
+    .data-table th.text-end,
+    .data-table td.text-end {
+        text-align: right !important;
+    }
+
+    .data-table th.text-center,
+    .data-table td.text-center {
+        text-align: center !important;
+    }
+
+    .data-table td.text-end .price-bubble-container {
+        display: inline-block;
+    }
+    </style>
+{% endblock extra_css %}
+{% block content %}
+    {% csrf_token %}
+    <div class="page-header">
+        <h2 class="page-title">Carts</h2>
+        <div class="cart-navigation">
+            <button type="button"
+                    class="nav-arrow nav-arrow-left"
+                    onclick="scrollCarts('left')"
+                    id="leftArrow">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="cart-buttons-container" id="cartButtonsContainer">
+                {% for data in carts %}
+                    <a href="{% url 'cart:get_cart_data' data.id %}"
+                       class="btn cart-btn {% if data.id == cart.id %}btn-primary active-cart-btn{% else %}btn-secondary{% endif %}"
+                       data-cart-id="{{ data.id }}">
+                        {{ data.name }} - <span class="value" id="cart-button-total-{{ data.id }}">{{ data.total_amount|currency }}
+                        {% if data.advance_payment > 0 %}({{ data.advance_payment|currency }}){% endif %}
+                    </span>
+                </a>
+            {% endfor %}
+        </div>
+        <button type="button"
+                class="nav-arrow nav-arrow-right"
+                onclick="scrollCarts('right')"
+                id="rightArrow">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <button type="button"
+                class="nav-arrow list-cart-btn"
+                onclick="toggleCartList()"
+                id="listCartBtn"
+                title="View all carts in list">
+            {{ carts|length }}
+            <i class="fas fa-list"></i>
+        </button>
+    </div>
+    <!-- Cart List Modal -->
+    <div class="cart-list-modal" id="cartListModal">
+        <div class="cart-list-overlay" onclick="toggleCartList()"></div>
+        <div class="cart-list-content">
+            <div class="cart-list-header">
+                <h3>All Carts - {{ carts|length }}</h3>
+                <button type="button" class="close-list-btn" onclick="toggleCartList()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="cart-list-search">
+                <div class="search-group search-expanded">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text"
+                           class="search-input"
+                           placeholder="Filter carts by name..."
+                           id="cartListSearch"
+                           autocomplete="off"
+                           spellcheck="false"
+                           autocorrect="off"
+                           autocapitalize="none">
+                </div>
+            </div>
+            <div class="cart-list-body">
+                <ul class="cart-list-items">
+                    {% for data in carts %}
+                        <li class="cart-list-item {% if data.id == cart.id %}active{% endif %}">
+                            <a href="{% url 'cart:get_cart_data' data.id %}" class="cart-list-link">
+                                <div class="cart-list-info">
+                                    <span class="cart-list-name">{{ data.name }}</span>
+                                    <span class="cart-list-amount" id="cart-list-total-{{ data.id }}">{{ data.total_amount|currency }}
+                                        {% if data.advance_payment > 0 %}({{ data.advance_payment|currency }}){% endif %}
+                                    </span>
+                                </div>
+                                {% if data.id == cart.id %}<i class="fas fa-check-circle"></i>{% endif %}
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="page-actions">
+        {% if perms.cart.add_cart %}
+            <a href="{% url 'cart:auto_cart_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                New Cart
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% if cart %}
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'cart:main_page' %}" class="breadcrumb-item">Carts</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Cart Details</span>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">{{ cart.created_at|timesince }} ago</span>
+        </nav>
+
+        <form href=""
+              class="search-filter-form"
+              id="barcodeForm"
+              data-allow-double-submit
+              autocomplete="off">
+            {% csrf_token %}
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="barcode"
+                       class="search-input"
+                       placeholder="Scan barcode..."
+                       value=""
+                       id="barcodeInput"
+                       autofocus>
+            </div>
+
+            <!-- Camera Scan Button — visible on mobile only -->
+            <button type="button"
+                    class="btn btn-primary btn-camera-scan d-md-none"
+                    id="cameraScanBtn"
+                    title="Scan barcode with camera"
+                    aria-label="Open camera barcode scanner">
+                <i class="fas fa-camera"></i>
+            </button>
+
+            <button type="submit" class="btn btn-primary" tabindex="-1">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    {% include "cart/models/cart.html" %}
+{% else %}
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'cart:main_page' %}" class="breadcrumb-item">Carts</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">No Cart</span>
+    </nav>
+    <div class="empty-state">
+        <i class="fas fa-shopping-cart"></i>
+        <h4>No Cart Selected</h4>
+        <p>Please select a cart from the buttons above or create a new one to start adding items.</p>
+    </div>
+{% endif %}
+{% endblock content %}
+{% block extra_js %}
+    <script>
+    function scrollCarts(direction) {
+        const container = document.getElementById('cartButtonsContainer');
+        const scrollAmount = 200; // pixels to scroll
+        
+        if (direction === 'left') {
+            container.scrollLeft -= scrollAmount;
+        } else {
+            container.scrollLeft += scrollAmount;
+        }
+        
+        // Update arrow visibility after scroll
+        updateArrowVisibility();
+    }
+    
+    function updateArrowVisibility() {
+        const container = document.getElementById('cartButtonsContainer');
+        const leftArrow = document.getElementById('leftArrow');
+        const rightArrow = document.getElementById('rightArrow');
+        
+        // Show/hide left arrow
+        if (container.scrollLeft <= 0) {
+            leftArrow.style.opacity = '0.5';
+            leftArrow.style.pointerEvents = 'none';
+        } else {
+            leftArrow.style.opacity = '1';
+            leftArrow.style.pointerEvents = 'auto';
+        }
+        
+        // Show/hide right arrow
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+        if (container.scrollLeft >= maxScrollLeft - 5) { // Small tolerance for floating point issues
+            rightArrow.style.opacity = '0.5';
+            rightArrow.style.pointerEvents = 'none';
+        } else {
+            rightArrow.style.opacity = '1';
+            rightArrow.style.pointerEvents = 'auto';
+        }
+        
+    }
+    
+    // Scroll to active cart button
+    function scrollToActiveCart() {
+        const container = document.getElementById('cartButtonsContainer');
+        const activeButton = container.querySelector('.btn-primary');
+        
+        if (activeButton) {
+            const containerRect = container.getBoundingClientRect();
+            const buttonRect = activeButton.getBoundingClientRect();
+            
+            // Calculate scroll position to center the active button
+            const scrollLeft = activeButton.offsetLeft - (container.clientWidth / 2) + (activeButton.clientWidth / 2);
+            
+            container.scrollTo({
+                left: Math.max(0, scrollLeft),
+                behavior: 'smooth'
+            });
+        }
+    }
+    
+    // Toggle cart list modal
+    function toggleCartList() {
+        const modal = document.getElementById('cartListModal');
+        if (modal) {
+            modal.classList.toggle('show');
+            if (modal.classList.contains('show')) {
+                document.body.style.overflow = 'hidden';
+                const searchInput = document.getElementById('cartListSearch');
+                if (searchInput) {
+                    searchInput.value = '';
+                    filterCartList();
+                    if (window.innerWidth > 768) {
+                        searchInput.focus();
+                    }
+                }
+                cartListSelectedIndex = -1;
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+    }
+
+    var cartListSelectedIndex = -1;
+
+    function getVisibleCartItems() {
+        return Array.from(document.querySelectorAll('.cart-list-item')).filter(
+            item => item.style.display !== 'none'
+        );
+    }
+
+    function highlightCartItem(index) {
+        getVisibleCartItems().forEach((item, i) => {
+            item.classList.toggle('keyboard-selected', i === index);
+        });
+    }
+
+    function navigateCartItem() {
+        const items = getVisibleCartItems();
+        if (cartListSelectedIndex >= 0 && cartListSelectedIndex < items.length) {
+            window.location.href = items[cartListSelectedIndex].querySelector('a').href;
+        }
+    }
+
+    function handleCartListKeydown(e) {
+        const items = getVisibleCartItems();
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            cartListSelectedIndex = Math.min(cartListSelectedIndex + 1, items.length - 1);
+            if (cartListSelectedIndex >= 0) {
+                items[cartListSelectedIndex].scrollIntoView({ block: 'nearest' });
+            }
+            highlightCartItem(cartListSelectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            cartListSelectedIndex = Math.max(cartListSelectedIndex - 1, -1);
+            highlightCartItem(cartListSelectedIndex);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            navigateCartItem();
+        }
+    }
+
+    // Cart list search filter
+    function filterCartList() {
+        const query = document.getElementById('cartListSearch').value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        document.querySelectorAll('.cart-list-item').forEach(item => {
+            const name = item.querySelector('.cart-list-name').textContent.toLowerCase();
+            const match = !query || name.includes(query);
+            item.style.display = match ? '' : 'none';
+            if (match) visibleCount++;
+        });
+
+        cartListSelectedIndex = -1;
+        highlightCartItem(-1);
+
+        const countEl = document.querySelector('.cart-list-header h3');
+        if (countEl) {
+            const total = document.querySelectorAll('.cart-list-item').length;
+            countEl.textContent = query
+                ? `Carts (${visibleCount} of ${total})`
+                : `All Carts - ${total}`;
+        }
+    }
+    
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const modal = document.getElementById('cartListModal');
+            if (modal && modal.classList.contains('show')) {
+                toggleCartList();
+            }
+        }
+    });
+    
+    // Initialize arrow visibility on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add delay to ensure container is fully rendered
+        setTimeout(() => {
+            // Scroll to active cart first
+            scrollToActiveCart();
+            
+            // Then update arrow visibility
+            setTimeout(() => {
+                updateArrowVisibility();
+                
+                // Update arrow visibility on scroll
+                const container = document.getElementById('cartButtonsContainer');
+                container.addEventListener('scroll', updateArrowVisibility);
+            }, 300);
+        }, 200);
+
+        // Wire up cart list search
+        const searchInput = document.getElementById('cartListSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', filterCartList);
+            searchInput.addEventListener('keydown', handleCartListKeydown);
+        }
+    });
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+{% endblock extra_js %}

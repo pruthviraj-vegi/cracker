@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Product Variants Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Product Variants Management</h2>
+        <div class="page-actions">
+            {% if perms.inventory.export_reports %}
+                <a href="#" id="downloadBtn" class="btn btn-primary">
+                    <i class="fas fa-download"></i>
+                    Download
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Products</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Variants</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search by Variant name, brand, barcode, or description..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <!-- Funnel Button with Active Count & Hover Preview Popover -->
+            <div class="filter-funnel-wrapper" id="filterFunnelWrapper">
+                <button type="button" class="filter-funnel-btn" id="openFilterDrawerBtn" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer" aria-controls="filterDrawer" title="Open Filters Drawer">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <span class="filter-btn-text d-none d-sm-inline">Filters</span>
+                    <span id="activeFilterBadge" class="filter-count-badge d-none">0</span>
+                </button>
+
+                <!-- Floating Hover Preview (shows active filter names and values on hover) -->
+                <div class="filter-hover-preview d-none d-md-block" id="filterHoverPreview" role="tooltip" aria-hidden="true">
+                    <div class="filter-hover-header">
+                        <span class="filter-hover-title">
+                            <i class="fas fa-filter me-1 text-primary"></i> Active Filters
+                        </span>
+                        <span class="filter-hover-count" id="filterHoverCount">0</span>
+                    </div>
+                    <div class="filter-hover-list" id="filterHoverList">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                    <div class="filter-hover-footer">
+                        <button type="button" class="filter-hover-clear-btn" id="filterHoverClearAll">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                        <span class="filter-hover-hint">Click button to edit</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+
+            <!-- Slide-over Filter Offcanvas Drawer (Right Side) -->
+            <div class="offcanvas offcanvas-end filter-drawer" tabindex="-1" id="filterDrawer" aria-labelledby="filterDrawerLabel">
+                <div class="offcanvas-header border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="filter-header-icon me-2">
+                            <i class="fas fa-sliders-h text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="offcanvas-title font-weight-bold mb-0" id="filterDrawerLabel">Filter Variants</h5>
+                            <small class="text-muted">Filter by attributes, price, discount &amp; stock</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-3">
+                    <!-- Section 1: Product Attributes -->
+                    <div class="filter-section-group mb-3">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-tags text-primary me-2"></i>Product Attributes
+                        </h6>
+                        <div class="mb-3">
+                            <label for="categoryFilter" class="form-label font-weight-bold">Category</label>
+                            <select name="category" class="form-select" id="categoryFilter">
+                                <option value="">All Categories</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="sizeFilter" class="form-label font-weight-bold">Size</label>
+                                <select name="size" class="form-select" id="sizeFilter">
+                                    <option value="">All Sizes</option>
+                                    {% for size in sizes %}
+                                        <option value="{{ size.id }}">{{ size.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="colorFilter" class="form-label font-weight-bold">Color</label>
+                                <select name="color" class="form-select" id="colorFilter">
+                                    <option value="">All Colors</option>
+                                    {% for color in colors %}
+                                        <option value="{{ color.id }}">{{ color.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Amount & Price Range with Dual Range Slider -->
+                    <div class="filter-section-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="filter-group-heading mb-0">
+                                <i class="fas fa-coins text-primary me-2"></i>Price Range (Amount)
+                            </h6>
+                            <span class="range-display-badge" id="priceRangeDisplay">0.00 - 20,000.00</span>
+                        </div>
+
+                        <!-- Dual Range Slider for Price -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-track"></div>
+                            <div class="range-slider-progress" id="priceRangeProgress"></div>
+                            <input type="range" class="range-slider-input" id="minPriceRange" min="0" max="20000" step="50" value="0">
+                            <input type="range" class="range-slider-input" id="maxPriceRange" min="0" max="20000" step="50" value="20000">
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <label for="minPriceFilter" class="form-label text-muted small mb-1">Min Price</label>
+                                <input type="number"
+                                       name="min_price"
+                                       id="minPriceFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="0.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="20000">
+                            </div>
+                            <div class="col-6">
+                                <label for="maxPriceFilter" class="form-label text-muted small mb-1">Max Price</label>
+                                <input type="number"
+                                       name="max_price"
+                                       id="maxPriceFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="20000.00"
+                                       step="0.01"
+                                       min="0"
+                                       max="20000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Discount Filter with Dual Range Slider & Custom Toggles -->
+                    <div class="filter-section-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="filter-group-heading mb-0">
+                                <i class="fas fa-percentage text-primary me-2"></i>Discount Filter
+                            </h6>
+                            <!-- Custom Toggle Switch (immune to generic checkbox styling) -->
+                            <label class="custom-toggle-switch">
+                                <input type="checkbox" name="discount_only" id="discountOnlyCheck" value="1">
+                                <span class="custom-toggle-slider"></span>
+                                <span class="custom-toggle-label">Discounted Only</span>
+                            </label>
+                        </div>
+
+                        <!-- Segmented Button Toggle for Discount By -->
+                        <div class="segmented-control-group mb-2" id="discountTypeControl">
+                            <label class="segmented-control-option active" id="discountTypePercentLabel">
+                                <input type="radio" name="discount_type" value="percent" id="discountTypePercent" checked>
+                                <i class="fas fa-percentage me-1"></i> Percent (%)
+                            </label>
+                            <label class="segmented-control-option" id="discountTypeAmountLabel">
+                                <input type="radio" name="discount_type" value="amount" id="discountTypeAmount">
+                                <i class="fas fa-coins me-1"></i> Amount
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-muted small font-weight-bold" id="discountRangeTitle">Discount Range (%):</span>
+                            <span class="range-display-badge" id="discountRangeDisplay">0% - 100%</span>
+                        </div>
+
+                        <!-- Dual Range Slider for Discount -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-track"></div>
+                            <div class="range-slider-progress" id="discountRangeProgress"></div>
+                            <input type="range" class="range-slider-input" id="minDiscountRange" min="0" max="100" step="1" value="0">
+                            <input type="range" class="range-slider-input" id="maxDiscountRange" min="0" max="100" step="1" value="100">
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <label for="minDiscountFilter" class="form-label text-muted small mb-1">Min Discount</label>
+                                <input type="number"
+                                       name="min_discount"
+                                       id="minDiscountFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="0"
+                                       step="0.01"
+                                       min="0">
+                            </div>
+                            <div class="col-6">
+                                <label for="maxDiscountFilter" class="form-label text-muted small mb-1">Max Discount</label>
+                                <input type="number"
+                                       name="max_discount"
+                                       id="maxDiscountFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="100"
+                                       step="0.01"
+                                       min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Stock & Status -->
+                    <div class="filter-section-group mb-2">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-boxes text-primary me-2"></i>Inventory &amp; Status
+                        </h6>
+                        <div class="mb-3">
+                            <label for="stockFilter" class="form-label font-weight-bold">Stock Level</label>
+                            <select name="stock" class="form-select" id="stockFilter">
+                                <option value="">All Stock Levels</option>
+                                <option value="in_stock">In Stock (&gt; 0)</option>
+                                <option value="low_stock">Low Stock (≤ Reorder Level)</option>
+                                <option value="out_of_stock">Out of Stock (0)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="statusFilter" class="form-label font-weight-bold">Variant Status</label>
+                            <select name="status" class="form-select" id="statusFilter">
+                                <option value="">All Statuses</option>
+                                {% for val, label in status_choices %}
+                                    <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="offcanvas-footer p-3 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="resetModalFiltersBtn">
+                        <i class="fas fa-undo me-1"></i> Clear All
+                    </button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="offcanvas">Close</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="applyModalFiltersBtn">
+                            <i class="fas fa-check me-1"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable mobile-hide" data-sort="barcode">Barcode</th>
+                    <th class="sortable mobile-hide" data-sort="product__brand">Brand</th>
+                    <th class="sortable" data-sort="product__name">Product Name</th>
+                    <th class="mobile-hide">Size/Color</th>
+                    <th class="sortable" data-sort="quantity">Quantity</th>
+                    <th class="sortable mobile-hide" data-sort="mrp">MRP</th>
+                    <th class="sortable mobile-hide" data-sort="discount_percentage">Discount</th>
+                    <th>Final Price</th>
+                    <th class="sortable mobile-hide" data-sort="commission_percentage">Comm (%)</th>
+                    <th class="sortable mobile-hide" data-sort="created_at">Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <tr>
+                    <td colspan="100" class="text-center p-2">
+                        <div class="empty-state">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading variants...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "inventory_variant:fetch" %}',
+            suggestions: '{% url "suggestions:product_variant_all" %}',
+            variants_pdf: '{% url "report:variants_pdf" %}',
+            request_pdf: '{% url "report:request_variants_pdf" %}',
+        }
+    </script>
+    <!-- Filter Drawer, Dual Range Sliders & Hover Preview Functionality -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function getDiscountType() {
+                const checked = document.querySelector('input[name="discount_type"]:checked');
+                return checked ? checked.value : 'percent';
+            }
+
+            // --- Price Dual Range Slider ---
+            const priceSlider = initDualRangeSlider({
+                minRange: '#minPriceRange',
+                maxRange: '#maxPriceRange',
+                progress: '#priceRangeProgress',
+                minInput: '#minPriceFilter',
+                maxInput: '#maxPriceFilter',
+                display: '#priceRangeDisplay',
+                min: 0,
+                max: 20000,
+                step: 50,
+                gap: 100,
+                format: 'decimal'
+            });
+
+            // --- Discount Dual Range Slider ---
+            const discountSlider = initDualRangeSlider({
+                minRange: '#minDiscountRange',
+                maxRange: '#maxDiscountRange',
+                progress: '#discountRangeProgress',
+                minInput: '#minDiscountFilter',
+                maxInput: '#maxDiscountFilter',
+                display: '#discountRangeDisplay',
+                min: 0,
+                max: 100,
+                step: 1,
+                gap: 1,
+                format: 'percent'
+            });
+
+            // --- Declarative Filter Drawer Controller ---
+            const drawerCtrl = initFilterDrawer({
+                drawerId: 'filterDrawer',
+                formId: 'searchForm',
+                tableId: 'data_table',
+
+                syncUrl: true,
+                filters: [
+                    { id: 'categoryFilter', key: 'category', label: 'Category', type: 'select' },
+                    { id: 'sizeFilter', key: 'size', label: 'Size', type: 'select' },
+                    { id: 'colorFilter', key: 'color', label: 'Color', type: 'select' },
+                    { slider: priceSlider, key: 'price', minKey: 'min_price', maxKey: 'max_price', label: 'Price', type: 'slider', format: 'decimal' },
+                    {
+                        slider: discountSlider,
+                        key: 'discount',
+                        minKey: 'min_discount',
+                        maxKey: 'max_discount',
+                        label: 'Discount',
+                        type: 'slider',
+                        format: function(v) {
+                            return getDiscountType() === 'percent' ? `${Math.round(v)}%` : formatPlainDecimal(v);
+                        }
+                    },
+                    { id: 'discountOnlyCheck', key: 'discount_only', label: 'Discounted', type: 'checkbox', text: 'Discounted Only' },
+                    { id: 'stockFilter', key: 'stock', label: 'Stock', type: 'select' },
+                    { id: 'statusFilter', key: 'status', label: 'Status', type: 'select' }
+                ]
+            });
+
+            // --- Segmented Control for Discount Type ---
+            const discountRangeTitle = document.getElementById('discountRangeTitle');
+            const minDiscountInput = document.getElementById('minDiscountFilter');
+            const maxDiscountInput = document.getElementById('maxDiscountFilter');
+            initSegmentedControl('#discountTypeControl', function(type) {
+                if (type === 'amount') {
+                    if (discountRangeTitle) discountRangeTitle.textContent = 'Discount Range (Amount):';
+                    discountSlider.setRangeBounds({
+                        min: 0,
+                        max: 5000,
+                        step: 10,
+                        gap: 20,
+                        format: 'decimal'
+                    });
+                    if (minDiscountInput) minDiscountInput.placeholder = '0.00';
+                    if (maxDiscountInput) maxDiscountInput.placeholder = '5000.00';
+                } else {
+                    if (discountRangeTitle) discountRangeTitle.textContent = 'Discount Range (%):';
+                    discountSlider.setRangeBounds({
+                        min: 0,
+                        max: 100,
+                        step: 1,
+                        gap: 1,
+                        format: 'percent'
+                    });
+                    if (minDiscountInput) minDiscountInput.placeholder = '0';
+                    if (maxDiscountInput) maxDiscountInput.placeholder = '100';
+                }
+                if (drawerCtrl) drawerCtrl.updateUI();
+            });
+        });
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize word suggestion on search input - jQuery-like syntax!
+            $('#searchInput').wordSuggestion({
+                url: urls.suggestions,
+                placeholder: 'Type to search variants...',
+                minLength: 2,
+                onSelect: function(suggestion, input) {
+                    // Auto-reload table when suggestion is selected
+                    reloadTable('data_table');
+                }
+            });
+            
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading variants...',
+                includeInputs: false,
+                sortable: true
+            });
+            initTableSorting('data_table');
+
+            // Request Async Report Generation
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+
+                    // Disable button and show spinner
+                    const originalHTML = downloadBtn.innerHTML;
+                    downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...';
+                    downloadBtn.disabled = true;
+
+                    try {
+                        // Get form parameters using helper
+                        const params = getTableQueryParams('searchForm', 'data_table');
+
+                        // Send POST request
+                        const response = await fetch(urls.request_pdf, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: params
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            if (typeof showToast === 'function') {
+                                showToast('success', data.message);
+                            } else {
+                                alert(data.message);
+                            }
+                        } else {
+                            if (typeof showToast === 'function') {
+                                showToast('error', data.message || 'Failed to request report.');
+                            } else {
+                                alert(data.message || 'Failed to request report.');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error requesting report:', error);
+                        alert('An error occurred while requesting the report.');
+                    } finally {
+                        // Restore button
+                        downloadBtn.innerHTML = originalHTML;
+                        downloadBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock extra_js %}

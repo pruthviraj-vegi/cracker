@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Supplier Invoice Tracking
+{% endblock title %}
+{% block extra_css %}
+<style>
+.view-mode-toggle {
+    display: inline-flex;
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    padding: 2px;
+    gap: 3px;
+    height: 32px;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.view-toggle-btn {
+    background: none;
+    border: none;
+    border-radius: 4px;
+    padding: 0 0.65rem;
+    height: 26px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.view-toggle-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-surface-hover);
+}
+
+.view-toggle-btn.active {
+    background: var(--primary);
+    color: var(--text-on-primary, #ffffff);
+    box-shadow: var(--shadow-sm);
+}
+
+.view-toggle-btn i {
+    font-size: 0.75rem;
+}
+</style>
+{% endblock extra_css %}
+{% block content %}
+    <div class="page-header">
+        <h2 class="page-title">Supplier Invoice Tracking</h2>
+        <div class="page-actions">
+            <button type="button"
+                    class="btn btn-secondary"
+                    onclick="reloadTable('supplierInvoiceTable')">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Inventory</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Supplier Invoices</span>
+        </nav>
+
+        <form method="get"
+              class="search-filter-form"
+              id="searchForm"
+              autocomplete="off">
+            <input type="hidden" name="view_mode" id="viewModeInput" value="invoices">
+
+            <!-- Dual View Switcher placed in the same search/filter toolbar row -->
+            <div class="view-mode-toggle" role="group" aria-label="View Mode Toggle">
+                <button type="button"
+                        class="view-toggle-btn active"
+                        id="toggleInvoicesBtn"
+                        onclick="switchMainViewMode('invoices')">
+                    <i class="fas fa-file-invoice"></i>
+                    <span> ({{ invoices_count|default:0 }})</span>
+                </button>
+                <button type="button"
+                        class="view-toggle-btn"
+                        id="toggleSuppliersBtn"
+                        onclick="switchMainViewMode('suppliers')">
+                    <i class="fas fa-building"></i>
+                    <span> ({{ active_suppliers_count|default:0 }})</span>
+                </button>
+            </div>
+
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search invoices or supplier..."
+                       value="{{ search_query }}"
+                       id="searchInput"
+                       autofocus>
+            </div>
+
+            <!-- Supplier Filter (Visible in Invoices View) -->
+            <select name="supplier" class="filter-select" id="supplierFilter">
+                <option value="">All Suppliers</option>
+                {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}"
+                            {% if supplier_filter == supplier.id|stringformat:"s" %}selected{% endif %}>
+                        {{ supplier.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <!-- Status Filter (Visible in Suppliers View) -->
+            <select name="status" class="filter-select" id="statusFilter" style="display: none;">
+                <option value="">All Status</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock (≤ 10)</option>
+                <option value="sold_out">Sold Out</option>
+                <option value="selling_well">Selling Well (≥ 50%)</option>
+                <option value="slow_moving">Slow Moving (&lt; 50%)</option>
+                <option value="damaged">Has Damaged Stock</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table"
+               id="supplierInvoiceTable"
+               data-sort="-invoice_date">
+            <!-- 1. Thead for Invoices View -->
+            <thead id="invoicesThead">
+                <tr>
+                    <th class="sortable" data-sort="invoice_number">Invoice Number</th>
+                    <th class="sortable" data-sort="supplier_name">Supplier</th>
+                    <th class="sortable mobile-hide" data-sort="invoice_date">Date</th>
+                    <th class="sortable" data-sort="invoice_amount">Invoice Amount</th>
+                    <th class="sortable mobile-hide" data-sort="stock_amount">Stock Amount</th>
+                    <th class="sortable mobile-hide" data-sort="stock_in_quantity">Stock In</th>
+                    <th class="sortable mobile-hide" data-sort="sales_quantity">Sales</th>
+                    <th class="sortable mobile-hide" data-sort="remaining_quantity">Remaining</th>
+                    <th class="sortable mobile-hide" data-sort="sold_percentage">Sold %</th>
+                    <th class="mobile-hide">Products</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+
+            <!-- 2. Thead for Suppliers View (Initially Hidden) -->
+            <thead id="suppliersThead" style="display: none;">
+                <tr>
+                    <th class="sortable" data-sort="name">Supplier</th>
+                    <th class="sortable" data-sort="invoices_count">Invoices</th>
+                    <th class="sortable" data-sort="total_invoiced">Total Invoiced</th>
+                    <th class="sortable" data-sort="stock_in_quantity">Stock In</th>
+                    <th class="sortable" data-sort="sales_quantity">Sales</th>
+                    <th class="sortable" data-sort="damage_quantity">Damage</th>
+                    <th class="sortable" data-sort="remaining_quantity">Remaining</th>
+                    <th class="sortable" data-sort="sold_percentage">Sold %</th>
+                    <th class="sortable" data-sort="profit">Gross Profit</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td colspan="100" class="text-center empty-state-container p-3">
+                        <div class="empty-state">
+                            <i class="fas fa-file-invoice"></i>
+                            <h3>Loading Data...</h3>
+                            <p>Fetching supplier and invoice records.</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const fetchUrl = '{% url "inventory:supplier_invoice_fetch" %}';
+
+            initTableAjax('searchForm', 'supplierInvoiceTable', fetchUrl, {
+                loadingText: 'Loading data...',
+                autoLoad: true,
+            }, true);
+
+            initTableSorting('supplierInvoiceTable');
+        });
+
+        function switchMainViewMode(mode) {
+            const viewModeInput = document.getElementById('viewModeInput');
+            const toggleInvoicesBtn = document.getElementById('toggleInvoicesBtn');
+            const toggleSuppliersBtn = document.getElementById('toggleSuppliersBtn');
+            const invoicesThead = document.getElementById('invoicesThead');
+            const suppliersThead = document.getElementById('suppliersThead');
+            const supplierFilter = document.getElementById('supplierFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const searchInput = document.getElementById('searchInput');
+            const table = document.getElementById('supplierInvoiceTable');
+
+            if (!viewModeInput) return;
+
+            viewModeInput.value = mode;
+
+            if (mode === 'suppliers') {
+                toggleInvoicesBtn?.classList.remove('active');
+                toggleSuppliersBtn?.classList.add('active');
+
+                if (invoicesThead) invoicesThead.style.display = 'none';
+                if (suppliersThead) suppliersThead.style.display = '';
+
+                if (supplierFilter) supplierFilter.style.display = 'none';
+                if (statusFilter) statusFilter.style.display = '';
+
+                if (searchInput) {
+                    searchInput.placeholder = 'Search suppliers by name, phone, contact...';
+                }
+
+                if (table) {
+                    table.dataset.sort = '-stock_in_quantity';
+                }
+            } else {
+                toggleSuppliersBtn?.classList.remove('active');
+                toggleInvoicesBtn?.classList.add('active');
+
+                if (suppliersThead) suppliersThead.style.display = 'none';
+                if (invoicesThead) invoicesThead.style.display = '';
+
+                if (statusFilter) statusFilter.style.display = 'none';
+                if (supplierFilter) supplierFilter.style.display = '';
+
+                if (searchInput) {
+                    searchInput.placeholder = 'Search invoices or supplier...';
+                }
+
+                if (table) {
+                    table.dataset.sort = '-invoice_date';
+                }
+            }
+
+            // Re-init sort listeners and reload table data via AJAX
+            initTableSorting('supplierInvoiceTable');
+            reloadTable('supplierInvoiceTable');
+        }
+    </script>
+{% endblock extra_js %}

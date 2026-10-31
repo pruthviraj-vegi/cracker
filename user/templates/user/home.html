@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Users Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Users Management</h2>
+        <div class="page-actions">
+            <a href="{% url 'user:sessions' %}" class="btn">
+                <i class="fas fa-user-clock"></i>
+                Sessions
+            </a>
+            {% if perms.security.view_loginevent %}
+                <a href="{% url 'security:logins' %}" class="btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login Activity
+                </a>
+            {% endif %}
+            {% if perms.security.view_unauthorizedaccess %}
+                <a href="{% url 'security:unauthorized' %}" class="btn">
+                    <i class="fas fa-shield-alt text-danger"></i>
+                    Unauthorized Access
+                </a>
+            {% endif %}
+            {% if perms.user.add_customuser %}
+                <a href="{% url 'user:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    New User
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Users</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Users</span>
+        </nav>
+
+        <form method="get"
+              class="search-filter-form"
+              id="searchForm"
+              autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search users by name, phone, email, or address..."
+                       value=""
+                       id="searchInput"
+                       autofocus>
+            </div>
+
+            <!-- Funnel Button with Active Count & Hover Preview Popover -->
+            <div class="filter-funnel-wrapper" id="filterFunnelWrapper">
+                <button type="button"
+                        class="filter-funnel-btn"
+                        id="openFilterDrawerBtn"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#filterDrawer"
+                        aria-controls="filterDrawer"
+                        title="Open Filters Drawer">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <span class="filter-btn-text d-none d-sm-inline">Filters</span>
+                    <span id="activeFilterBadge" class="filter-count-badge d-none">0</span>
+                </button>
+
+                <!-- Floating Hover Preview (shows active filter names and values on hover) -->
+                <div class="filter-hover-preview d-none d-md-block" id="filterHoverPreview" role="tooltip" aria-hidden="true">
+                    <div class="filter-hover-header">
+                        <span class="filter-hover-title">
+                            <i class="fas fa-filter me-1 text-primary"></i> Active Filters
+                        </span>
+                        <span class="filter-hover-count" id="filterHoverCount">0</span>
+                    </div>
+                    <div class="filter-hover-list" id="filterHoverList">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                    <div class="filter-hover-footer">
+                        <button type="button" class="filter-hover-clear-btn" id="filterHoverClearAll">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                        <span class="filter-hover-hint">Click button to edit</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+
+            <!-- Slide-over Filter Offcanvas Drawer (Right Side) -->
+            <div class="offcanvas offcanvas-end filter-drawer"
+                 tabindex="-1"
+                 id="filterDrawer"
+                 aria-labelledby="filterDrawerLabel">
+                <div class="offcanvas-header border-bottom">
+                    <div class="d-flex align-items-center">
+                        <div class="filter-header-icon me-2">
+                            <i class="fas fa-sliders-h text-primary"></i>
+                        </div>
+                        <div>
+                            <h5 class="offcanvas-title font-weight-bold mb-0" id="filterDrawerLabel">Filter Users</h5>
+                            <small class="text-muted">Filter by role, status, commission, salary &amp; joined date</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+                <div class="offcanvas-body p-3">
+                    <!-- Section 1: Role & Account Status -->
+                    <div class="filter-section-group mb-3">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-user-tag text-primary me-2"></i>Role &amp; Permissions
+                        </h6>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="groupFilter" class="form-label font-weight-bold">Role / Group</label>
+                                <select name="group" class="form-select" id="groupFilter">
+                                    <option value="">All Roles</option>
+                                    {% for group in groups %}
+                                        <option value="{{ group.id }}">{{ group.name|capfirst }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="staffStatusFilter" class="form-label font-weight-bold">Access Level</label>
+                                <select name="staff_status" class="form-select" id="staffStatusFilter">
+                                    <option value="">All Users</option>
+                                    <option value="staff">Staff Only</option>
+                                    <option value="superuser">Superusers Only</option>
+                                    <option value="regular">Regular Users</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="statusFilter" class="form-label font-weight-bold">Status</label>
+                                <select name="status" class="form-select" id="statusFilter">
+                                    <option value="">All Status</option>
+                                    <option value="active">Active Only</option>
+                                    <option value="inactive">Inactive Only</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label for="commissionFilter" class="form-label font-weight-bold">Commission</label>
+                                <select name="commission" class="form-select" id="commissionFilter">
+                                    <option value="">All Commission</option>
+                                    <option value="yes">Commission Eligible</option>
+                                    <option value="no">No Commission</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-2 pt-1">
+                            <!-- Has Email Toggle -->
+                            <label class="custom-toggle-switch">
+                                <input type="checkbox" name="has_email" id="hasEmailCheck" value="1">
+                                <span class="custom-toggle-slider"></span>
+                                <span class="custom-toggle-label">Has Email Address</span>
+                            </label>
+                            <!-- Has Active Salary Toggle -->
+                            <label class="custom-toggle-switch">
+                                <input type="checkbox" name="has_salary" id="hasSalaryCheck" value="1">
+                                <span class="custom-toggle-slider"></span>
+                                <span class="custom-toggle-label">Has Active Salary Record</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Active Salary Range with Dual Range Slider -->
+                    <div class="filter-section-group mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="filter-group-heading mb-0">
+                                <i class="fas fa-wallet text-primary me-2"></i>Active Salary Range
+                            </h6>
+                            <span class="range-display-badge" id="salaryRangeDisplay">0.00 - {{ slider_max_salary|default:"50000" }}.00</span>
+                        </div>
+
+                        <!-- Dual Range Slider for Salary -->
+                        <div class="range-slider-container">
+                            <div class="range-slider-track"></div>
+                            <div class="range-slider-progress" id="salaryRangeProgress"></div>
+                            <input type="range"
+                                   class="range-slider-input"
+                                   id="minSalaryRange"
+                                   min="0"
+                                   max="{{ slider_max_salary|default:"50000" }}"
+                                   step="1000"
+                                   value="0">
+                            <input type="range"
+                                   class="range-slider-input"
+                                   id="maxSalaryRange"
+                                   min="0"
+                                   max="{{ slider_max_salary|default:"50000" }}"
+                                   step="1000"
+                                   value="{{ slider_max_salary|default:"50000" }}">
+                        </div>
+
+                        <div class="row g-2 mt-1">
+                            <div class="col-6">
+                                <label for="minSalaryFilter" class="form-label text-muted small mb-1">Min Salary</label>
+                                <input type="number"
+                                       name="min_salary"
+                                       id="minSalaryFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="0.00"
+                                       step="100"
+                                       min="0"
+                                       max="{{ slider_max_salary|default:"50000" }}">
+                            </div>
+                            <div class="col-6">
+                                <label for="maxSalaryFilter" class="form-label text-muted small mb-1">Max Salary</label>
+                                <input type="number"
+                                       name="max_salary"
+                                       id="maxSalaryFilter"
+                                       class="form-control form-control-sm"
+                                       placeholder="{{ slider_max_salary|default:"50000" }}.00"
+                                       step="100"
+                                       min="0"
+                                       max="{{ slider_max_salary|default:"50000" }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Joined Date Range -->
+                    <div class="filter-section-group mb-3">
+                        <h6 class="filter-group-heading">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>Joined Date Range
+                        </h6>
+                        <!-- Quick Date Presets -->
+                        <div class="date-preset-group">
+                            <button type="button" class="date-preset-btn" data-preset="today" data-from="#dateFromFilter" data-to="#dateToFilter">Today</button>
+                            <button type="button" class="date-preset-btn" data-preset="this_month" data-from="#dateFromFilter" data-to="#dateToFilter">This Month</button>
+                            <button type="button" class="date-preset-btn" data-preset="last_month" data-from="#dateFromFilter" data-to="#dateToFilter">Last Month</button>
+                            <button type="button" class="date-preset-btn" data-preset="this_fy" data-from="#dateFromFilter" data-to="#dateToFilter">This FY</button>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label for="dateFromFilter" class="form-label text-muted small mb-1">Joined From</label>
+                                <input type="date"
+                                       name="date_from"
+                                       id="dateFromFilter"
+                                       class="form-control form-control-sm"
+                                       title="Joined from date">
+                            </div>
+                            <div class="col-6">
+                                <label for="dateToFilter" class="form-label text-muted small mb-1">Joined To</label>
+                                <input type="date"
+                                       name="date_to"
+                                       id="dateToFilter"
+                                       class="form-control form-control-sm"
+                                       title="Joined to date">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Drawer Actions (Sticky Footer) -->
+                <div class="offcanvas-footer p-3 border-top d-flex gap-2">
+                    <button type="button" class="btn btn-secondary flex-fill" id="resetModalFiltersBtn">
+                        <i class="fas fa-undo me-1"></i> Reset
+                    </button>
+                    <button type="button" class="btn btn-primary flex-fill" id="applyModalFiltersBtn">
+                        <i class="fas fa-check me-1"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table" data-sort="">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="mobile-hide">Profile ID</th>
+                    <th class="sortable" data-sort="full_name">Name</th>
+                    <th class="sortable" data-sort="phone_number">Phone No</th>
+                    <th class="sortable mobile-hide" data-sort="email">Email</th>
+                    <th class="mobile-hide">Groups</th>
+                    <th class="sortable mobile-hide" data-sort="address">Address</th>
+                    <th class="mobile-hide">Commission</th>
+                    <th>Status</th>
+                    <th class="sortable mobile-hide" data-sort="date_joined">Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-2">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading users...
+                        </div>
+                        <br>
+                        <br>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-primary"
+                                onclick="if (typeof reloadTable === 'function') { reloadTable('data_table'); } else { document.dispatchEvent(new Event('reloadTable')); }">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot id="table_footer">
+                <!-- Pagination will be loaded here via AJAX -->
+            </tfoot>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "user:fetch" %}',
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Server max bound for salary slider
+            const maxSalaryVal = parseFloat("{{ slider_max_salary|default:'50000' }}") || 50000;
+
+            // Initialize Dual Range Slider for Salary
+            const salarySlider = initDualRangeSlider({
+                minRange: '#minSalaryRange',
+                maxRange: '#maxSalaryRange',
+                progress: '#salaryRangeProgress',
+                minInput: '#minSalaryFilter',
+                maxInput: '#maxSalaryFilter',
+                display: '#salaryRangeDisplay',
+                min: 0,
+                max: maxSalaryVal,
+                step: 1000,
+                gap: 1000,
+                format: 'decimal'
+            });
+
+            // Initialize Declarative Filter Drawer Controller with URL Sync & Date Presets
+            initFilterDrawer({
+                drawerId: 'filterDrawer',
+                formId: 'searchForm',
+                tableId: 'data_table',
+                syncUrl: true,
+                filters: [
+                    { id: 'groupFilter', key: 'group', label: 'Role', type: 'select' },
+                    { id: 'staffStatusFilter', key: 'staff_status', label: 'Access', type: 'select' },
+                    { id: 'statusFilter', key: 'status', label: 'Status', type: 'select' },
+                    { id: 'commissionFilter', key: 'commission', label: 'Commission', type: 'select' },
+                    { id: 'hasEmailCheck', key: 'has_email', label: 'User', type: 'checkbox', text: 'Has Email' },
+                    { id: 'hasSalaryCheck', key: 'has_salary', label: 'Salary', type: 'checkbox', text: 'Has Salary' },
+                    { slider: salarySlider, key: 'salary_range', minKey: 'min_salary', maxKey: 'max_salary', label: 'Salary', type: 'slider', format: 'decimal' },
+                    { fromId: 'dateFromFilter', toId: 'dateToFilter', key: 'date_joined', label: 'Joined', type: 'daterange' }
+                ]
+            });
+        });
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table AJAX with sorting enabled
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading users...',
+                includeInputs: false,
+                sortable: true
+            });
+            initTableSorting('data_table');
+        });
+    </script>
+{% endblock extra_js %}

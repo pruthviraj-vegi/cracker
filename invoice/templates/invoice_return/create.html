@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'invoice:return_home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Returns
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'invoice:return_home' %}" class="breadcrumb-item">Return Invoices</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Create New</span>
+  </nav>
+  <!-- Return Invoice Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Return Invoice Details Section -->
+        <div class="form-section mb-2">
+          <h5 class="section-title"><i class="fas fa-undo"></i> Return Invoice Details</h5>
+          <!-- Invoice Selection Row -->
+          <div class="row">
+            <div class="col-md-6 mb-2">
+              <div class="form-group {% if form.invoice.errors %}has-error{% endif %}">
+                <label for="{{ form.invoice.id_for_label }}" class="form-label">{{ form.invoice.label }}</label>
+                {{ form.invoice }}
+                <small class="form-help"><span class="form-help-text">Select the original invoice being returned</span></small>
+                {% if form.invoice.errors %}
+                  <div class="field-errors">
+                    {% for error in form.invoice.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <!-- Refund Type, Status, and Reason Row -->
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group {% if form.refund_type.errors %}has-error{% endif %}">
+                  <label for="{{ form.refund_type.id_for_label }}" class="form-label">{{ form.refund_type.label }}</label>
+                  {{ form.refund_type }}
+                  <small class="form-help"><span class="form-help-text">Select the type of refund</span></small>
+                  {% if form.refund_type.errors %}
+                    <div class="field-errors">
+                      {% for error in form.refund_type.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group {% if form.status.errors %}has-error{% endif %}">
+                  <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                  {{ form.status }}
+                  <small class="form-help"><span class="form-help-text">Select the return status</span></small>
+                  {% if form.status.errors %}
+                    <div class="field-errors">
+                      {% for error in form.status.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group {% if form.reason.errors %}has-error{% endif %}">
+                  <label for="{{ form.reason.id_for_label }}" class="form-label">{{ form.reason.label }}</label>
+                  {{ form.reason }}
+                  <small class="form-help"><span class="form-help-text">Select the reason for return</span></small>
+                  {% if form.reason.errors %}
+                    <div class="field-errors">
+                      {% for error in form.reason.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <!-- Financial Details Row -->
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group {% if form.total_amount.errors %}has-error{% endif %}">
+                  <label for="{{ form.total_amount.id_for_label }}" class="form-label">{{ form.total_amount.label }}</label>
+                  {{ form.total_amount }}
+                  {% if form.total_amount.help_text %}<small class="form-help"><span class="form-help-text">{{ form.total_amount.help_text }}</span></small>{% endif %}
+                  {% if form.total_amount.errors %}
+                    <div class="field-errors">
+                      {% for error in form.total_amount.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group {% if form.refund_amount.errors %}has-error{% endif %}">
+                  <label for="{{ form.refund_amount.id_for_label }}" class="form-label">{{ form.refund_amount.label }}</label>
+                  {{ form.refund_amount }}
+                  {% if form.refund_amount.help_text %}<small class="form-help"><span class="form-help-text">{{ form.refund_amount.help_text }}</span></small>{% endif %}
+                  {% if form.refund_amount.errors %}
+                    <div class="field-errors">
+                      {% for error in form.refund_amount.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group {% if form.restocking_fee.errors %}has-error{% endif %}">
+                  <label for="{{ form.restocking_fee.id_for_label }}" class="form-label">{{ form.restocking_fee.label }}</label>
+                  {{ form.restocking_fee }}
+                  {% if form.restocking_fee.help_text %}<small class="form-help"><span class="form-help-text">{{ form.restocking_fee.help_text }}</span></small>{% endif %}
+                  {% if form.restocking_fee.errors %}
+                    <div class="field-errors">
+                      {% for error in form.restocking_fee.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <!-- Return Date Field -->
+            <div class="row">
+              <div class="col-md-6 mb-2 {% if form.return_date.errors %}has-error{% endif %}">
+                <label for="{{ form.return_date.id_for_label }}" class="form-label">{{ form.return_date.label }}</label>
+                {{ form.return_date }}
+                <small class="form-help"><span class="form-help-text">Select the date when return was initiated</span></small>
+                {% if form.return_date.errors %}
+                  <div class="field-errors">
+                    {% for error in form.return_date.errors %}
+                      <div class="error-message">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+            <!-- Notes Fields -->
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group {% if form.notes.errors %}has-error{% endif %}">
+                  <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+                  {{ form.notes }}
+                  {% if form.notes.help_text %}<small class="form-help"><span class="form-help-text">{{ form.notes.help_text }}</span></small>{% endif %}
+                  {% if form.notes.errors %}
+                    <div class="field-errors">
+                      {% for error in form.notes.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group {% if form.internal_notes.errors %}has-error{% endif %}">
+                  <label for="{{ form.internal_notes.id_for_label }}" class="form-label">{{ form.internal_notes.label }}</label>
+                  {{ form.internal_notes }}
+                  {% if form.internal_notes.help_text %}<small class="form-help"><span class="form-help-text">{{ form.internal_notes.help_text }}</span></small>{% endif %}
+                  {% if form.internal_notes.errors %}
+                    <div class="field-errors">
+                      {% for error in form.internal_notes.errors %}
+                        <div class="error-message">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Amount Summary Section -->
+          <div class="form-section">
+            <div class="section-title"><i class="fas fa-calculator"></i> Amount Summary</div>
+            <div class="total-amount-display">
+              <div class="total-row">
+                <span class="total-label">Total Amount:</span>
+                <span class="total-value" id="totalAmountDisplay">0.00</span>
+              </div>
+              <div class="total-row">
+                <span class="total-label">Refund Amount:</span>
+                <span class="total-value text-success" id="refundAmountDisplay">0.00</span>
+              </div>
+              <div class="total-row">
+                <span class="total-label">Restocking Fee:</span>
+                <span class="total-value text-warning" id="restockingFeeDisplay">0.00</span>
+              </div>
+              <div class="total-row total-final">
+                <span class="total-label">Net Refund:</span>
+                <span class="total-value" id="netRefundDisplay">0.00</span>
+              </div>
+            </div>
+          </div>
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              Create Return Invoice
+            </button>
+            <div class="cart-options-row">
+              <a class="cart-option-btn text-danger" href="{% url 'invoice:return_home' %}" title="Cancel">
+                <i class="fas fa-times"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+     $(document).ready(function() {
+       $('#id_invoice').select2({
+         placeholder: "Type to search invoices...",
+         width: '100%'
+       });
+    });
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const invoiceField = document.getElementById('{{ form.invoice.id_for_label }}');
+      const totalAmountField = document.getElementById('{{ form.total_amount.id_for_label }}');
+      const refundAmountField = document.getElementById('{{ form.refund_amount.id_for_label }}');
+      const restockingFeeField = document.getElementById('{{ form.restocking_fee.id_for_label }}');
+      
+      // Display elements
+      const customerInfoDisplay = document.getElementById('customer-info');
+      const totalAmountDisplay = document.getElementById('totalAmountDisplay');
+      const refundAmountDisplay = document.getElementById('refundAmountDisplay');
+      const restockingFeeDisplay = document.getElementById('restockingFeeDisplay');
+      const netRefundDisplay = document.getElementById('netRefundDisplay');
+      
+      function updateTotals() {
+        const totalAmount = parseFloat(totalAmountField.value) || 0;
+        const refundAmount = parseFloat(refundAmountField.value) || 0;
+        const restockingFee = parseFloat(restockingFeeField.value) || 0;
+        
+        const netRefund = refundAmount - restockingFee;
+        
+        totalAmountDisplay.textContent = formatCurrency(totalAmount);
+        refundAmountDisplay.textContent = formatCurrency(refundAmount);
+        restockingFeeDisplay.textContent = formatCurrency(restockingFee);
+        netRefundDisplay.textContent = formatCurrency(netRefund);
+      }
+    
+      
+      function fetchInvoiceDetails(invoiceId) {
+        if (!invoiceId) {
+          customerInfoDisplay.innerHTML = '<div class="text-muted">Select an invoice to view customer details</div>';
+          return;
+        }
+        
+        // Fetch invoice details via AJAX
+        fetch(`/invoice/api/invoice-details/${invoiceId}/`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              const invoice = data.invoice;
+              customerInfoDisplay.innerHTML = `
+                <div class="customer-details">
+                  <div class="fw-semibold text-primary">${invoice.customer_name}</div>
+                  <div class="text-muted">${invoice.customer_phone || 'No phone'}</div>
+                  <div class="text-muted">Invoice: ${invoice.invoice_number}</div>
+                  <div class="text-muted">Amount: ${parseFloat(invoice.amount).toFixed(2)}</div>
+                </div>
+              `;
+              
+              // Auto-populate total amount
+              if (!totalAmountField.value || totalAmountField.value === '0') {
+                totalAmountField.value = invoice.amount;
+                updateTotals();
+              }
+            } else {
+              customerInfoDisplay.innerHTML = '<div class="text-danger">Error loading invoice details</div>';
+            }
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            customerInfoDisplay.innerHTML = '<div class="text-danger">Error loading invoice details</div>';
+          });
+      }
+      
+      // Auto-populate refund amount with total amount when total amount changes
+      totalAmountField.addEventListener('input', function() {
+        if (!refundAmountField.value || refundAmountField.value === '0') {
+          refundAmountField.value = this.value;
+        }
+        updateTotals();
+      });
+      
+      // Listen for invoice selection changes
+      invoiceField.addEventListener('change', function() {
+        fetchInvoiceDetails(this.value);
+      });
+      
+      // Listen for input changes to update totals in real-time
+      [totalAmountField, refundAmountField, restockingFeeField].forEach(field => {
+        field.addEventListener('input', updateTotals);
+      });
+      
+      // Handle form submission to ensure empty fields are treated as zero
+      document.querySelector('form').addEventListener('submit', function(e) {
+        // Set empty numeric fields to 0 before submission
+        if (!refundAmountField.value || refundAmountField.value === '') {
+          refundAmountField.value = '0';
+        }
+        if (!restockingFeeField.value || restockingFeeField.value === '') {
+          restockingFeeField.value = '0';
+        }
+      });
+      
+      // Initial setup
+      updateTotals();
+      
+      // Load invoice details if one is already selected
+      if (invoiceField.value) {
+        fetchInvoiceDetails(invoiceField.value);
+      }
+    });
+  </script>
+{% endblock extra_js %}

@@ -1,0 +1,64 @@
+
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for ev in page_obj %}
+        <tr>
+            <!-- Desktop Columns -->
+            <td class="mobile-hide">{{ ev.timestamp|date:"Y-m-d H:i:s" }}</td>
+            <td class="mobile-hide">
+                {% if ev.user %}
+                    {{ ev.user.full_name|default:ev.user.phone_number }}
+                {% else %}
+                    <span class="text-muted">Anonymous / Deleted</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ ev.view_name }}</td>
+            <td class="mobile-hide">{{ ev.required_roles }}</td>
+            <td class="mobile-hide">{{ ev.ip_address|default:"-" }}</td>
+            <td class="mobile-hide">
+                <span title="{{ ev.url_path }}">{{ ev.url_path|default:"-"|truncatechars:32 }}</span>
+            </td>
+
+            <!-- Mobile Columns (<768px) -->
+            <td class="mobile-table-cell">
+                <div>
+                    <strong class="text-primary">{{ ev.view_name }}</strong>
+                    <span class="text-muted small ms-1">({{ ev.ip_address|default:"-" }})</span>
+                </div>
+                <div class="text-secondary small mt-1">
+                    <i class="far fa-clock"></i> {{ ev.timestamp|date:"Y-m-d H:i:s" }}
+                    <br>
+                    <i class="far fa-user"></i>
+                    {% if ev.user %}
+                        {{ ev.user.full_name|default:ev.user.phone_number }}
+                    {% else %}
+                        <span class="text-muted">Anonymous / Deleted</span>
+                    {% endif %}
+                </div>
+            </td>
+            <td class="mobile-table-cell">
+                <div>
+                    <span title="{{ ev.url_path }}"><code>{{ ev.url_path|default:"-"|truncatechars:32 }}</code></span>
+                </div>
+                <div class="text-muted small mt-1">
+                    {% if ev.required_roles %}
+                        <i class="fas fa-user-shield me-1"></i>{{ ev.required_roles }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="100" class="text-center p-2">
+            <div class="empty-state">
+                <i class="fas fa-exclamation-circle"></i>
+                No events found.
+            </div>
+        </td>
+    </tr>
+{% endif %}

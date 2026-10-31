@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Calendar — Billing System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'assets/plugins/fontawesome/css/fontawesom.min.css' %}" />
+<link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}" />
+<link rel="stylesheet" href="{% static 'css/calendar.css' %}" />
+{% endblock extra_css %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-header page-header-sticky">
+  <div class="d-flex align-items-center gap-2">
+    <h2 class="page-title mb-0">Calendar</h2>
+    <span class="text-white-50 fs-7 d-none d-md-inline">• {{ month_name }} {{ year }}</span>
+  </div>
+  <div class="page-actions dash-actions-group">
+    <a href="{% url 'base:calendar_details' %}?start={{ year }}-{{ month|stringformat:'02d' }}-01" id="pageHeaderAnalyticsBtn" class="btn btn-dash-action primary" title="View Detailed Analytics">
+      <i class="fa-solid fa-chart-pie"></i>
+      <span>Analytics</span>
+    </a>
+  </div>
+</div>
+
+<!-- Breadcrumb Navigation -->
+<nav class="breadcrumb breadcrumb-right">
+  <a href="{% url 'base:home' %}" class="breadcrumb-item">Home</a>
+  <span class="breadcrumb-separator">/</span>
+  <span class="breadcrumb-active">Calendar</span>
+</nav>
+
+<div id="dashboardContent" class="dashboardContent calendar-page-container">
+
+  <!-- ── DASHBOARD TOP HERO DETAILS ── -->
+  <div class="dash-hero-grid">
+    <!-- Left Hero Card: Revenue & Billing Overview -->
+    <div class="dash-hero-card">
+      <div>
+        <div class="hero-card-header">
+          <span class="hero-card-title">
+            <i class="fa-solid fa-chart-line"></i>
+            Total Month Billing
+          </span>
+          <span class="hero-tag">{{ month_name }} {{ year }}</span>
+        </div>
+        <div class="hero-val-display">
+          <span class="hero-number-lg counting-number" id="kpiTotalBilling" data-count="{{ month_kpi.total_billing|default:'0.00' }}">{{ month_kpi.total_billing|default:'0.00' }}</span>
+        </div>
+        <div class="stat-label-small">
+          Net realized billing after discounts &amp; returns
+        </div>
+      </div>
+
+      <div class="hero-submetrics">
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Total Invoices</span>
+          <div class="hero-submetric-val">
+            <span class="counting-number" id="kpiTotalInvoices" data-count="{{ month_kpi.total_invoices|default:'0' }}">{{ month_kpi.total_invoices|default:'0' }}</span> bills
+          </div>
+        </div>
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Daily Average</span>
+          <div class="hero-submetric-val">
+            <span class="counting-number" id="kpiDailyAvg" data-count="{{ month_kpi.avg_daily_billing|default:'0.00' }}">{{ month_kpi.avg_daily_billing|default:'0.00' }}</span> / day
+          </div>
+        </div>
+        <div class="hero-submetric-item">
+          <span class="hero-submetric-label">Period Days</span>
+          <div class="hero-submetric-val">
+            <span>{{ month_kpi.days_in_month|default:'30' }}</span> days
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Hero Card: Collection & Settlement Health -->
+    <div class="dash-hero-card">
+      <div>
+        <div class="hero-card-header">
+          <span class="hero-card-title">
+            <i class="fa-solid fa-scale-balanced"></i>
+            Collection &amp; Recovery
+          </span>
+          <span class="hero-tag" id="kpiCollectionRatePill">{{ month_kpi.collection_rate|default:'0' }}% Collected</span>
+        </div>
+      </div>
+
+      <!-- Highlight Health Boxes -->
+      <div class="health-highlights-row">
+        <div class="health-box">
+          <span class="health-box-label">
+            <i class="fa-solid fa-circle-check text-success"></i>
+            Collected Paid
+          </span>
+          <div class="health-box-val">
+            <span class="counting-number" id="kpiPaidAmount" data-count="{{ month_kpi.paid_amount|default:'0.00' }}">{{ month_kpi.paid_amount|default:'0.00' }}</span>
+          </div>
+          <span class="health-box-sub">Realized settlements</span>
+        </div>
+        <div class="health-box">
+          <span class="health-box-label">
+            <i class="fa-solid fa-clock-rotate-left text-warning"></i>
+            Pending Balance
+          </span>
+          <div class="health-box-val">
+            <span class="counting-number" id="kpiPendingAmount" data-count="{{ month_kpi.pending_amount|default:'0.00' }}">{{ month_kpi.pending_amount|default:'0.00' }}</span>
+          </div>
+          <span class="health-box-sub">Customer outstanding due</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FULL-WIDTH CALENDAR CARD ── -->
+  <div class="calendar-page card border-0 shadow-sm" id="calendarPage">
+
+    <main class="main-view">
+
+      <!-- Header Navigation & Toolbar -->
+      <header class="cal-header">
+        <div class="cal-nav">
+          <a href="?year={{ prev_year }}&month={{ prev_month }}" class="nav-btn" id="prevBtn" aria-label="Previous month" title="Previous Month">
+            <i class="fa-solid fa-chevron-left"></i>
+          </a>
+
+          <div class="cal-title-block">
+            <select id="monthSelect" class="cal-select month-select" aria-label="Select Month">
+              {% for m_num, m_name in months_list %}
+                <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+              {% endfor %}
+            </select>
+
+            <select id="yearSelect" class="cal-select year-select" aria-label="Select Year">
+              {% for y in years_list %}
+                <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <a href="?year={{ next_year }}&month={{ next_month }}" class="nav-btn" id="nextBtn" aria-label="Next month" title="Next Month">
+            <i class="fa-solid fa-chevron-right"></i>
+          </a>
+
+          <a href="?" class="today-btn ms-1" title="Jump to Today">
+            <i class="fa-solid fa-calendar-day me-1"></i> Today
+          </a>
+        </div>
+
+        <div class="cal-header-center">
+          <div class="cal-filter-group" role="group" aria-label="Status Filters">
+            <button type="button" class="cal-filter-btn active" data-filter="ALL">All</button>
+            <button type="button" class="cal-filter-btn filter-paid" data-filter="PAID">
+              <span class="filter-dot dot-paid"></span> Paid
+            </button>
+            <button type="button" class="cal-filter-btn filter-pending" data-filter="PENDING">
+              <span class="filter-dot dot-pending"></span> Pending
+            </button>
+          </div>
+        </div>
+
+        <div class="cal-header-right">
+          <div class="cal-search-wrapper">
+            <i class="fa-solid fa-magnifying-glass cal-search-icon"></i>
+            <input type="text" id="calSearchInput" class="cal-search-input" placeholder="Search customer or invoice..." aria-label="Search invoices">
+            <button type="button" id="calSearchClear" class="cal-search-clear" style="display:none;" aria-label="Clear search">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Day Labels (Sun - Sat) -->
+      <div class="day-labels">
+        <span class="weekend">Sun</span><span>Mon</span><span>Tue</span>
+        <span>Wed</span><span>Thu</span><span>Fri</span><span class="weekend">Sat</span>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div class="cal-grid" id="calGrid">
+        <!-- JavaScript dynamically renders cells -->
+      </div>
+
+    </main>
+
+  </div>
+
+</div>
+
+<!-- ── DATE INVOICES MODAL (FOCUSED DAY BREAKDOWN & INVOICES) ── -->
+<div class="modal fade" id="dateInvoicesModal" tabindex="-1" aria-labelledby="dateInvoicesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="d-flex align-items-center gap-2">
+          <div class="modal-icon p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+            <i class="fa-solid fa-calendar-day fs-5"></i>
+          </div>
+          <div>
+            <h5 class="modal-title mb-0" id="dateInvoicesModalLabel">Selected Date</h5>
+            <span class="small" id="modalSubTitle">Invoices &amp; Payment Breakdown</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Date Payment Progress Metric Card -->
+        <div class="card border-0 mb-3" id="modalMetricCard">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="metric-title-text">Payment Collection</span>
+            <span class="badge bg-primary-subtle text-primary px-2 py-1" id="modalMetricPercentage" style="font-size: 0.72rem; font-weight: 700;">0% Paid</span>
+          </div>
+          <h4 class="mb-1 fw-bold" id="modalSalesAmount">0.00 / 0.00</h4>
+          <div class="progress mt-2" style="height: 6px;">
+            <div class="progress-bar bg-success" id="modalMetricBar" role="progressbar" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Invoices List Header -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold mb-0 text-secondary">
+            <i class="fa-solid fa-list-check me-1 text-primary"></i> Invoices
+            <span class="badge bg-secondary ms-1" id="modalEventsCountBadge">0</span>
+          </h6>
+        </div>
+
+        <!-- Invoices List -->
+        <div class="modal-events-list d-flex flex-column gap-2" id="modalEventsList">
+          <!-- JS dynamically renders list items here -->
+        </div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-between">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <a href="#" id="modalAnalyticsLink" class="btn btn-primary btn-sm px-3 font-weight-semibold">
+          <i class="fa-solid fa-chart-pie me-1"></i> View Full Date Analytics
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ calendar_data|json_script:"calendar-data" }}
+{{ month_kpi|json_script:"month-kpi" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/calendar-page.js' %}"></script>
+{% endblock extra_js %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+{% load static %} {% load custom_filters %}
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ values.barcode }} - Barcode</title>
+    <link rel="stylesheet" href="{% static 'styles/Barcode.css' %}" />
+    <link rel="shortcut icon" type="image/ico" href="{% static 'images/favicon.ico' %}" />
+  </head>
+  <body>
+    {% for i in print_count|range %}
+      <div class="wrapper">
+        {% include 'report/barcode_slot.html' %}
+        {% include 'report/barcode_slot.html' %}
+      </div>
+    {% endfor %}
+     <script src="{% static 'js/print.js' %}"></script>
+  </body>
+</html>

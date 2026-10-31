@@ -1,0 +1,70 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for item in page_obj %}
+        <tr>
+            <td>
+                <span class="font-weight-bold text-primary">{{ item.invoice.invoice_number|default:"N/A" }}</span>
+            </td>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary"><a class="text-decoration-none"
+   href="{% url 'customer:detail' item.invoice.customer.id %} "
+   target="_blank">{{ item.invoice.customer.name|default:"N/A" }}</a></span>
+                    <br />
+                    {% if item.invoice.customer.phone_number %}
+                        <small class="text-muted">{{ item.invoice.customer.phone_number|phone_number }}</small>
+                    {% endif %}
+                </div>
+            </td>
+            <td class="mobile-hide">
+                {% if item.invoice.payment_type == 'CASH' %}
+                    <span class="badge badge-success">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Cash
+                    </span>
+                {% else %}
+                    <span class="badge badge-warning">
+                        <i class="fas fa-credit-card"></i>
+                        Credit
+                    </span>
+                {% endif %}
+            </td>
+            <td>
+                <div>
+                    <div class="font-weight-bold text-primary">{{ item.invoice.amount|currency }}</div>
+                </div>
+            </td>
+            <td class="mobile-hide">{{ item.quantity }}</td>
+            <td class="mobile-hide">{{ item.mrp|currency }}</td>
+            <td class="mobile-hide">{{ item.unit_price|currency }}</td>
+            <td class="mobile-hide">{{ item.invoice.sold_by.username }}</td>
+            <td class="mobile-hide">{{ item.invoice.invoice_date|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    <a href="{% url 'invoice:detail' item.invoice.id %}"
+                       class="btn-action btn-view"
+                       title="View Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="100" class="text-center empty-state-container p-3">
+            <div class="empty-state">
+                <i class="fas fa-file-invoice f-3 mb-1 text-secondary"></i>
+                <h4 class="mb-1 text-primary">No Invoices Found</h4>
+                <p class="mb-3 text-secondary">
+                    No invoices match your search criteria. Try adjusting your filters or create a new invoice.
+                </p>
+                <a href="{% url 'cart:main_page' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Create First Invoice</a>
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

@@ -1,0 +1,58 @@
+{% load custom_filters %}
+<tr id="cart-item-{{ item.id }}">
+    <td class="mobile-hide">
+        <span data-copy="{{ item.product_variant.barcode }}">{{ item.product_variant.barcode }}</span>
+    </td>
+    <td>
+        <div>
+            <span class="font-weight-bold">{{ item.product_variant.product.brand }}</span>
+            <span class="mobile-inline text-muted small"> · {{ item.product_variant.simple_name }}</span>
+        </div>
+    </td>
+    <td class="mobile-hide">{{ item.product_variant.simple_name }}</td>
+    <td class="price-toggle-cell text-end"
+        data-selling-price="{{ item.product_variant.mrp }}"
+        data-purchase-price="{{ item.product_variant.purchase_price }}">
+        <span class="price-display">{{ item.product_variant.mrp|currency }}</span>
+    </td>
+    <td class="text-end">
+        <input type="number"
+               class="form-input quantity-input"
+               value="{{ item.quantity }}"
+               data-item-id="{{ item.id }}"
+               min="1"
+               step="1">
+    </td>
+    <td class="text-end">
+        <div class="price-bubble-container" style="position: relative;">
+            <input type="number"
+                   class="form-input price-input"
+                   value="{{ item.price }}"
+                   data-item-id="{{ item.id }}"
+                   min="0"
+                   step="1"
+                   aria-label="Selling Price">
+            <div class="price-suggestions-wrapper d-none">
+                {% if item.frequent_sold_prices %}
+                    {% for sold_price in item.frequent_sold_prices %}
+                    <div class="suggestion-bubble" data-price="{{ sold_price }}" title="Set Past Sold Price">
+                        {{ sold_price|currency }}
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td class="discount-cell mobile-hide text-end">{{ item.discount_percentage|default:"0" }}</td>
+    <td class="amount-cell text-end">{{ item.amount|currency }}</td>
+    <td class="text-center">
+        <div class="action-buttons d-inline-flex flex-nowrap align-items-center justify-content-center gap-1">
+            <button type="button"
+                    class="btn btn-danger delete-item-btn"
+                    data-item-id="{{ item.id }}"
+                    tabindex="-1">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>

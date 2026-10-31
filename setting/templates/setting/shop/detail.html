@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    {{ shop.shop_name }} - Details
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">{{ shop.shop_name }}</h1>
+        <div class="page-actions">
+            {% if perms.setting.change_shopdetails %}
+                <a href="{% url 'setting:shop_details_edit' shop.id %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Shop
+                </a>
+            {% endif %}
+            {% if perms.setting.delete_shopdetails %}
+                <a href="{% url 'setting:shop_details_delete' shop.id %}"
+                   class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </a>
+            {% endif %}
+            <a href="{% url 'setting:shop_details_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'setting:shop_details_list' %}" class="breadcrumb-item">Shops</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ shop.shop_name }}</span>
+    </nav>
+
+    <div class="details-container">
+        <div class="details-card">
+            <div class="details-header">
+                <div class="details-title">
+                    <h2>{{ shop.shop_name }}</h2>
+                    {% if shop.gst_no %}<span class="badge badge-info">GST: {{ shop.gst_no }}</span>{% endif %}
+                </div>
+                <div class="details-status">
+                    {% if shop.is_active %}
+                        <span class="status-badge status-active">
+                            <i class="fas fa-check-circle"></i> Active
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-inactive">
+                            <i class="fas fa-times-circle"></i> Inactive
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="details-body">
+                <!-- Location & Address -->
+                <div class="details-section">
+                    <h3 class="section-title">Address & Location</h3>
+                    <div class="info-grid">
+                        <div class="info-item full-width">
+                            <label>Full Address</label>
+                            <p>{{ shop.full_address }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>City</label>
+                            <p>{{ shop.city }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>State</label>
+                            <p>{{ shop.state }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>PIN Code</label>
+                            <p>{{ shop.pincode }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Country</label>
+                            <p>{{ shop.country }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact & Web -->
+                <div class="details-section">
+                    <h3 class="section-title">Contact & Communication</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Phone Number</label>
+                            <p>{{ shop.phone_number }}</p>
+                        </div>
+                        {% if shop.phone_two %}
+                            <div class="info-item">
+                                <label>Secondary Phone</label>
+                                <p>{{ shop.phone_two }}</p>
+                            </div>
+                        {% endif %}
+                        <div class="info-item">
+                            <label>Email</label>
+                            <p>{{ shop.email|default:"-" }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Website</label>
+                            <p>
+                                {% if shop.website %}
+                                    <a href="{{ shop.website }}" target="_blank">{{ shop.website }}</a>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thermal / Direct Printing Settings -->
+                <div class="details-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 class="section-title" style="margin: 0;">Printing & Receipt Settings</h3>
+                        <a href="{% url 'setting:report_config_list' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-sliders-h"></i> Manage Report Configurations
+                        </a>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Direct Network Printing</label>
+                            <p>
+                                {% if shop.is_direct_print_enabled %}
+                                    <span class="badge badge-success">Enabled</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Disabled</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        {% if shop.is_direct_print_enabled %}
+                            <div class="info-item">
+                                <label>Printer IP</label>
+                                <p><code>{{ shop.printer_ip|default:"-" }}</code></p>
+                            </div>
+                            <div class="info-item">
+                                <label>Printer Port</label>
+                                <p><code>{{ shop.printer_port|default:"9100" }}</code></p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="details-footer">
+                <div class="meta-info">
+                    <small>Created: {{ shop.created_at|date:"M d, Y H:i" }} | Updated: {{ shop.updated_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

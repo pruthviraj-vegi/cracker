@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Delete Size - {{ size.name }}
+{% endblock %}
+
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">Delete Size</h2>
+    <div class="page-actions">
+      <a href="{% url 'inventory:size_home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to List
+      </a>
+      <a href="{% url 'inventory:size_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to Sizes
+      </a>
+    </div>
+  </div>
+
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:size_home' %}" class="breadcrumb-item">Sizes</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-item">{{ size.name }}</span>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Delete</span>
+  </nav>
+
+  <!-- Delete Confirmation -->
+  <div class="form-container">
+    <div class="form-card">
+      <!-- Warning Message -->
+      <div class="delete-warning">
+        <div class="warning-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+          <h3>Are you sure you want to delete this size?</h3>
+          <p>This action cannot be undone. The size will be permanently removed from the system.</p>
+        </div>
+      </div>
+
+      <!-- Size Details -->
+      <div class="customer-details">
+        <h4 class="details-title">Size Information</h4>
+
+        <div class="detail-row">
+          <div class="detail-label">Size Name:</div>
+          <div class="detail-value">{{ size.name }}</div>
+        </div>
+
+        {% if size.description %}
+          <div class="detail-row">
+            <div class="detail-label">Description:</div>
+            <div class="detail-value">{{ size.description }}</div>
+          </div>
+        {% endif %}
+
+        <div class="detail-row">
+          <div class="detail-label">Variants Count:</div>
+          <div class="detail-value">{{ size.product_variants.count }} variants</div>
+        </div>
+
+        <div class="detail-row">
+          <div class="detail-label">Created:</div>
+          <div class="detail-value">{{ size.created_at|date:'F j, Y' }}</div>
+        </div>
+
+        {% if size.created_by %}
+          <div class="detail-row">
+            <div class="detail-label">Created By:</div>
+            <div class="detail-value">{{ size.created_by.username }}</div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Confirmation Form -->
+      <form method="POST" class="delete-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="confirm_delete" class="form-label">
+            <input type="checkbox" id="confirm_delete" name="confirm_delete" required class="form-checkbox" />
+            <span class="checkbox-label">I understand that this action cannot be undone</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+            <i class="fas fa-trash"></i>
+            Delete Size
+          </button>
+          <a href="{% url 'inventory:size_home' %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const confirmCheckbox = document.getElementById('confirm_delete')
+      const deleteBtn = document.getElementById('deleteBtn')
+    
+      confirmCheckbox.addEventListener('change', function () {
+        deleteBtn.disabled = !this.checked
+      })
+    
+      // Prevent accidental form submission
+      const form = document.querySelector('.delete-form')
+      form.addEventListener('submit', function (e) {
+        if (!confirmCheckbox.checked) {
+          e.preventDefault()
+          alert('Please confirm that you understand this action cannot be undone.')
+          return false
+        }
+    
+        // Final confirmation
+        if (!confirm('Are you absolutely sure you want to delete this size? This action cannot be undone.')) {
+          e.preventDefault()
+          return false
+        }
+      })
+    })
+  </script>
+{% endblock %}

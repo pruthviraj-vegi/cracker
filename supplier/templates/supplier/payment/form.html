@@ -1,0 +1,689 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  {{ title }} - {{ supplier.name }}
+{% endblock title %}
+
+{% block extra_css %}
+<style>
+/* Media Upload Styles */
+.media-drop-zone {
+  border: 2px dashed var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background-color: var(--bg-body, #f8fafc);
+  cursor: pointer;
+  transition: border-color 0.2s, background-color 0.2s;
+  margin-bottom: 20px;
+}
+
+.media-drop-zone:hover, .media-drop-zone.drag-over {
+  border-color: var(--primary, #3b82f6);
+  background-color: var(--primary-bg, #eff6ff);
+}
+
+.drop-zone-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.drop-zone-icon {
+  font-size: 32px;
+  color: var(--text-secondary, #64748b);
+}
+
+.drop-zone-text {
+  font-size: 14px;
+  color: var(--text-primary, #334155);
+  margin: 0;
+}
+
+.drop-zone-browse {
+  color: var(--primary, #3b82f6);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.drop-zone-hint {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+  margin: 0;
+}
+
+/* Media File Items */
+.media-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.media-file-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background-color: var(--bg-surface, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  gap: 12px;
+}
+
+.media-file-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: var(--bg-body, #f1f5f9);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.media-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-pdf-icon {
+  font-size: 24px;
+  color: var(--danger, #ef4444);
+}
+
+.media-file-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.media-file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #1e293b);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.media-file-name:hover {
+  text-decoration: underline;
+}
+
+.media-file-date {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+
+.media-delete-btn, .media-remove-btn {
+  background: none;
+  border: none;
+  color: var(--danger, #ef4444);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.media-delete-btn:hover, .media-remove-btn:hover {
+  background-color: var(--danger-bg, #fee2e2);
+}
+
+.badge-pending {
+  background-color: var(--warning-bg, #fef3c7);
+  color: var(--warning, #d97706);
+  border: 1px solid var(--warning-border, #fde68a);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+</style>
+{% endblock extra_css %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'supplier:detail' supplier.pk %}"
+         class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Supplier
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'supplier:home' %}" class="breadcrumb-item">Suppliers</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:detail' supplier.pk %}"
+       class="breadcrumb-item">{{ supplier.name }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">{{ title }}</span>
+  </nav>
+  <!-- Supplier Payment Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <!-- Supplier Info Summary -->
+      <div class="info-summary">
+        <h4>{{ supplier.name }}</h4>
+        <p>
+          {% if supplier.contact_person %}{{ supplier.contact_person }} •{% endif %}
+          {{ supplier.phone }}
+          {% if supplier.email %}• {{ supplier.email }}{% endif %}
+        </p>
+      </div>
+      <!-- Payment Form -->
+      <form method="post"
+            class="details-form"
+            enctype="multipart/form-data"
+            novalidate
+            autocomplete="off"
+            id="paymentForm">
+        {% csrf_token %}
+        <!-- Payment Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-credit-card"></i> Payment Details : {{ supplier.balance_due|currency }}</h5>
+          <div class="row">
+            <div class="form-group {% if form.amount.errors %}has-error{% endif %}">
+              <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+              {{ form.amount }}
+              <small class="form-help">
+                {% if form.amount.errors %}
+                  {% for error in form.amount.errors %}
+                    {% if 'Cannot reduce payment amount below total allocated amount' in error %}
+                      <div class="amount-error-message">
+                        <div class="error-header">
+                          <i class="fas fa-exclamation-triangle"></i>
+                          <span>Payment Amount Error</span>
+                        </div>
+                        <div class="error-body">{{ error }}</div>
+                        <div class="error-solution">
+                          <strong>Solution:</strong> First delete or reduce the allocations for this payment, then you can reduce the payment amount.
+                        </div>
+                      </div>
+                    {% else %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Enter the amount of the payment</span>
+              </small>
+              {% if top_payments or present_balance %}
+                <div class="payment-suggestions mt-2 d-flex flex-wrap gap-2">
+                  <span class="text-muted small align-self-center">Suggestions: </span>
+                  {% if present_balance %}
+                    <button type="button" class="btn btn-sm btn-outline-primary suggestion-btn" data-amount="{{ present_balance|stringformat:'.2f' }}">{{ present_balance|currency }} (Balance)</button>
+                  {% endif %}
+                  {% for amount in top_payments %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary suggestion-btn" data-amount="{{ amount|stringformat:'.2f' }}">{{ amount|currency }}</button>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group {% if form.method.errors %}has-error{% endif %}">
+              <label for="{{ form.method.id_for_label }}" class="form-label">{{ form.method.label }}</label>
+              {{ form.method }}
+              <small class="form-help">
+                {% if form.method.errors %}
+                  {% for error in form.method.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Select the method of the payment</span>
+              </small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group {% if form.payment_date.errors %}has-error{% endif %}">
+              <label for="{{ form.payment_date.id_for_label }}" class="form-label">{{ form.payment_date.label }}</label>
+              {{ form.payment_date }}
+              <small class="form-help">
+                {% if form.payment_date.errors %}
+                  {% for error in form.payment_date.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Select the date of the payment</span>
+              </small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="form-group {% if form.transaction_id.errors %}has-error{% endif %}">
+              <label for="{{ form.transaction_id.id_for_label }}" class="form-label">{{ form.transaction_id.label }}</label>
+              {{ form.transaction_id }}
+              <small class="form-help">
+                {% if form.transaction_id.errors %}
+                  {% for error in form.transaction_id.errors %}
+                    <span class="form-error-inline">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </span>
+                  {% endfor %}
+                {% endif %}
+                <span class="form-help-text">Required for Bank Transfer and UPI payments</span>
+              </small>
+            </div>
+          </div>
+        </div>
+        <!-- Attachments Section -->
+        <div class="form-section">
+          <h5 class="section-title">
+            <i class="fas fa-paperclip"></i> Attachments
+            <span class="badge badge-secondary ms-2" id="attachmentCount">{% if payment %}{{ media_files|length }}{% else %}0{% endif %}</span>
+          </h5>
+          <p class="text-muted small mb-3">Upload payment receipts or screenshots (PDF, JPG, PNG, GIF, WebP). Max 10 MB per file.</p>
+
+          <!-- Drop Zone -->
+          <div id="paymentDropZone"
+               class="media-drop-zone">
+            <div class="drop-zone-inner">
+              <i class="fas fa-cloud-upload-alt drop-zone-icon"></i>
+              <p class="drop-zone-text">Drag & drop files here, or <label for="{{ form.attachments.id_for_label }}" class="drop-zone-browse">browse</label></p>
+              <p class="drop-zone-hint">PDF, JPG, PNG, GIF, WebP — up to 10 MB each</p>
+              {{ form.attachments }}
+            </div>
+            {% if form.attachments.errors %}
+              <div class="form-error-inline mt-2">
+                {% for error in form.attachments.errors %}
+                  <span><i class="fas fa-exclamation-circle"></i> {{ error }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Existing / Uploaded Files -->
+          <div id="paymentMediaList" class="media-file-list mt-3">
+            {% if payment %}
+              {% for mf in media_files %}
+                <div class="media-file-item" id="media-item-{{ mf.pk }}">
+                  <div class="media-file-icon">
+                    {% if mf.is_image %}
+                      <img src="{{ mf.media_file.url }}" alt="{{ mf.original_filename }}" class="media-thumb">
+                    {% else %}
+                      <i class="fas fa-file-pdf media-pdf-icon"></i>
+                    {% endif %}
+                  </div>
+                  <div class="media-file-info">
+                    <a href="{{ mf.media_file.url }}" target="_blank" class="media-file-name">{{ mf.original_filename }}</a>
+                    <span class="media-file-date text-muted small">{{ mf.created_at|date:"d M Y, H:i" }}</span>
+                  </div>
+                  <button type="button"
+                          class="btn btn-sm btn-danger media-delete-btn"
+                          data-delete-url="{% url 'supplier:delete_payment_media' supplier.pk payment.pk mf.pk %}"
+                          data-item-id="media-item-{{ mf.pk }}"
+                          title="Delete attachment">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              {% endfor %}
+            {% endif %}
+            
+            {% if not payment or not media_files %}
+              <p class="text-muted small" id="noAttachmentsMsg">No attachments selected.</p>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if payment %}
+              Update Payment
+            {% else %}
+              Create Payment
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'supplier:detail' supplier.pk %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const methodSelect = document.getElementById('{{ form.method.id_for_label }}')
+      const transactionIdField = document.getElementById('{{ form.transaction_id.id_for_label }}')
+      const transactionIdLabel = transactionIdField ? document.querySelector(`label[for="{{ form.transaction_id.id_for_label }}"]`) : null
+      const amountField = document.getElementById('{{ form.amount.id_for_label }}')
+    
+      function toggleTransactionIdRequired() {
+        const selectedMethod = methodSelect.value
+        const formGroup = transactionIdField ? transactionIdField.closest('.form-group') : null
+        const helpText = formGroup ? formGroup.querySelector('.form-help-text') : null
+        
+        if (selectedMethod === 'BANK_TRANSFER' || selectedMethod === 'UPI') {
+          if (transactionIdField) transactionIdField.required = true
+          if (transactionIdLabel && !transactionIdLabel.textContent.includes('*')) {
+            transactionIdLabel.textContent = transactionIdLabel.textContent + ' *'
+          }
+          if (helpText) helpText.style.display = 'block'
+        } else {
+          if (transactionIdField) transactionIdField.required = false
+          if (transactionIdLabel) {
+            transactionIdLabel.textContent = transactionIdLabel.textContent.replace(' *', '').trim()
+          }
+          if (helpText) helpText.style.display = 'none'
+        }
+      }
+    
+      // Initial setup
+      toggleTransactionIdRequired()
+    
+      // Listen for changes
+      methodSelect.addEventListener('change', toggleTransactionIdRequired)
+      
+      // Handle amount field errors
+      if (amountField) {
+        amountField.focus()
+        amountField.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        
+        // Add pulsing animation to error message
+        const errorMessage = document.querySelector('.amount-error-message')
+        if (errorMessage) {
+          errorMessage.style.animation = 'pulse 2s infinite'
+        }
+      }
+      
+      // Clear error highlighting when user starts typing
+      if (amountField) {
+        amountField.addEventListener('input', function() {
+          this.classList.remove('error-highlight')
+        })
+      }
+      
+      // Handle suggestion clicks
+      const suggestionBtns = document.querySelectorAll('.suggestion-btn')
+      if (suggestionBtns.length > 0 && amountField) {
+        suggestionBtns.forEach(btn => {
+          btn.addEventListener('click', function() {
+            amountField.value = this.getAttribute('data-amount')
+            amountField.classList.remove('error-highlight')
+            
+            // Optional: visual feedback on the button
+            const originalText = this.innerHTML
+            this.innerHTML = '<i class="fas fa-check"></i> Applied'
+            setTimeout(() => {
+              this.innerHTML = originalText
+            }, 1000)
+            
+            // Trigger input event to clear errors if needed
+            amountField.dispatchEvent(new Event('input'))
+          })
+        })
+      }
+    })
+  </script>
+
+  <script>
+    // ── Payment Attachment Upload / Delete / Queue ─────────────────────────────
+    (function () {
+      const dropZone   = document.getElementById('paymentDropZone')
+      const fileInput  = document.getElementById('{{ form.attachments.id_for_label }}')
+      const mediaList  = document.getElementById('paymentMediaList')
+      const countBadge = document.getElementById('attachmentCount')
+      const uploadUrl  = dropZone ? dropZone.dataset.uploadUrl : null
+      const csrfToken  = document.querySelector('[name=csrfmiddlewaretoken]').value
+
+      if (!dropZone || !fileInput) return
+
+      let pendingFiles = []
+      const dt = new DataTransfer()
+
+      function updateCount() {
+        if (uploadUrl) {
+          const n = mediaList.querySelectorAll('.media-file-item').length
+          if (countBadge) countBadge.textContent = n
+          const noMsg = document.getElementById('noAttachmentsMsg')
+          if (noMsg) noMsg.style.display = n > 0 ? 'none' : ''
+        } else {
+          const n = pendingFiles.length
+          if (countBadge) countBadge.textContent = n
+          const noMsg = document.getElementById('noAttachmentsMsg')
+          if (noMsg) noMsg.style.display = n > 0 ? 'none' : ''
+        }
+      }
+
+      function renderFileItem(f, isPending = false, index = null) {
+        const noMsg = document.getElementById('noAttachmentsMsg')
+        if (noMsg) noMsg.style.display = 'none'
+
+        const name = f.name
+        const ext = name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : ''
+        const isImage = ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)
+
+        const item = document.createElement('div')
+        item.className = 'media-file-item'
+        
+        if (isPending) {
+          item.id = 'pending-item-' + index
+          item.innerHTML = `
+            <div class="media-file-icon">
+              ${isImage
+                ? `<img src="${URL.createObjectURL(f)}" alt="${name}" class="media-thumb">`
+                : `<i class="fas fa-file-pdf media-pdf-icon"></i>`}
+            </div>
+            <div class="media-file-info">
+              <span class="media-file-name">${name}</span>
+              <span class="media-file-date text-muted small"><span class="badge-pending">Pending Upload</span></span>
+            </div>
+            <button type="button"
+                    class="btn btn-sm btn-danger media-remove-btn"
+                    data-index="${index}"
+                    title="Remove attachment">
+              <i class="fas fa-times"></i>
+            </button>`
+        } else {
+          item.id = 'media-item-' + f.id
+          item.innerHTML = `
+            <div class="media-file-icon">
+              ${isImage
+                ? `<img src="${f.url}" alt="${f.name}" class="media-thumb">`
+                : `<i class="fas fa-file-pdf media-pdf-icon"></i>`}
+            </div>
+            <div class="media-file-info">
+              <a href="${f.url}" target="_blank" class="media-file-name">${f.name}</a>
+              <span class="media-file-date text-muted small">Uploaded</span>
+            </div>
+            <button type="button"
+                    class="btn btn-sm btn-danger media-delete-btn"
+                    data-delete-url="${f.deleteUrl}"
+                    data-item-id="media-item-${f.id}"
+                    title="Delete attachment">
+              <i class="fas fa-trash"></i>
+            </button>`
+        }
+        mediaList.appendChild(item)
+        updateCount()
+      }
+
+      function validateFile(file) {
+        const name = file.name
+        const ext = name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : ''
+        const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp']
+        
+        if (!allowedExts.includes(ext)) {
+          return `Unsupported file type '${ext}'. Allowed types: PDF, JPEG, PNG, GIF, WebP.`
+        }
+        
+        const maxSize = 10 * 1024 * 1024 // 10 MB
+        if (file.size > maxSize) {
+          return `File too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed size is 10 MB.`
+        }
+        
+        return null
+      }
+
+      function handleFiles(files) {
+        if (!files || files.length === 0) return
+
+        if (uploadUrl) {
+          const fd = new FormData()
+          let hasValidFiles = false
+
+          Array.from(files).forEach(f => {
+            const err = validateFile(f)
+            if (err) {
+              if (typeof showNotification === 'function') {
+                showNotification(f.name + ': ' + err, 'error')
+              } else {
+                alert(f.name + ': ' + err)
+              }
+            } else {
+              fd.append('files', f)
+              hasValidFiles = true
+            }
+          })
+
+          if (!hasValidFiles) return
+          fd.append('csrfmiddlewaretoken', csrfToken)
+
+          fetch(uploadUrl, { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(data => {
+              if (data.saved) {
+                const baseDelete = uploadUrl.replace('/upload/', '/')
+                data.saved.forEach(f => {
+                  f.deleteUrl = baseDelete + f.id + '/delete/'
+                  renderFileItem(f)
+                })
+              }
+              if (data.errors && data.errors.length > 0) {
+                data.errors.forEach(e => {
+                  if (typeof showNotification === 'function') {
+                    showNotification(e.file + ': ' + e.error, 'error')
+                  } else {
+                    alert(e.file + ': ' + e.error)
+                  }
+                })
+              }
+            })
+            .catch(() => {
+              if (typeof showNotification === 'function') {
+                showNotification('Upload failed. Please try again.', 'error')
+              }
+            })
+        } else {
+          Array.from(files).forEach(f => {
+            const err = validateFile(f)
+            if (err) {
+              if (typeof showNotification === 'function') {
+                showNotification(f.name + ': ' + err, 'error')
+              } else {
+                alert(f.name + ': ' + err)
+              }
+            } else {
+              pendingFiles.push(f)
+              const idx = pendingFiles.length - 1
+              renderFileItem(f, true, idx)
+            }
+          })
+          syncFileInput()
+        }
+      }
+
+      function syncFileInput() {
+        const newDt = new DataTransfer()
+        pendingFiles.forEach(f => newDt.items.add(f))
+        fileInput.files = newDt.files
+      }
+
+      dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over') })
+      dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('drag-over'))
+      dropZone.addEventListener('drop', e => {
+        e.preventDefault()
+        dropZone.classList.remove('drag-over')
+        handleFiles(e.dataTransfer.files)
+      })
+
+      fileInput.addEventListener('change', () => {
+        handleFiles(fileInput.files)
+        if (uploadUrl) {
+          fileInput.value = ''
+        }
+      })
+      
+      dropZone.addEventListener('click', (e) => {
+        if (!e.target.closest('label') && !e.target.closest('input')) fileInput.click()
+      })
+
+      mediaList.addEventListener('click', function (e) {
+        const btn = e.target.closest('.media-remove-btn')
+        if (!btn) return
+
+        const idx = parseInt(btn.dataset.index)
+        pendingFiles.splice(idx, 1)
+        
+        mediaList.innerHTML = ''
+        pendingFiles.forEach((f, i) => {
+          renderFileItem(f, true, i)
+        })
+        
+        syncFileInput()
+        updateCount()
+        
+        if (pendingFiles.length === 0) {
+          mediaList.innerHTML = '<p class="text-muted small" id="noAttachmentsMsg">No attachments selected.</p>'
+        }
+      })
+
+      mediaList.addEventListener('click', function (e) {
+        const btn = e.target.closest('.media-delete-btn')
+        if (!btn) return
+        if (!confirm('Delete this attachment?')) return
+
+        const deleteUrl = btn.dataset.deleteUrl
+        const itemId    = btn.dataset.itemId
+
+        fetch(deleteUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              const item = document.getElementById(itemId)
+              if (item) item.remove()
+              updateCount()
+              if (typeof showNotification === 'function') {
+                showNotification('Attachment deleted.', 'success')
+              }
+            }
+          })
+          .catch(() => {
+            if (typeof showNotification === 'function') {
+              showNotification('Delete failed. Please try again.', 'error')
+            }
+          })
+      })
+
+      updateCount()
+    })()
+  </script>
+{% endblock extra_js %}

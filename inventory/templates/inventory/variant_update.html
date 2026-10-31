@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }} - Stock Management
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'inventory_variant:details' variant.pk %}" class="btn">
+        <i class="fas fa-arrow-left"></i>
+        Back to Variant Details
+      </a>
+      <a href="{% url 'inventory_products:home' %}"
+         class="btn btn-primary">
+        <i class="fas fa-boxes"></i>
+        Products
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'inventory_products:home' %}"
+       class="breadcrumb-item">Products</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'inventory_variant:details' variant.pk %}"
+       class="breadcrumb-item">{{ variant.full_name }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Update</span>
+  </nav>
+  <!-- Main Content -->
+  <div class="form-container">
+    <div class="form-card">
+      <div class="form-header">
+        <h3>
+          <i class="fas fa-edit"></i> {{ subtitle }}
+        </h3>
+        <p>Update variant details and pricing information for {{ variant.full_name }}.</p>
+      </div>
+      <!-- Current Variant Info -->
+      <div class="variant-summary">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <strong>Product:</strong>
+            <span>{{ variant.product.display_name }}</span>
+          </div>
+          <div class="summary-item">
+            <strong>Barcode:</strong>
+            <span data-copy="{{ variant.barcode }}">{{ variant.barcode }}</span>
+          </div>
+          <div class="summary-item">
+            <strong>Current Stock:</strong>
+            <span class="{% if variant.is_low_stock %}text-warning{% elif variant.available_quantity == 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ variant.available_quantity|floatformat:0 }}
+            </span>
+          </div>
+          <div class="summary-item">
+            <strong>Status:</strong>
+            <span class="status-badge status-{{ variant.status|lower }}">{{ variant.get_status_display }}</span>
+          </div>
+        </div>
+      </div>
+      <form method="post" class="details-form">
+        {% csrf_token %}
+        <!-- Pricing Information -->
+        <div class="form-section">
+          <h4>
+            <i class="fas fa-tags"></i> Pricing Information
+          </h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ form.purchase_price.id_for_label }}">{{ form.purchase_price.label }}</label>
+              {{ form.purchase_price }}
+              {% if form.purchase_price.help_text %}<small class="form-help"><span class="form-help-text">{{ form.purchase_price.help_text }}</span></small>{% endif %}
+              {% if form.purchase_price.errors %}
+                <div class="field-errors">
+                  {% for error in form.purchase_price.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ form.mrp.id_for_label }}">{{ form.mrp.label }}</label>
+              {{ form.mrp }}
+              {% if form.mrp.help_text %}<small class="form-help"><span class="form-help-text">{{ form.mrp.help_text }}</span></small>{% endif %}
+              {% if form.mrp.errors %}
+                <div class="field-errors">
+                  {% for error in form.mrp.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Price Summary -->
+          <div class="price-summary">
+            <div class="summary-item">
+              <strong>Profit Margin:</strong>
+              <span id="profit-margin"
+                    class="{% if variant.profit_margin > 0 %}text-success{% else %}text-danger{% endif %}">
+                {{ variant.profit_margin|floatformat:1 }}%
+              </span>
+            </div>
+            <div class="summary-item">
+              <strong>Final Price:</strong>
+              <span id="final-price">{{ variant.final_price|floatformat:2 }}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Stock Settings -->
+        <div class="form-section">
+          <h4>
+            <i class="fas fa-cubes"></i> Stock Settings
+          </h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="{{ form.minimum_quantity.id_for_label }}">{{ form.minimum_quantity.label }}</label>
+              {{ form.minimum_quantity }}
+              {% if form.minimum_quantity.help_text %}
+                <small class="form-help"><span class="form-help-text">{{ form.minimum_quantity.help_text }}</span></small>
+              {% endif %}
+              {% if form.minimum_quantity.errors %}
+                <div class="field-errors">
+                  {% for error in form.minimum_quantity.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="form-group">
+              <label for="{{ form.discount_percentage.id_for_label }}">{{ form.discount_percentage.label }}</label>
+              {{ form.discount_percentage }}
+              {% if form.discount_percentage.help_text %}
+                <small class="form-help"><span class="form-help-text">{{ form.discount_percentage.help_text }}</span></small>
+              {% endif %}
+              {% if form.discount_percentage.errors %}
+                <div class="field-errors">
+                  {% for error in form.discount_percentage.errors %}<div class="error-message">{{ error }}</div>{% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            Update Variant
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory_variant:details' variant.pk %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+  // Auto-calculate profit margin and final price
+  function updatePriceCalculations() {
+    const purchasePrice = parseFloat(document.getElementById('{{ form.purchase_price.id_for_label }}').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('{{ form.mrp.id_for_label }}').value) || 0;
+    const discountPercentage = parseFloat(document.getElementById('{{ form.discount_percentage.id_for_label }}').value) || 0;
+    
+    // Calculate gross margin (consistent with Python model property)
+    let profitMargin = 0;
+    if (sellingPrice > 0) {
+      profitMargin = ((sellingPrice - purchasePrice) / sellingPrice) * 100;
+    }
+    
+    // Calculate final price with discount
+    let finalPrice = sellingPrice;
+    if (discountPercentage > 0) {
+      finalPrice = sellingPrice * (1 - discountPercentage / 100);
+    }
+    
+    // Update display
+    const profitMarginElement = document.getElementById('profit-margin');
+    const finalPriceElement = document.getElementById('final-price');
+    
+    profitMarginElement.textContent = profitMargin.toFixed(1) + '%';
+    profitMarginElement.className = profitMargin > 0 ? 'text-success' : 'text-danger';
+    
+    finalPriceElement.textContent = finalPrice.toFixed(2);
+  }
+
+  // Add event listeners for real-time calculations
+  document.getElementById('{{ form.purchase_price.id_for_label }}').addEventListener('input', updatePriceCalculations);
+  document.getElementById('{{ form.mrp.id_for_label }}').addEventListener('input', updatePriceCalculations);
+  document.getElementById('{{ form.discount_percentage.id_for_label }}').addEventListener('input', updatePriceCalculations);
+
+  // Auto-populate selling price based on purchase price (suggest 30% markup)
+  document.getElementById('{{ form.purchase_price.id_for_label }}').addEventListener('input', function() {
+    const purchasePrice = parseFloat(this.value) || 0;
+    const sellingPriceField = document.getElementById('{{ form.mrp.id_for_label }}');
+    
+    if (purchasePrice > 0 && !sellingPriceField.value) {
+      const suggestedSellingPrice = purchasePrice * 1.3; // 30% markup
+      sellingPriceField.value = suggestedSellingPrice.toFixed(2);
+      updatePriceCalculations();
+    }
+  });
+
+  // Form validation — warn (don't block) when selling at/below cost
+  document.querySelector('form').addEventListener('submit', function(e) {
+    const purchasePrice = parseFloat(document.getElementById('{{ form.purchase_price.id_for_label }}').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('{{ form.mrp.id_for_label }}').value) || 0;
+    
+    if (sellingPrice > 0 && sellingPrice <= purchasePrice) {
+      if (!confirm('Selling price is at or below purchase price. Continue anyway?')) {
+        e.preventDefault();
+        return false;
+      }
+    }
+  });
+
+  // Initialize calculations on page load
+  updatePriceCalculations();
+  </script>
+  <style>
+  .variant-summary {
+    background-color: var(--bg-surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background-color: var(--bg-surface);
+    border-radius: 4px;
+  }
+  
+  .summary-item strong {
+    color: var(--text-secondary);
+  }
+  
+  .price-summary {
+    background-color: var(--bg-surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-around;
+    gap: 2rem;
+  }
+  
+  .price-summary .summary-item {
+    background: none;
+    padding: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .price-summary .summary-item strong {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+  
+  .price-summary .summary-item span {
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+  </style>
+{% endblock extra_js %}

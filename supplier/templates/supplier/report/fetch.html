@@ -1,0 +1,71 @@
+{% load custom_filters %}
+{% if opening_balance %}
+  <tr>
+    <td>{{ start_date|date:"M j, Y" }}</td>
+    <td colspan="3" class="text-center">
+      <strong>Opening Balance</strong>
+    </td>
+    <td class="text-right">-</td>
+    <td class="text-right">-</td>
+    <td class="text-right">
+      <strong>{{ opening_balance|currency }}</strong>
+    </td>
+    <td class="mobile-hide">-</td>
+  </tr>
+{% endif %}
+{% if page_obj %}
+  {% for transaction in page_obj %}
+    <tr>
+      <td>{{ transaction.date|date:"M j, Y" }}</td>
+      <td>
+        {% if transaction.type == "invoice" %}
+          <span class="badge badge-info">Invoice</span>
+        {% else %}
+          <span class="badge badge-secondary">Payment</span>
+        {% endif %}
+      </td>
+      <td class="mobile-hide">
+        {% if transaction.type == "invoice" %}
+          <strong># {{ transaction.reference|default:"-" }}</strong>
+        {% else %}
+          {{ transaction.reference|default:"-" }}
+        {% endif %}
+      </td>
+      <td class="mobile-hide">
+        <strong>{{ transaction.description }}</strong>
+      </td>
+      <td class="text-right">
+        {% if transaction.credit > 0 %}
+          <strong class="text-success">{{ transaction.credit|currency }}</strong>
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td class="text-right">
+        {% if transaction.debit > 0 %}
+          <strong class="text-danger">{{ transaction.debit|currency }}</strong>
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td class="text-right">
+        <strong class="{% if transaction.running_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+          {{ transaction.running_balance|currency }}
+        </strong>
+      </td>
+      <td class="mobile-hide">
+        <small class="secondary-text">{{ transaction.notes|default:"-"|truncatechars:15 }}</small>
+      </td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="8" class="text-center p-2">
+      <div class="empty-state">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <h4>No Transactions Found</h4>
+        <p>No transactions have been recorded for this supplier in the selected date range.</p>
+      </div>
+    </td>
+  </tr>
+{% endif %}

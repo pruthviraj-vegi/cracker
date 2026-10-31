@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Sizes Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Sizes Management</h2>
+        <div class="page-actions">
+            {% if perms.inventory.add_size %}
+                <a href="{% url 'inventory:size_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    New Size
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory:size_home' %}" class="breadcrumb-item">Sizes</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Sizes</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search sizes..."
+                       value="{{ search_query }}"
+                       id="searchInput"
+                       autofocus />
+            </div>
+            <select name="sort" class="filter-select" id="sortSelect">
+                <option value="-created_at"
+                        {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                <option value="created_at"
+                        {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name A-Z</option>
+                <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Name Z-A</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        {% if sizes %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="mobile-hide">ID</th>
+                        <th>Size</th>
+                        <th class="mobile-hide">Description</th>
+                        <th>Variants</th>
+                        <th class="mobile-hide">Created</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for size in sizes %}
+                        <tr>
+                            <td class="mobile-hide">{{ size.id }}</td>
+                            <td>
+                                <div>
+                                    <div class="font-weight-bold text-primary">{{ size.name|default:'N/A' }}</div>
+                                </div>
+                            </td>
+                            <td class="mobile-hide">{{ size.description|default:'No description' }}</td>
+                            <td>
+                                <span class="badge badge-primary">{{ size.variants_count|default:0 }}</span>
+                            </td>
+                            <td class="mobile-hide">{{ size.created_at|date:'M d, Y' }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    {% if perms.inventory.change_size %}
+                                        <a href="{% url 'inventory:size_edit' size.id %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit Size">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.inventory.delete_size %}
+                                        <a href="{% url 'inventory:size_delete' size.id %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete Size">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-ruler"></i>
+                <h4>No Sizes Found</h4>
+                <p>No sizes match your search criteria. Try adjusting your filters or add a new size.</p>
+                {% if perms.inventory.add_size %}
+                    <a href="{% url 'inventory:size_create' %}"
+                       class="btn btn-primary"
+                       id="addFirstSizeBtn">
+                        <i class="fas fa-plus"></i>
+                        Add First Size
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+// Search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const sortSelect = document.getElementById('sortSelect');
+    const searchForm = document.getElementById('searchForm');
+    
+    // Auto-submit form on filter change
+    sortSelect.addEventListener('change', function() {
+        searchForm.submit();
+    });
+    
+    // Debounced search
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            searchForm.submit();
+        }, 500);
+    });
+});
+    </script>
+{% endblock extra_js %}

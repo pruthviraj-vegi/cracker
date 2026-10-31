@@ -1,0 +1,57 @@
+{% load static %}
+{% comment %}
+Reusable Date Filter Dropdown Component
+
+Usage:
+  Default (shows ALL options):
+  {% include "common/_date_filter.html" %}
+
+  Hide specific options with hide_* flags:
+  {% include "common/_date_filter.html" with hide_today=True hide_yesterday=True hide_custom=True %}
+
+  With other parameters:
+  {% include "common/_date_filter.html" with filter_id="reportDateFilter" wrap_form=False hide_custom=True %}
+{% endcomment %}
+{% with fid=filter_id|default:"dateFilter" fname=filter_name|default:"date_filter" formid=form_id|default:"dateFilterForm" cur_val=selected|default:"this_month" %}
+{% if wrap_form|default:True %}
+<form method="get" class="d-inline date-filter-form {{ form_class|default:'' }}" id="{{ formid }}" onsubmit="return false;">
+{% endif %}
+  <div class="position-relative date-filter-container {{ container_class|default:'d-inline-flex align-items-center' }}">
+    <select name="{{ fname }}" class="form-select date-filter-select {{ custom_class|default:'' }}" id="{{ fid }}" aria-label="{{ aria_label|default:'Filter by date' }}" {% if hide_custom %}data-show-custom="false"{% endif %}>
+      {% if not hide_today %}
+      <option value="today" {% if cur_val == "today" %}selected{% endif %}>Today</option>
+      {% endif %}
+      {% if not hide_yesterday %}
+      <option value="yesterday" {% if cur_val == "yesterday" %}selected{% endif %}>Yesterday</option>
+      {% endif %}
+      {% if not hide_this_month %}
+      <option value="this_month" {% if cur_val == "this_month" %}selected{% endif %}>This Month</option>
+      {% endif %}
+      {% if not hide_last_month %}
+      <option value="last_month" {% if cur_val == "last_month" %}selected{% endif %}>Last Month</option>
+      {% endif %}
+      {% if not hide_this_quarter %}
+      <option value="this_quarter" {% if cur_val == "this_quarter" %}selected{% endif %}>This Quarter</option>
+      {% endif %}
+      {% if not hide_last_quarter %}
+      <option value="last_quarter" {% if cur_val == "last_quarter" %}selected{% endif %}>Last Quarter</option>
+      {% endif %}
+      {% if not hide_this_finance %}
+      <option value="this_finance" {% if cur_val == "this_finance" %}selected{% endif %}>This Finance</option>
+      {% endif %}
+      {% if not hide_last_finance %}
+      <option value="last_finance" {% if cur_val == "last_finance" %}selected{% endif %}>Last Finance</option>
+      {% endif %}
+      {% if not hide_full_date %}
+      <option value="full_date" {% if cur_val == "full_date" %}selected{% endif %}>Full Date</option>
+      {% endif %}
+      {% if not hide_custom %}
+      <option value="custom" {% if cur_val == "custom" %}selected{% endif %}>Custom Dates</option>
+      {% endif %}
+    </select>
+  </div>
+{% if wrap_form|default:True %}
+</form>
+{% endif %}
+{% endwith %}
+

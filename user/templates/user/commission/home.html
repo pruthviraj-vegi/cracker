@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  Commission Report - {{ user.full_name }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header page-header-sticky">
+    <h2 class="page-title">{{ user.full_name }} - Commission Report</h2>
+    <div class="page-actions dash-actions-group">
+      <!-- Date Filter Dropdown -->
+      {% include "common/_date_filter.html" with hide_today=True hide_yesterday=True hide_this_quarter=True hide_last_quarter=True  %}
+      {% if perms.user.change_customuser or perms.user.change_user %}
+        <a href="{% url 'user:edit' user.id %}" class="btn btn-primary">
+          <i class="fas fa-edit"></i>
+          Edit User
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'user:detail' user.id %}" class="breadcrumb-item">{{ user.full_name }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Commission</span>
+  </nav>
+  {% if not user.is_active %}
+    <div class="alert alert-warning d-flex align-items-center mb-2" role="alert">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <div>
+        <strong>User is Inactive:</strong> Commission is inactive for this user.
+      </div>
+    </div>
+  {% endif %}
+  <!-- Main Layout -->
+  <div class="col d-flex flex-row">
+    <!-- Left Column - User Details and Summary -->
+    <div class="col-md-2 d-flex flex-column gap-2">
+      <!-- User Details Column -->
+      <div class="column details-column">
+        <div class="column-header">
+          <h3>
+            <i class="fas fa-user"></i> User Details
+          </h3>
+        </div>
+        <div class="details-info-compact">
+          <div class="detail-name-compact">
+            <h4>{{ user.full_name }}</h4>
+            <div class="d-flex justify-content-center gap-1 flex-wrap">
+              <span class="detail-status {% if user.is_active %}status-active{% else %}status-inactive{% endif %}" title="User Status">
+                {% if user.is_active %}
+                  Active
+                {% else %}
+                  Inactive
+                {% endif %}
+              </span>
+              <span class="detail-status {% if is_commission_active %}status-active{% else %}status-inactive{% endif %}" title="Commission Status">
+                <i class="fas fa-percentage"></i>
+                {% if is_commission_active %}
+                  Commission Active
+                {% else %}
+                  Commission Inactive
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="detail-contact-compact">
+            <div class="contact-item">
+              <i class="fas fa-phone"></i>
+              <span>{{ user.phone_number }}</span>
+            </div>
+            {% if user.email %}
+              <div class="contact-item">
+                <i class="fas fa-envelope"></i>
+                <span>{{ user.email }}</span>
+              </div>
+            {% endif %}
+            {% if user.address %}
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>{{ user.address|truncatechars:50 }}</span>
+              </div>
+            {% endif %}
+            <div class="contact-item">
+              <i class="fas fa-users"></i>
+              <span>{{ user.groups.all|first|default:"User" }}</span>
+            </div>
+            {% if current_salary %}
+              <div class="contact-item">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>{{ current_salary.amount|currency }}/mo</span>
+              </div>
+            {% endif %}
+            <div class="contact-item">
+              <i class="fas fa-percentage"></i>
+              <span>Commission:
+                {% if is_commission_active %}
+                  <span class="badge text-success">
+                    <i class="fas fa-check-circle"></i> Active
+                  </span>
+                {% else %}
+                  <span class="badge text-danger">
+                    <i class="fas fa-times-circle"></i> Inactive
+                  </span>
+                {% endif %}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Commission Summary Card -->
+      <div class="summary-card-compact" id="commissionSummaryCard">
+        <div class="summary-icon-compact">
+          <i class="fas fa-percentage"></i>
+        </div>
+        <div class="summary-content-compact">
+          <div class="d-flex justify-content-between align-items-center mb-1 pb-1" style="border-bottom: 1px solid var(--border-color);">
+            <h4 class="mb-0 pb-0" style="border-bottom: none;">Commission Summary</h4>
+            <span class="badge {% if is_commission_active %}text-success{% else %}text-danger{% endif %}" style="font-size: 0.75rem;">
+              {% if is_commission_active %}
+                <i class="fas fa-check-circle"></i> Active
+              {% else %}
+                <i class="fas fa-times-circle"></i> Inactive
+              {% endif %}
+            </span>
+          </div>
+          <div class="summary-stats-compact">
+            <div class="stat-item-compact">
+              <span class="stat-number-compact" id="totalCommission">{{ total_commission|currency_abbreviation }}</span>
+              <span class="stat-label-compact">Total Commission</span>
+            </div>
+            <div class="stat-item-compact">
+              <span class="stat-number-compact" id="totalSales">{{ total_sales|currency_abbreviation }}</span>
+              <span class="stat-label-compact">Total Sales</span>
+            </div>
+            <div class="stat-item-compact">
+              <span class="stat-number-compact" id="avgRate">
+                {% if total_sales > 0 %}
+                  {{ total_commission|floatformat:2|div:total_sales|floatformat:2|mul:100|floatformat:2 }}%
+                {% else %}
+                  0%
+                {% endif %}
+              </span>
+              <span class="stat-label-compact">Avg Rate</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Right Column - Filters and Tables -->
+    <div class="col-md-10 d-flex flex-column gap-2 ps-1">
+      <!-- Monthly Summary Table -->
+      <div class="table-section" id="monthlySummarySection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-calendar-alt"></i> Monthly Summary
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Invoices</th>
+                <th>Items</th>
+                <th>Total Sales</th>
+                <th>Total Commission</th>
+              </tr>
+            </thead>
+            <tbody id="monthlySummaryBody">
+              {% for summary in monthly_summary %}
+                <tr>
+                  <td>
+                    <strong>{{ summary.month_label }}</strong>
+                  </td>
+                  <td>{{ summary.invoice_count }}</td>
+                  <td>{{ summary.item_count }}</td>
+                  <td>{{ summary.total_sales|currency }}</td>
+                  <td>
+                    <strong class="text-primary">{{ summary.total_commission|currency }}</strong>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center">No data found</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Detailed Commission Data -->
+      <div class="table-section" id="commissionDetailsSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-list"></i> Commission Details
+          </h3>
+        </div>
+        <div class="table-container">
+          <!-- Hidden form for AJAX table loader -->
+          <form id="dummyFormCommission" method="get" class="hidden">
+            <input type="hidden"
+                   id="hiddenDateRange"
+                   name="date_range"
+                   value="this_month">
+            <input type="hidden" id="hiddenStartDate" name="start_date" value="">
+            <input type="hidden" id="hiddenEndDate" name="end_date" value="">
+          </form>
+          <table class="data-table" id="commission_table" data-sort="-invoice_date">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="invoice_date">Date</th>
+                <th>Invoice #</th>
+                <th class="mobile-hide">Product</th>
+                <th class="mobile-hide">Quantity</th>
+                <th class="mobile-hide">Unit Price</th>
+                <th>Item Amount</th>
+                <th class="mobile-hide">Commission %</th>
+                <th>Commission Amount</th>
+              </tr>
+            </thead>
+            <tbody id="commission_table_body">
+              <tr>
+                <td colspan="8" class="text-center p-2">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading commission data...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div id="commission_pagination"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Summary card click handlers
+      const commissionSummaryCard = document.getElementById('commissionSummaryCard')
+      const monthlySummarySection = document.getElementById('monthlySummarySection')
+      const commissionDetailsSection = document.getElementById('commissionDetailsSection')
+    
+      if (commissionSummaryCard && monthlySummarySection) {
+        commissionSummaryCard.addEventListener('click', function () {
+          monthlySummarySection.scrollIntoView({ behavior: 'smooth' })
+        })
+      }
+
+      // URLs for commission data
+      const urls = {
+        commission: '{% url "user:commission_fetch" user.id %}',
+        summary: '{% url "user:commission_summary" user.id %}'
+      }
+
+      const currentFilter = '{{ date_range|default:"this_month" }}';
+
+
+      // Update commission summary
+      function updateCommissionSummary() {
+        const styledRef = window.dateFilter_styled;
+        const dateFilter = styledRef ? styledRef.hiddenSelect : document.getElementById('dateFilter');
+        const dummyForm = document.getElementById('dummyFormCommission');
+        if (!dummyForm || !dateFilter) return;
+
+        const params = new URLSearchParams();
+        const dateFilterValue = dateFilter ? dateFilter.value : currentFilter;
+        
+        // Use date_range parameter (not date_filter)
+        params.append('date_range', dateFilterValue);
+        
+        // If custom date, add from_date and to_date parameters
+        if (dateFilterValue === 'custom' && dateFilter) {
+          const fromDate = dateFilter.getAttribute('data-from-date');
+          const toDate = dateFilter.getAttribute('data-to-date');
+          if (fromDate) params.append('start_date', fromDate);
+          if (toDate) params.append('end_date', toDate);
+        }
+
+        // Update hidden form inputs
+        const hiddenDateRange = document.getElementById('hiddenDateRange');
+        const hiddenStartDate = document.getElementById('hiddenStartDate');
+        const hiddenEndDate = document.getElementById('hiddenEndDate');
+        
+        if (hiddenDateRange) hiddenDateRange.value = dateFilterValue;
+        if (dateFilterValue === 'custom') {
+          if (hiddenStartDate) hiddenStartDate.value = dateFilter.getAttribute('data-from-date') || '';
+          if (hiddenEndDate) hiddenEndDate.value = dateFilter.getAttribute('data-to-date') || '';
+        } else {
+          if (hiddenStartDate) hiddenStartDate.value = '';
+          if (hiddenEndDate) hiddenEndDate.value = '';
+        }
+
+        fetch(urls.summary + '?' + params.toString())
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Update summary card
+              const totalCommissionEl = document.getElementById('totalCommission');
+              const totalSalesEl = document.getElementById('totalSales');
+              const avgRateEl = document.getElementById('avgRate');
+
+              if (totalCommissionEl) totalCommissionEl.textContent = formatCurrency(data.total_commission || 0);
+              if (totalSalesEl) totalSalesEl.textContent = formatCurrency(data.total_sales || 0);
+              if (avgRateEl) {
+                const avgRate = data.total_sales > 0
+                  ? ((data.total_commission / data.total_sales) * 100).toFixed(2)
+                  : '0';
+                avgRateEl.textContent = avgRate + '%';
+              }
+
+              // Update monthly summary table
+              const monthlyBody = document.getElementById('monthlySummaryBody');
+              if (monthlyBody && data.monthly_summary) {
+                if (data.monthly_summary.length > 0) {
+                  monthlyBody.innerHTML = data.monthly_summary.map(s => `
+                    <tr>
+                      <td><strong>${s.month_label}</strong></td>
+                      <td>${s.invoice_count || 0}</td>
+                      <td>${s.item_count || 0}</td>
+                      <td>${formatCurrency(s.total_sales || 0)}</td>
+                      <td><strong class="text-primary">${formatCurrency(s.total_commission || 0)}</strong></td>
+                    </tr>
+                  `).join('');
+                } else {
+                  monthlyBody.innerHTML = '<tr><td colspan="5" class="text-center">No data found</td></tr>';
+                }
+              }
+            }
+          })
+          .catch(error => {
+            console.error('Error updating summary:', error);
+          });
+      }
+
+      // Track if table is initialized
+      let tableInitialized = false;
+      let isInitialLoad = true;
+
+      // Reload commission table (only initialize once)
+      function reloadCommissionTable() {
+        const dummyForm = document.getElementById('dummyFormCommission');
+        if (!dummyForm || !window.initTableAjax) return;
+
+        if (!tableInitialized) {
+          // Initialize table only once
+          initTableAjax('dummyFormCommission', 'commission_table', urls.commission, { autoLoad: true });
+          if (window.initTableSorting) {
+            initTableSorting('commission_table');
+          }
+          tableInitialized = true;
+        } else {
+          // Just reload the table data
+          if (window.reloadTable) {
+            reloadTable('commission_table');
+          } else if (window.loadTableData) {
+            loadTableData('dummyFormCommission', 'commission_table', urls.commission, { autoLoad: false });
+          }
+        }
+      }
+
+      // Debounce function to prevent rapid calls
+      let updateTimeout = null;
+      function debouncedUpdate() {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+          updateCommissionSummary();
+          reloadCommissionTable();
+        }, 100);
+      }
+
+      // Set the original select value BEFORE conversion to ensure correct initial value
+      const originalSelect = document.getElementById('dateFilter');
+      if (originalSelect && currentFilter) {
+        originalSelect.value = currentFilter;
+      }
+
+      // Use common waitForDropdownReady if available, otherwise define locally
+      const waitForDropdownReady = window.DashboardCommon?.waitForDropdownReady || function(callback, maxAttempts = 10) {
+        let attempts = 0;
+        const checkReady = () => {
+          const styledRef = window.dateFilter_styled;
+          if (styledRef?.hiddenSelect) {
+            callback(styledRef);
+          } else if (attempts < maxAttempts) {
+            attempts++;
+            requestAnimationFrame(checkReady);
+          } else {
+            console.warn('Dropdown not ready after max attempts, using fallback');
+            const dateFilter = document.getElementById('dateFilter');
+            if (dateFilter) {
+              callback({ hiddenSelect: dateFilter, label: null });
+            } else {
+              console.error('Could not find date filter element');
+            }
+          }
+        };
+        requestAnimationFrame(checkReady);
+      };
+
+      // Convert select to styled dropdown with onChange callback
+      initDateFilter('dateFilter', {
+        onChange: function(data) {
+          // Skip callback on initial load (will be handled separately)
+          if (isInitialLoad) return;
+          
+          // Update summary and reload table when date filter changes
+          debouncedUpdate();
+        }
+      });
+
+      // Wait for dropdown to be ready, then set initial value and load data
+      waitForDropdownReady((styledRef) => {
+        const dateFilter = styledRef.hiddenSelect;
+        
+        // Set initial value (JS will auto-update the label)
+        if (dateFilter && currentFilter) {
+          // Clear any existing selection first
+          Array.from(dateFilter.options).forEach(opt => opt.selected = false);
+          
+          // Set the desired value
+          const targetOption = Array.from(dateFilter.options).find(opt => opt.value === currentFilter);
+          if (targetOption) {
+            targetOption.selected = true;
+            dateFilter.value = currentFilter;
+            
+            // Update visual label if converted
+            if (styledRef.label) {
+              styledRef.label.textContent = targetOption.text;
+            }
+          } else {
+            // Fallback: set by value directly
+            dateFilter.value = currentFilter;
+          }
+        }
+        
+        // Load initial data (only once)
+        updateCommissionSummary();
+        reloadCommissionTable();
+        
+        // Mark initial load as complete
+        isInitialLoad = false;
+      });
+    })
+  </script>
+{% endblock extra_js %}

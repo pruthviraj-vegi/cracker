@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Invoice Manager — {{ audit_data.title }}
+{% endblock title %}
+{% block content %}
+    {% csrf_token %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            <i class="fas fa-exchange-alt"></i>
+            Invoice Manager
+            <span class="text-muted" style="font-size: 0.7em; opacity: 0.85;">({{ date_range_info }})</span>
+        </h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:audit_detail' audit_data.pk %}" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Audit
+            </a>
+            <button id="exportBtn" class="btn" onclick="exportChanges()">
+                <i class="fas fa-download"></i>
+                Export
+            </button>
+            <button id="submitBtn" class="btn btn-primary" onclick="submitConversions()">
+                <i class="fas fa-check"></i>
+                Submit Conversions
+            </button>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:audit_home' %}" class="breadcrumb-item">Audit Tables</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:audit_detail' audit_data.pk %}" class="breadcrumb-item">{{ audit_data.title }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Invoice Manager</span>
+    </nav>
+    <!-- Audit Info Summary -->
+    <div class="manager-info-bar">
+        <div class="info-item">
+            <i class="fas fa-clipboard-check"></i>
+            <span><strong>{{ audit_data.title }}</strong></span>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-calendar"></i>
+            <span>{{ start_date }} — {{ end_date }}</span>
+        </div>
+        <div class="info-item">
+            <i class="fas fa-file-invoice"></i>
+            <span>{{ gst_invoices.count|add:cash_invoices.count }} invoices</span>
+        </div>
+        <div class="info-item" id="movedCounter">
+            <i class="fas fa-arrows-alt-h"></i>
+            <span><strong id="movedCount">0</strong> moved</span>
+        </div>
+    </div>
+    <!-- Main Layout — Two Column Drag & Drop -->
+    <div class="manager-columns">
+        <!-- Left Column - GST Section -->
+        <div class="manager-column">
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-receipt"></i> GST Invoices
+                        <span class="manager-count" id="gstCount">{{ gst_invoices.count }}</span>
+                        <span class="manager-badge manager-badge-primary" id="gstTotal">{{ gst_total|floatformat:0 }}</span>
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div id="gstSection" class="drag-section" ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <!-- GST items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Right Column - Cash Section -->
+        <div class="manager-column">
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-money-bill-wave"></i> Cash Invoices
+                        <span class="manager-count" id="cashCount">{{ cash_invoices.count }}</span>
+                        <span class="manager-badge manager-badge-success" id="cashTotal">{{ cash_total|floatformat:0 }}</span>
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div id="cashSection" class="drag-section" ondrop="drop(event)" ondragover="allowDrop(event)">
+                        <!-- Cash items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Export Results Modal -->
+    <div id="exportModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:600px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:1rem; border-bottom:1px solid var(--border-color);">
+                <h3 style="margin:0; color:var(--text-primary); font-size:1rem;">
+                    <i class="fas fa-download"></i> Export Results
+                </h3>
+                <button class="btn btn-sm" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div style="padding:1rem; max-height:400px; overflow-y:auto;">
+                <pre id="exportData" style="background:var(--bg-body); padding:1rem; border-radius:0.5rem; border:1px solid var(--border-color); font-size:0.8rem; color:var(--text-primary); white-space:pre-wrap; word-wrap:break-word; margin:0;"></pre>
+            </div>
+            <div style="padding:1rem; border-top:1px solid var(--border-color); display:flex; gap:0.5rem; justify-content:flex-end;">
+                <button class="btn" onclick="closeModal()">Close</button>
+                <button class="btn btn-primary" onclick="copyToClipboard()">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_css %}
+<style>
+    /* ── Audit Info Bar ─────────────────── */
+    .manager-info-bar {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0.6rem 1rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .manager-info-bar .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .manager-info-bar .info-item i {
+        color: var(--primary);
+        font-size: 0.75rem;
+    }
+
+    .manager-info-bar .info-item strong {
+        color: var(--text-primary);
+    }
+
+    #movedCounter.has-moves {
+        color: var(--warning);
+    }
+
+    #movedCounter.has-moves i {
+        color: var(--warning);
+    }
+
+    /* ── Two-Column Layout ──────────────── */
+    .manager-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .manager-column {
+        min-width: 0;
+    }
+
+    /* ── Badge / Count ──────────────────── */
+    .manager-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.5rem;
+        padding: 0.1rem 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border-radius: 10rem;
+        background: rgba(255, 255, 255, 0.15);
+        color: inherit;
+        margin-left: 0.25rem;
+    }
+
+    .manager-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.15rem 0.5rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        border-radius: 0.375rem;
+        margin-left: 0.35rem;
+    }
+
+    .manager-badge-primary {
+        background: rgba(37, 99, 235, 0.12);
+        color: var(--primary);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+    }
+
+    .manager-badge-success {
+        background: rgba(22, 163, 74, 0.12);
+        color: var(--success, #16a34a);
+        border: 1px solid rgba(22, 163, 74, 0.2);
+    }
+
+    /* ── Drag & Drop Section ────────────── */
+    .drag-section {
+        min-height: 400px;
+        max-height: calc(100vh - 320px);
+        border: 2px dashed var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        transition: all 0.3s ease;
+        background: var(--bg-surface);
+        overflow-y: auto;
+    }
+
+    .drag-section.drag-over {
+        border-color: var(--primary);
+        background: rgba(37, 99, 235, 0.04);
+        box-shadow: inset 0 0 0 2px rgba(37, 99, 235, 0.08);
+    }
+
+    /* ── Drag Item Card ─────────────────── */
+    .drag-item {
+        background: var(--bg-body);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        margin-bottom: 0.35rem;
+        cursor: grab;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .drag-item:active {
+        cursor: grabbing;
+    }
+
+    .drag-item:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-sm);
+        transform: translateY(-1px);
+    }
+
+    .drag-item.dragging {
+        opacity: 0.5;
+        transform: rotate(1deg) scale(0.98);
+    }
+
+    .drag-item.moved {
+        border-color: var(--warning);
+        background: rgba(255, 193, 7, 0.06);
+        border-left: 3px solid var(--warning);
+    }
+
+    .drag-item.flash-animation {
+        animation: flashHighlight 0.8s ease-in-out;
+    }
+
+    @keyframes flashHighlight {
+        0% {
+            background: rgba(255, 193, 7, 0.25);
+            transform: scale(1.01);
+        }
+        100% {
+            background: rgba(255, 193, 7, 0.06);
+            transform: scale(1);
+        }
+    }
+
+    /* ── Item Inner Layout ──────────────── */
+    .item-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+    }
+
+    .item-details {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+    }
+
+    .item-id {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.78rem;
+        line-height: 1.3;
+    }
+
+    .item-description {
+        color: var(--text-secondary);
+        font-size: 0.72rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 220px;
+    }
+
+    .item-date {
+        color: var(--text-secondary);
+        font-size: 0.65rem;
+        line-height: 1.2;
+        opacity: 0.8;
+    }
+
+    .item-amount {
+        font-weight: 600;
+        color: var(--primary);
+        font-size: 0.82rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Move Button ────────────────────── */
+    .move-btn {
+        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border-color);
+        border-radius: 0.375rem;
+        background: var(--bg-surface);
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .move-btn:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: rgba(37, 99, 235, 0.08);
+        transform: scale(1.1);
+    }
+
+    /* ── Empty State ────────────────────── */
+    .empty-section {
+        text-align: center;
+        color: var(--text-secondary);
+        padding: 3rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .empty-section i {
+        display: block;
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.3;
+    }
+
+    /* ── Responsive ─────────────────────── */
+    @media (max-width: 768px) {
+        .manager-columns {
+            grid-template-columns: 1fr;
+        }
+
+        .drag-section {
+            min-height: 250px;
+            max-height: 350px;
+        }
+
+        .item-description {
+            max-width: 160px;
+        }
+
+        .manager-info-bar {
+            gap: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .drag-item {
+            padding: 0.5rem;
+            gap: 0.5rem;
+        }
+
+        .item-description {
+            max-width: 120px;
+        }
+
+        .move-btn {
+            width: 26px;
+            height: 26px;
+        }
+    }
+</style>
+{% endblock extra_css %}
+{% block extra_js %}
+<script>
+    // Real invoice data from Django backend
+    const invoiceData = [
+        {% for invoice in gst_invoices %}
+        {
+            id: {{ invoice.id }},
+            description: "{{ invoice.customer.name }} - {{ invoice.invoice_number }}",
+            amount: {{ invoice.total_payable }},
+            original: "gst",
+            invoice_number: "{{ invoice.invoice_number }}",
+            customer_name: "{{ invoice.customer.name }}",
+            invoice_date: "{{ invoice.invoice_date|date:'M d, Y' }}"
+        },
+        {% endfor %}
+        {% for invoice in cash_invoices %}
+        {
+            id: {{ invoice.id }},
+            description: "{{ invoice.customer.name }} - {{ invoice.invoice_number }}",
+            amount: {{ invoice.total_payable }},
+            original: "cash",
+            invoice_number: "{{ invoice.invoice_number }}",
+            customer_name: "{{ invoice.customer.name }}",
+            invoice_date: "{{ invoice.invoice_date|date:'M d, Y' }}"
+        },
+        {% endfor %}
+    ];
+
+    let items = [];
+
+    /**
+     * Initialize the application
+     */
+    function init() {
+        items = invoiceData.map(item => ({
+            ...item,
+            current: item.original,
+            conversion: "none",
+            moved: false
+        }));
+
+        renderItems();
+        updateTotals();
+        updateMovedCounter();
+    }
+
+    /**
+     * Render all items in their current sections
+     */
+    function renderItems() {
+        const gstSection = document.getElementById('gstSection');
+        const cashSection = document.getElementById('cashSection');
+
+        gstSection.innerHTML = '';
+        cashSection.innerHTML = '';
+
+        const gstItems = items.filter(item => item.current === 'gst').sort((a, b) => a.id - b.id);
+        const cashItems = items.filter(item => item.current === 'cash').sort((a, b) => a.id - b.id);
+
+        if (gstItems.length === 0) {
+            gstSection.innerHTML = '<div class="empty-section"><i class="fas fa-inbox"></i>No GST invoices</div>';
+        } else {
+            gstItems.forEach(item => {
+                gstSection.appendChild(createItemElement(item));
+            });
+        }
+
+        if (cashItems.length === 0) {
+            cashSection.innerHTML = '<div class="empty-section"><i class="fas fa-inbox"></i>No Cash invoices</div>';
+        } else {
+            cashItems.forEach(item => {
+                cashSection.appendChild(createItemElement(item));
+            });
+        }
+
+        // Update section counts
+        document.getElementById('gstCount').textContent = gstItems.length;
+        document.getElementById('cashCount').textContent = cashItems.length;
+    }
+
+    /**
+     * Create DOM element for an item
+     */
+    function createItemElement(item) {
+        const div = document.createElement('div');
+        div.className = 'drag-item';
+        div.draggable = true;
+        div.setAttribute('data-id', item.id);
+        div.setAttribute('data-original', item.original);
+        div.setAttribute('data-current', item.current);
+        div.setAttribute('data-amount', item.amount);
+        div.setAttribute('tabindex', '0');
+
+        if (item.moved) {
+            div.classList.add('moved');
+        }
+
+        const formattedAmount = item.amount.toLocaleString('en-IN');
+
+        div.innerHTML = `
+            <div class="item-info">
+                <div class="item-details">
+                    <div class="item-id">${item.invoice_number}</div>
+                    <div class="item-description" title="${item.customer_name}">${item.customer_name}</div>
+                    <div class="item-date">${item.invoice_date}</div>
+                </div>
+                <div class="item-amount">${formattedAmount}</div>
+            </div>
+            <button class="move-btn" onclick="toggleItem(${item.id})" title="Move to ${item.current === 'gst' ? 'Cash' : 'GST'}">
+                <i class="fas fa-arrow-${item.current === 'gst' ? 'right' : 'left'}"></i>
+            </button>
+        `;
+
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragend', handleDragEnd);
+        div.addEventListener('keydown', handleKeyDown);
+
+        return div;
+    }
+
+    /**
+     * Handle drag start event
+     */
+    function handleDragStart(e) {
+        e.target.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.outerHTML);
+        e.dataTransfer.setData('text/plain', e.target.getAttribute('data-id'));
+    }
+
+    /**
+     * Handle drag end event
+     */
+    function handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+    }
+
+    /**
+     * Allow drop event
+     */
+    function allowDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    /**
+     * Handle drop event
+     */
+    function drop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+
+        const itemId = parseInt(e.dataTransfer.getData('text/plain'));
+        const targetSection = e.currentTarget.id === 'gstSection' ? 'gst' : 'cash';
+
+        moveItem(itemId, targetSection);
+    }
+
+    /**
+     * Move item to target section
+     */
+    function moveItem(itemId, targetSection) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        item.current = targetSection;
+
+        if (item.current !== item.original) {
+            item.conversion = `${item.original}-to-${item.current}`;
+            item.moved = true;
+        } else {
+            item.conversion = "none";
+            item.moved = false;
+        }
+
+        renderItems();
+        updateTotals();
+        updateMovedCounter();
+
+        // Flash animation for moved items
+        setTimeout(() => {
+            const element = document.querySelector(`[data-id="${itemId}"]`);
+            if (element) {
+                element.classList.add('flash-animation');
+                setTimeout(() => {
+                    element.classList.remove('flash-animation');
+                    if (item.moved) {
+                        element.classList.add('moved');
+                    } else {
+                        element.classList.remove('moved');
+                    }
+                }, 800);
+            }
+        }, 50);
+    }
+
+    /**
+     * Toggle item between sections
+     */
+    function toggleItem(itemId) {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        const targetSection = item.current === 'gst' ? 'cash' : 'gst';
+        moveItem(itemId, targetSection);
+    }
+
+    /**
+     * Handle keyboard navigation
+     */
+    function handleKeyDown(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const itemId = parseInt(e.target.getAttribute('data-id'));
+            toggleItem(itemId);
+        }
+    }
+
+    /**
+     * Update totals for both sections
+     */
+    function updateTotals() {
+        const gstTotal = items
+            .filter(item => item.current === 'gst')
+            .reduce((sum, item) => sum + item.amount, 0);
+
+        const cashTotal = items
+            .filter(item => item.current === 'cash')
+            .reduce((sum, item) => sum + item.amount, 0);
+
+        document.getElementById('gstTotal').textContent = `${gstTotal.toLocaleString('en-IN')}`;
+        document.getElementById('cashTotal').textContent = `${cashTotal.toLocaleString('en-IN')}`;
+    }
+
+    /**
+     * Update the moved items counter in the info bar
+     */
+    function updateMovedCounter() {
+        const movedCount = items.filter(item => item.moved).length;
+        document.getElementById('movedCount').textContent = movedCount;
+        const counter = document.getElementById('movedCounter');
+        if (movedCount > 0) {
+            counter.classList.add('has-moves');
+        } else {
+            counter.classList.remove('has-moves');
+        }
+    }
+
+    /**
+     * Export changes to JSON format
+     */
+    function exportChanges() {
+        const movedItems = items.filter(item => item.moved);
+
+        if (movedItems.length === 0) {
+            showNotification('No conversions to export. Move some invoices first.', 'warning');
+            return;
+        }
+
+        const exportData = movedItems.map(item => ({
+            id: item.id,
+            originalSection: item.original,
+            currentSection: item.current,
+            amount: item.amount,
+            conversionDirection: item.conversion,
+            convertedValue: null
+        }));
+
+        document.getElementById('exportData').textContent = JSON.stringify(exportData, null, 2);
+        document.getElementById('exportModal').style.display = 'flex';
+    }
+
+    /**
+     * Close modal
+     */
+    function closeModal() {
+        document.getElementById('exportModal').style.display = 'none';
+    }
+
+    /**
+     * Copy export data to clipboard
+     */
+    function copyToClipboard() {
+        const exportData = document.getElementById('exportData').textContent;
+        navigator.clipboard.writeText(exportData).then(() => {
+            showNotification('Data copied to clipboard!', 'success');
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            showNotification('Failed to copy data.', 'error');
+        });
+    }
+
+    /**
+     * Submit conversions to backend
+     */
+    function submitConversions() {
+        const movedItems = items.filter(item => item.moved);
+
+        if (movedItems.length === 0) {
+            showNotification('No conversions to submit. Move some invoices between sections first.', 'warning');
+            return;
+        }
+
+        const conversionData = {
+            conversions: movedItems.map(item => ({
+                id: item.id,
+                originalSection: item.original,
+                currentSection: item.current,
+                amount: item.amount,
+                conversionDirection: item.conversion,
+                invoiceNumber: item.invoice_number,
+                customerName: item.customer_name,
+                invoiceDate: item.invoice_date
+            })),
+            dateRange: {
+                startDate: '{{ start_date|default:"" }}',
+                endDate: '{{ end_date|default:"" }}'
+            },
+            totals: {
+                gstTotal: items.filter(item => item.current === 'gst').reduce((sum, item) => sum + item.amount, 0),
+                cashTotal: items.filter(item => item.current === 'cash').reduce((sum, item) => sum + item.amount, 0)
+            }
+        };
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('submitting');
+
+        // Send to backend
+        fetch('{{ audit_data.get_absolute_url }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(conversionData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Successfully processed ${data.converted_count} conversions!`, 'success');
+                    window.location.reload();
+                } else {
+                    showNotification('Error: ' + (data.error || 'Unknown error occurred'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Error submitting conversions. Please try again.', 'error');
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('submitting');
+            });
+    }
+
+    // Remove drag-over class when leaving drop zones
+    document.addEventListener('dragleave', function (e) {
+        if (e.target.classList.contains('drag-section')) {
+            e.target.classList.remove('drag-over');
+        }
+    });
+
+    // Initialize the application when page loads
+    document.addEventListener('DOMContentLoaded', init);
+</script>
+{% endblock extra_js %}

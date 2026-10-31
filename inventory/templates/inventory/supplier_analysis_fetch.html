@@ -1,0 +1,107 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for product in page_obj %}
+        <tr>
+            <td>
+                <div class="product-info">
+                    <div class="product-brand">{{ product.variant__product__brand }}</div>
+                    {% if product.variant__product__name %}
+                        <small class="text-muted">{{ product.variant__product__name }}</small>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                {% if product.variant__size__name %}
+                    <span class="badge badge-secondary">{{ product.variant__size__name }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if product.variant__color__name %}
+                    <div class="d-inline-flex align-items-center gap-2">
+                        <div class="color-swatch-small"
+                             style="background-color: {{ product.variant__color__hex_code|default:'#ccc' }}">
+                        </div>
+                        {{ product.variant__color__name }}
+                    </div>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td>
+                <code data-copy="{{ product.variant__barcode }}">{{ product.variant__barcode }}</code>
+            </td>
+            <td>
+                <span class="badge badge-count" title="Appears on {{ product.invoices_count }} invoice(s)">
+                    {{ product.invoices_count }} inv
+                </span>
+            </td>
+            <td>
+                <strong>{{ product.stock_in_quantity|floatformat:0 }}</strong>
+            </td>
+            <td>{{ product.sales_quantity|floatformat:0 }}</td>
+            <td>
+                {% if product.damage_quantity > 0 %}
+                    <span class="badge bg-danger text-white">{{ product.damage_quantity|floatformat:0 }}</span>
+                {% else %}
+                    <span class="text-muted">0</span>
+                {% endif %}
+            </td>
+            <td>
+                <strong class="{% if product.remaining_quantity <= 0 %}text-muted{% elif product.remaining_quantity <= 5 %}text-warning{% else %}text-success{% endif %}">
+                    {{ product.remaining_quantity|floatformat:0 }}
+                </strong>
+            </td>
+            <td class="sensitive-col">{{ product.purchase_price|currency }}</td>
+            <td>{{ product.selling_price|currency }}</td>
+            <td>{{ product.sales_revenue|currency }}</td>
+            <td class="sensitive-col">
+                <span class="{% if product.profit > 0 %}text-success{% elif product.profit < 0 %}text-danger{% else %}text-muted{% endif %} fw-bold">
+                    {{ product.profit|currency }}
+                </span>
+            </td>
+            <td>
+                <span class="badge {% if product.sold_percentage >= 90 %}badge-success{% elif product.sold_percentage >= 50 %}badge-info{% elif product.sold_percentage > 0 %}badge-warning{% else %}badge-secondary{% endif %}">
+                    {{ product.sold_percentage|floatformat:1 }}%
+                </span>
+            </td>
+            <td>
+                <span class="status-badge {% if product.remaining_quantity <= 0 and product.sales_quantity > 0 %}status-active{% elif product.remaining_quantity <= 0 %}status-inactive{% elif product.sold_percentage >= 50 %}status-active{% elif product.sales_quantity == 0 %}status-danger{% else %}status-warning{% endif %}">
+                    {% if product.sales_quantity == 0 and product.remaining_quantity > 0 %}
+                        No Sales
+                    {% elif product.remaining_quantity <= 0 and product.sales_quantity > 0 %}
+                        Sold Out!
+                    {% elif product.remaining_quantity <= 0 %}
+                        No Stock
+                    {% elif product.remaining_quantity <= 5 %}
+                        Low Stock
+                    {% elif product.sold_percentage >= 50 %}
+                        Selling Well
+                    {% else %}
+                        Slow Moving
+                    {% endif %}
+                </span>
+            </td>
+            <td class="text-right">
+                <div class="action-buttons">
+                    <a href="{% url 'inventory_variant:details' product.variant__id %}"
+                       class="btn-action btn-view"
+                       title="View Product Details">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="16" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-boxes"></i>
+                <h4>No Products Found</h4>
+                <p>No products match your search or filter criteria for this supplier.</p>
+            </div>
+        </td>
+    </tr>
+{% endif %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Delete User - {{ user.full_name }}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Delete User</h2>
+        <div class="page-actions">
+            <a href="{% url 'user:detail' user.id %}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i>
+                Back to User
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'user:detail' user.id %}" class="breadcrumb-item">{{ user.full_name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Delete</span>
+    </nav>
+    <!-- Delete Confirmation -->
+    <div class="delete-container">
+        <div class="delete-warning">
+            <div class="warning-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Are you sure you want to delete this user?</h3>
+            <p class="warning-text">This action cannot be undone. The user will be permanently removed from the system.</p>
+        </div>
+        <!-- User Information -->
+        <div class="user-info">
+            <h4>User Details:</h4>
+            <div class="info-grid">
+                <div class="info-row">
+                    <span class="info-label">Name:</span>
+                    <span class="info-value">{{ user.full_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ user.phone_number }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ user.email|default:"Not provided" }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Groups:</span>
+                    <span class="info-value">
+                        <span class="badge badge-primary">{{ user.groups.all|join:", "|default:"User" }}</span>
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">
+                        {% if user.is_active %}
+                            <span class="badge text-success">Active</span>
+                        {% else %}
+                            <span class="badge text-danger">Inactive</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Joined:</span>
+                    <span class="info-value">{{ user.date_joined|date:"F d, Y" }}</span>
+                </div>
+            </div>
+        </div>
+        <!-- Important Notes -->
+        <div class="important-notes">
+            <h4>Important Notes:</h4>
+            <ul>
+                <li>This action will permanently delete the user account</li>
+                <li>All user data will be lost</li>
+                <li>If this user has created any records, those will remain but without user attribution</li>
+                <li>Consider deactivating the user instead if you want to preserve data</li>
+            </ul>
+        </div>
+        <!-- Delete Actions -->
+        <div class="delete-actions">
+            <form method="post" class="delete-form">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i>
+                    Delete User Permanently
+                </button>
+            </form>
+            <a href="{% url 'user:detail' user.id %}" class="btn btn-outline">
+                <i class="fas fa-times"></i>
+                Cancel
+            </a>
+        </div>
+        <!-- Alternative Actions -->
+        <div class="alternative-actions">
+            <h4>Alternative Actions:</h4>
+            <div class="action-buttons">
+                {% if user.is_active %}
+                    <form method="post"
+                          action="{% url 'user:change_status' user.id %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-user-slash"></i>
+                            Deactivate Instead
+                        </button>
+                    </form>
+                {% else %}
+                    <form method="post"
+                          action="{% url 'user:change_status' user.id %}"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-user-check"></i>
+                            Activate Instead
+                        </button>
+                    </form>
+                {% endif %}
+                <a href="{% url 'user:edit' user.id %}" class="btn btn-outline">
+                    <i class="fas fa-edit"></i>
+                    Edit User
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

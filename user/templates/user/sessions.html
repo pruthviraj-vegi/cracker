@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Active Sessions
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            Active Sessions
+            {% if active_count is not None %}({{ active_count }}){% endif %}
+        </h2>
+        <div class="page-actions">
+            <a href="{% url 'user:home' %}" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </a>
+            <a href="{% url 'user:sessions' %}" class="btn btn-primary">
+                <i class="fas fa-sync"></i>
+                Refresh
+            </a>
+            {% if request.user.is_staff %}
+                <form method="post" action="{% url 'user:invalidate_all_sessions' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-slash"></i>
+                        Close all
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Active Sessions</span>
+    </nav>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th class="mobile-hide">Username</th>
+                    <th class="mobile-hide">Last login</th>
+                    <th class="mobile-hide">Session</th>
+                    <th class="mobile-hide">IP</th>
+                    <th class="mobile-hide">Device</th>
+                    <th>Last activity</th>
+                    <th class="mobile-hide">Expires</th>
+                    <th>Current</th>
+                    {% if request.user.is_staff %}<th class="text-right">Actions</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sessions %}
+                    <tr>
+                        <td>{{ s.user.full_name|default:s.user.get_username }}</td>
+                        <td class="mobile-hide">{{ s.user.get_username }}</td>
+                        <td class="mobile-hide">{{ s.last_login|date:"Y-m-d H:i:s" }}</td>
+                        <td class="mobile-hide">
+                            <code>{{ s.session_key|slice:":8" }}…</code>
+                        </td>
+                        <td class="mobile-hide">{{ s.ip_address|default:"-" }}</td>
+                        <td class="mobile-hide">
+                            {% if s.user_agent %}
+                                <span title="{{ s.user_agent }}">{{ s.user_agent|truncatechars:32 }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.last_activity %}
+                                {{ s.last_activity|to_datetime|date:"Y-m-d H:i:s" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="mobile-hide">
+                            {% if s.last_activity %}
+                                {{ s.last_activity|expiry|date:"Y-m-d H:i:s" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.is_current %}
+                                <span class="badge text-success">
+                                    <i class="fas fa-check-circle"></i>
+                                    This session
+                                </span>
+                            {% else %}
+                                <span class="badge text-muted">Other</span>
+                            {% endif %}
+                        </td>
+                        {% if request.user.is_staff %}
+                            <td class="text-right">
+                                <form method="post"
+                                      action="{% url 'user:invalidate_session' s.session_key %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Close</button>
+                                </form>
+                            </td>
+                        {% endif %}
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center">No active sessions</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}

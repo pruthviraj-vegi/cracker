@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {% if salary %}
+        Edit Salary
+    {% else %}
+        Create Salary
+    {% endif %}
+    - {{ user.full_name }}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            {% if salary %}
+                Edit Salary
+            {% else %}
+                Create Salary
+            {% endif %}
+        </h2>
+        <div class="page-actions">
+            <a href="{% url 'user:detail' user.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Details
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'user:detail' user.id %}" class="breadcrumb-item">{{ user.full_name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">
+            {% if salary %}
+                Edit Salary
+            {% else %}
+                Create Salary
+            {% endif %}
+        </span>
+    </nav>
+    <!-- Salary Form -->
+    <div class="form-container">
+        <div class="form-card">
+            <form method="post" class="details-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <!-- Salary Details Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-money-bill-wave"></i> Salary Information</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Amount Field -->
+                            <div class="form-group {% if form.amount.errors %}has-error{% endif %}">
+                                <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+                                {{ form.amount }}
+                                <small class="form-help">
+                                    {% if form.amount.errors %}
+                                        {% for error in form.amount.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="form-help-text">
+                                        {% if form.amount.help_text %}
+                                            {{ form.amount.help_text }}
+                                        {% else %}
+                                            Enter the salary amount
+                                        {% endif %}
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Commission Field -->
+                            <div class="form-group {% if form.commission.errors %}has-error{% endif %}">
+                                <label for="{{ form.commission.id_for_label }}" class="form-label">{{ form.commission.label }}</label>
+                                <div class="checkbox-group">
+                                    {{ form.commission }}
+                                    <label for="{{ form.commission.id_for_label }}" class="checkbox-label">Commission Eligible</label>
+                                </div>
+                                <small class="form-help">
+                                    {% if form.commission.errors %}
+                                        {% for error in form.commission.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="form-help-text">
+                                        {% if form.commission.help_text %}
+                                            {{ form.commission.help_text }}
+                                        {% else %}
+                                            Check if this salary includes commission eligibility
+                                        {% endif %}
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- Effective From Field -->
+                            <div class="form-group {% if form.effective_from.errors %}has-error{% endif %}">
+                                <label for="{{ form.effective_from.id_for_label }}" class="form-label">{{ form.effective_from.label }}</label>
+                                {{ form.effective_from }}
+                                <small class="form-help">
+                                    {% if form.effective_from.errors %}
+                                        {% for error in form.effective_from.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="form-help-text">
+                                        {% if form.effective_from.help_text %}
+                                            {{ form.effective_from.help_text }}
+                                        {% else %}
+                                            Date when this salary becomes effective
+                                        {% endif %}
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <!-- Effective To Field -->
+                            <div class="form-group {% if form.effective_to.errors %}has-error{% endif %}">
+                                <label for="{{ form.effective_to.id_for_label }}" class="form-label">{{ form.effective_to.label }}</label>
+                                {{ form.effective_to }}
+                                <small class="form-help">
+                                    {% if form.effective_to.errors %}
+                                        {% for error in form.effective_to.errors %}
+                                            <span class="form-error-inline">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <span class="form-help-text">
+                                        {% if form.effective_to.help_text %}
+                                            {{ form.effective_to.help_text }}
+                                        {% else %}
+                                            Leave blank to keep this as the current salary. Set a date to end this salary period.
+                                        {% endif %}
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            {% if salary %}
+                                Update Salary
+                            {% else %}
+                                Create Salary
+                            {% endif %}
+                        </button>
+                        <div class="cart-options-row">
+                          <a class="cart-option-btn text-danger" href="{% url 'user:detail' user.id %}" title="Cancel">
+                            <i class="fas fa-times"></i>
+                          </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!-- Help Text -->
+            <div class="help-section mt-4 pt-3 border-top">
+                <h5 class="text-muted mb-2">Notes:</h5>
+                <ul class="text-muted mb-0 small ps-4">
+                    <li>Amount and Effective From date are required</li>
+                    <li>If Effective To is left blank, this will be the current active salary</li>
+                    <li>Creating a new salary with an Effective From date will automatically end any existing current salary</li>
+                    <li>Commission eligibility determines if the user can receive commission on this salary</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

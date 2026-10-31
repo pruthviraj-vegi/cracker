@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}
+    {{ page_title|default:"Report Configuration" }}
+{% endblock title %}
+
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">{{ page_title|default:"Report Configuration" }}</h2>
+        <div class="page-actions">
+            <a href="{% url 'setting:report_config_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'setting:report_config_list' %}" class="breadcrumb-item">Report Configurations</a>
+        <span class="breadcrumb-separator">/</span>
+        {% if config %}
+            <a href="#" class="breadcrumb-item">{{ config.get_report_type_display|default:"Configuration" }}</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Edit</span>
+        {% else %}
+            <span class="breadcrumb-active">Create New</span>
+        {% endif %}
+    </nav>
+
+    <!-- Report Configuration Form -->
+    <div class="form-container">
+        <div class="form-card">
+            <form method="post" class="details-form" novalidate autocomplete="off">
+                {% csrf_token %}
+                
+                <!-- Form Errors -->
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Basic Configuration Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-sliders-h"></i> Basic Configuration</h5>
+                    
+                    <!-- Report Type, Paper Size, Currency Row -->
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.report_type.errors %}has-error{% endif %}">
+                                <label for="{{ form.report_type.id_for_label }}" class="form-label">{{ form.report_type.label }}</label>
+                                {{ form.report_type }}
+                                <small class="form-help"><span class="form-help-text">{{ form.report_type.help_text }}</span></small>
+                                {% if form.report_type.errors %}
+                                    <div class="field-errors">
+                                        {% for error in form.report_type.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.paper_size.errors %}has-error{% endif %}">
+                                <label for="{{ form.paper_size.id_for_label }}" class="form-label">{{ form.paper_size.label }}</label>
+                                {{ form.paper_size }}
+                                <small class="form-help"><span class="form-help-text">{{ form.paper_size.help_text }}</span></small>
+                                {% if form.paper_size.errors %}
+                                    <div class="field-errors">
+                                        {% for error in form.paper_size.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.currency.errors %}has-error{% endif %}">
+                                <label for="{{ form.currency.id_for_label }}" class="form-label">{{ form.currency.label }}</label>
+                                {{ form.currency }}
+                                <small class="form-help"><span class="form-help-text">{{ form.currency.help_text }}</span></small>
+                                {% if form.currency.errors %}
+                                    <div class="field-errors">
+                                        {% for error in form.currency.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                    </div>
+
+                    <!-- Direct Thermal Network Printer Row -->
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.is_direct_print_enabled.errors %}has-error{% endif %}">
+                                <label for="{{ form.is_direct_print_enabled.id_for_label }}" class="form-label">
+                                    Direct Network Print
+                                </label>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                                    {{ form.is_direct_print_enabled }}
+                                    <span>Enable Socket Print</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.printer_ip.errors %}has-error{% endif %}">
+                                <label for="{{ form.printer_ip.id_for_label }}" class="form-label">Printer IP Address</label>
+                                {{ form.printer_ip }}
+                                <small class="form-help"><span class="form-help-text">e.g. 192.168.1.192</span></small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group {% if form.printer_port.errors %}has-error{% endif %}">
+                                <label for="{{ form.printer_port.id_for_label }}" class="form-label">Printer Port</label>
+                                {{ form.printer_port }}
+                                <small class="form-help"><span class="form-help-text">Default: 9100</span></small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Settings Row -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.is_default.errors %}has-error{% endif %}">
+                                <div class="checkbox-group">
+                                    {{ form.is_default }}
+                                    <label for="{{ form.is_default.id_for_label }}" class="checkbox-label">{{ form.is_default.label }}</label>
+                                </div>
+                                <small class="form-help"><span class="form-help-text">{{ form.is_default.help_text }}</span></small>
+                                {% if form.is_default.errors %}
+                                    <div class="field-errors">
+                                        {% for error in form.is_default.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group {% if form.is_active.errors %}has-error{% endif %}">
+                                <div class="checkbox-group">
+                                    {{ form.is_active }}
+                                    <label for="{{ form.is_active.id_for_label }}" class="checkbox-label">{{ form.is_active.label }}</label>
+                                </div>
+                                <small class="form-help"><span class="form-help-text">Enable or disable this configuration</span></small>
+                                {% if form.is_active.errors %}
+                                    <div class="field-errors">
+                                        {% for error in form.is_active.errors %}
+                                            <div class="error-message">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                                {{ error }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Header Settings Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-heading"></i> Header Settings</h5>
+
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            {{ form.show_logo }}
+                            <label for="{{ form.show_logo.id_for_label }}" class="checkbox-label">{{ form.show_logo.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_shop_name }}
+                            <label for="{{ form.show_shop_name.id_for_label }}" class="checkbox-label">{{ form.show_shop_name.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_address }}
+                            <label for="{{ form.show_address.id_for_label }}" class="checkbox-label">{{ form.show_address.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_contact }}
+                            <label for="{{ form.show_contact.id_for_label }}" class="checkbox-label">{{ form.show_contact.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_gst }}
+                            <label for="{{ form.show_gst.id_for_label }}" class="checkbox-label">{{ form.show_gst.label }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice Content Settings Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-file-alt"></i> Invoice Content Settings</h5>
+
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            {{ form.show_invoice_number }}
+                            <label for="{{ form.show_invoice_number.id_for_label }}" class="checkbox-label">{{ form.show_invoice_number.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_date }}
+                            <label for="{{ form.show_date.id_for_label }}" class="checkbox-label">{{ form.show_date.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_due_date }}
+                            <label for="{{ form.show_due_date.id_for_label }}" class="checkbox-label">{{ form.show_due_date.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_payment_method }}
+                            <label for="{{ form.show_payment_method.id_for_label }}" class="checkbox-label">{{ form.show_payment_method.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_customer_details }}
+                            <label for="{{ form.show_customer_details.id_for_label }}" class="checkbox-label">{{ form.show_customer_details.label }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Item Details Settings Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-list-ul"></i> Item Details Settings</h5>
+
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            {{ form.show_item_description }}
+                            <label for="{{ form.show_item_description.id_for_label }}" class="checkbox-label">{{ form.show_item_description.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_quantity }}
+                            <label for="{{ form.show_quantity.id_for_label }}" class="checkbox-label">{{ form.show_quantity.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_unit_price }}
+                            <label for="{{ form.show_unit_price.id_for_label }}" class="checkbox-label">{{ form.show_unit_price.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_discount }}
+                            <label for="{{ form.show_discount.id_for_label }}" class="checkbox-label">{{ form.show_discount.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_tax_breakdown }}
+                            <label for="{{ form.show_tax_breakdown.id_for_label }}" class="checkbox-label">{{ form.show_tax_breakdown.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_total }}
+                            <label for="{{ form.show_total.id_for_label }}" class="checkbox-label">{{ form.show_total.label }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Settings Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-shoe-prints"></i> Footer Settings</h5>
+
+                    <div class="checkbox-grid">
+                        <div class="checkbox-item">
+                            {{ form.show_terms_conditions }}
+                            <label for="{{ form.show_terms_conditions.id_for_label }}" class="checkbox-label">{{ form.show_terms_conditions.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_qr_code }}
+                            <label for="{{ form.show_qr_code.id_for_label }}" class="checkbox-label">{{ form.show_qr_code.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_thank_you }}
+                            <label for="{{ form.show_thank_you.id_for_label }}" class="checkbox-label">{{ form.show_thank_you.label }}</label>
+                        </div>
+                        <div class="checkbox-item">
+                            {{ form.show_signature }}
+                            <label for="{{ form.show_signature.id_for_label }}" class="checkbox-label">{{ form.show_signature.label }}</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Text Section -->
+                <div class="form-section">
+                    <h5 class="section-title"><i class="fas fa-quote-right"></i> Custom Text</h5>
+                    
+                    <!-- Terms & Conditions Field -->
+                    <div class="form-group {% if form.terms_conditions.errors %}has-error{% endif %}">
+                        <label for="{{ form.terms_conditions.id_for_label }}" class="form-label">{{ form.terms_conditions.label }}</label>
+                        {{ form.terms_conditions }}
+                        <small class="form-help"><span class="form-help-text">{{ form.terms_conditions.help_text }}</span></small>
+                        {% if form.terms_conditions.errors %}
+                            <div class="field-errors">
+                                {% for error in form.terms_conditions.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Thank You Message Field -->
+                    <div class="form-group {% if form.thank_you_message.errors %}has-error{% endif %}">
+                        <label for="{{ form.thank_you_message.id_for_label }}" class="form-label">{{ form.thank_you_message.label }}</label>
+                        {{ form.thank_you_message }}
+                        <small class="form-help"><span class="form-help-text">{{ form.thank_you_message.help_text }}</span></small>
+                        {% if form.thank_you_message.errors %}
+                            <div class="field-errors">
+                                {% for error in form.thank_you_message.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Footer Note Field -->
+                    <div class="form-group {% if form.footer_note.errors %}has-error{% endif %}">
+                        <label for="{{ form.footer_note.id_for_label }}" class="form-label">{{ form.footer_note.label }}</label>
+                        {{ form.footer_note }}
+                        {% if form.footer_note.help_text %}<small class="form-help"><span class="form-help-text">{{ form.footer_note.help_text }}</span></small>{% endif %}
+                        {% if form.footer_note.errors %}
+                            <div class="field-errors">
+                                {% for error in form.footer_note.errors %}
+                                    <div class="error-message">
+                                        <i class="fas fa-exclamation-circle"></i>
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        {% if config %}
+                            Update Configuration
+                        {% else %}
+                            Create Configuration
+                        {% endif %}
+                    </button>
+                    <div class="cart-options-row">
+                        {% if config %}
+                            <a href="{% url 'setting:report_config_detail' config.id %}" class="cart-option-btn" title="View Configuration">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'setting:report_config_list' %}" class="cart-option-btn text-danger" title="Cancel">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Simple form validation and enhancement
+    const form = document.querySelector('.details-form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Add loading state to submit button
+    form.addEventListener('submit', function() {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        submitBtn.disabled = true;
+    });
+    
+    // Toggle visibility of related fields
+    const showTermsCheckbox = document.getElementById('{{ form.show_terms_conditions.id_for_label }}');
+    const termsTextarea = document.getElementById('{{ form.terms_conditions.id_for_label }}');
+    
+    const showThankYouCheckbox = document.getElementById('{{ form.show_thank_you.id_for_label }}');
+    const thankYouTextarea = document.getElementById('{{ form.thank_you_message.id_for_label }}');
+    
+    function toggleTermsField() {
+        if (showTermsCheckbox && termsTextarea) {
+            termsTextarea.closest('.form-group').style.display = 
+                showTermsCheckbox.checked ? 'block' : 'none';
+        }
+    }
+    
+    function toggleThankYouField() {
+        if (showThankYouCheckbox && thankYouTextarea) {
+            thankYouTextarea.closest('.form-group').style.display = 
+                showThankYouCheckbox.checked ? 'block' : 'none';
+        }
+    }
+    
+    if (showTermsCheckbox) {
+        showTermsCheckbox.addEventListener('change', toggleTermsField);
+        toggleTermsField(); // Initial call
+    }
+    
+    if (showThankYouCheckbox) {
+        showThankYouCheckbox.addEventListener('change', toggleThankYouField);
+        toggleThankYouField(); // Initial call
+    }
+});
+</script>
+{% endblock extra_js %}

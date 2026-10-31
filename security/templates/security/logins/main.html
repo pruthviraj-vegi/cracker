@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Login Activity
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h2 class="page-title">Login Activity</h2>
+        <div class="page-actions">
+            <a href="{% url 'user:home' %}" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </a>
+        </div>
+    </div>
+    <div class="search-filter-section">
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'user:home' %}" class="breadcrumb-item">Users</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Login Activity</span>
+        </nav>
+        <form method="#"
+              class="search-filter-form"
+              id="searchForm"
+              autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search customers by name, phone, email, or address..."
+                       value=""
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <div class="table-container">
+        <table class="data-table" id="data_table" data-sort="">
+            <thead>
+                <!-- Desktop Header -->
+                <tr class="mobile-hide">
+                    <th class="sortable" data-sort="occurred_at">When</th>
+                    <th class="sortable" data-sort="user">User</th>
+                    <th class="sortable" data-sort="event_type">Event</th>
+                    <th class="sortable" data-sort="ip_address">IP</th>
+                    <th class="sortable" data-sort="user_agent">User Agent</th>
+                    <th>Session</th>
+                </tr>
+                <!-- Mobile Header (<768px) -->
+                <tr class="mobile-table-row">
+                    <th class="sortable" data-sort="event_type">Event & User</th>
+                    <th>Session & User Agent</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                 <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center loading-cell">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading events...
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        urls = {
+            fetch: '{% url "security:fetch_logins" %}',
+        }
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table AJAX with sorting enabled - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading events...',
+            });
+        });
+    </script>
+{% endblock extra_js %}

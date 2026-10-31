@@ -1,0 +1,712 @@
+<!-- Media Gallery Section for Variant Details (Single Polished View) -->
+<div class="media-gallery-section" id="mediaGallerySection">
+   <!-- Header -->
+   <div class="media-gallery-header">
+      <h3 class="media-gallery-title">
+         <i class="fas fa-camera-retro"></i>
+         Media Gallery
+         <span class="media-count-badge" id="mediaCount">{{ media_files|length }}</span>
+      </h3>
+      {% if perms.inventory.change_productvariant %}
+         <div class="media-gallery-actions">
+            <label for="mediaFileInput" class="btn btn-primary btn-sm m-0">
+               <i class="fas fa-cloud-upload-alt"></i> Upload Media
+            </label>
+            <input type="file" id="mediaFileInput" multiple
+                   accept="image/*,video/mp4,video/webm,video/quicktime"
+                   class="media-file-input" />
+         </div>
+      {% endif %}
+   </div>
+
+   <!-- Drag & Drop Full Overlay -->
+   <div id="mediaDropOverlay" class="media-drop-overlay">
+      <i class="fas fa-cloud-upload-alt"></i>
+      <p>Drop photos or videos to upload</p>
+   </div>
+
+   <!-- Single Unified Responsive Media Grid -->
+   <div class="variant-media-grid" id="mediaGrid">
+      {% for media in media_files %}
+         <div class="variant-media-card {% if media.is_featured %}is-featured{% endif %}"
+              data-id="{{ media.id }}"
+              data-original="{{ media.original_url }}"
+              data-type="{{ media.media_type }}"
+              data-featured="{% if media.is_featured %}true{% else %}false{% endif %}">
+
+            <!-- Featured / Cover Badge -->
+            <span class="media-badge-featured">
+               <i class="fas fa-star"></i> Featured
+            </span>
+
+            <!-- Media Thumbnail or Video Poster -->
+            {% if media.is_image %}
+               <img src="{{ media.gallery_url }}"
+                    alt="{{ media.alt_text|default:media.variant }}"
+                    loading="lazy"
+                    class="variant-media-thumb"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+               <div class="variant-media-fallback" style="display: none;">
+                  <i class="fas fa-shirt fallback-icon"></i>
+                  <span class="fallback-text">Photo Not Available</span>
+               </div>
+            {% else %}
+               <div class="video-poster-box">
+                  <i class="fas fa-film"></i>
+               </div>
+               <div class="media-badge-video">
+                  <i class="fas fa-play"></i>
+               </div>
+            {% endif %}
+
+            <!-- Action Buttons (Star, Delete) -->
+            {% if perms.inventory.change_productvariant %}
+               <div class="media-card-actions">
+                  <button type="button"
+                          class="media-action-btn media-action-star {% if media.is_featured %}active{% endif %}"
+                          title="{% if media.is_featured %}Remove featured status{% else %}Set as featured cover{% endif %}"
+                          data-url="{% url 'inventory_variant:media_set_featured' media.id %}">
+                     <i class="fas fa-star"></i>
+                  </button>
+                  <button type="button"
+                          class="media-action-btn media-action-delete"
+                          title="Delete media"
+                          data-url="{% url 'inventory_variant:media_delete' media.id %}">
+                     <i class="fas fa-trash"></i>
+                  </button>
+               </div>
+            {% endif %}
+
+            <!-- Footer Meta -->
+            <div class="media-card-footer">
+               <span>{{ media.file_size_display }}</span>
+            </div>
+         </div>
+      {% empty %}
+         <!-- Default Placeholder Card (Like Media Gallery) -->
+         <div class="variant-media-card default-placeholder-card" id="mediaDefaultPlaceholder">
+            <span class="media-badge-placeholder">
+               <i class="fas fa-shirt"></i> Default
+            </span>
+            <div class="variant-media-fallback">
+               <i class="fas fa-shirt fallback-icon"></i>
+               <span class="fallback-text">No Image Uploaded</span>
+            </div>
+            {% if perms.inventory.change_productvariant %}
+               <label for="mediaFileInput" class="media-card-upload-overlay" title="Upload Image for this Variant">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Upload Photo</span>
+               </label>
+            {% endif %}
+            <div class="media-card-footer">
+               <span>Default</span>
+            </div>
+         </div>
+      {% endfor %}
+   </div>
+</div>
+
+<!-- Lightbox Modal -->
+<div id="mediaLightbox" class="media-lightbox">
+   <button type="button" class="media-lightbox-close" id="lightboxClose" title="Close (Esc)">&times;</button>
+
+   <a href="#" id="lightboxDownload" class="media-lightbox-download" download target="_blank" rel="noopener">
+      <i class="fas fa-download"></i> Download Original
+   </a>
+
+   <button type="button" class="media-lightbox-nav media-lightbox-prev" id="lightboxPrev" title="Previous (←)">
+      <i class="fas fa-chevron-left"></i>
+   </button>
+   <button type="button" class="media-lightbox-nav media-lightbox-next" id="lightboxNext" title="Next (→)">
+      <i class="fas fa-chevron-right"></i>
+   </button>
+
+   <div class="media-lightbox-content" id="lightboxContent"></div>
+   <div class="media-lightbox-counter" id="lightboxCounter"></div>
+</div>
+
+<script>
+(function() {
+   const uploadUrl = '{% url "inventory_variant:media_upload" variant.id %}';
+   const csrfToken = '{{ csrf_token }}';
+   const gallerySection = document.getElementById('mediaGallerySection');
+   const grid = document.getElementById('mediaGrid');
+   const dropOverlay = document.getElementById('mediaDropOverlay');
+   const fileInput = document.getElementById('mediaFileInput');
+   const countEl = document.getElementById('mediaCount');
+   const lightbox = document.getElementById('mediaLightbox');
+   const lightboxContent = document.getElementById('lightboxContent');
+   const lightboxDownload = document.getElementById('lightboxDownload');
+   const lightboxCounter = document.getElementById('lightboxCounter');
+   const lightboxPrev = document.getElementById('lightboxPrev');
+   const lightboxNext = document.getElementById('lightboxNext');
+   const lightboxClose = document.getElementById('lightboxClose');
+
+   const ALLOWED_IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+   const ALLOWED_VIDEO_EXT = ['mp4', 'webm', 'mov'];
+   const MAX_IMAGE_SIZE = 25 * 1024 * 1024;  // 25 MB
+   const MAX_VIDEO_SIZE = 50 * 1024 * 1024;  // 50 MB
+
+   let allMediaCards = [];
+   let currentMediaIndex = 0;
+
+   // ── File Validation ──
+   function validateFile(file) {
+      const name = file.name || '';
+      const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+      const allAllowed = ALLOWED_IMAGE_EXT.concat(ALLOWED_VIDEO_EXT);
+
+      if (!allAllowed.includes(ext)) {
+         return 'Unsupported: .' + ext;
+      }
+
+      const isVideo = ALLOWED_VIDEO_EXT.includes(ext);
+      const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
+      const maxLabel = isVideo ? '50 MB' : '25 MB';
+
+      if (file.size > maxSize) {
+         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+         return 'Too large: ' + sizeMB + ' MB (max ' + maxLabel + ')';
+      }
+      return null;
+   }
+
+   // ── Empty State Management ──
+   function removeEmptyState() {
+      const placeholderEl = document.getElementById('mediaDefaultPlaceholder');
+      if (placeholderEl) placeholderEl.remove();
+   }
+
+   function checkEmptyState() {
+      const remaining = grid.querySelectorAll('.variant-media-card:not(.uploading):not(.default-placeholder-card)');
+      if (remaining.length === 0 && !grid.querySelector('#mediaDefaultPlaceholder')) {
+         grid.innerHTML = `
+            <div class="variant-media-card default-placeholder-card" id="mediaDefaultPlaceholder">
+               <span class="media-badge-placeholder">
+                  <i class="fas fa-shirt"></i> Default
+               </span>
+               <div class="variant-media-fallback">
+                  <i class="fas fa-shirt fallback-icon"></i>
+                  <span class="fallback-text">No Image Uploaded</span>
+               </div>
+               {% if perms.inventory.change_productvariant %}
+               <label for="mediaFileInput" class="media-card-upload-overlay" title="Upload Image for this Variant">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Upload Photo</span>
+               </label>
+               {% endif %}
+               <div class="media-card-footer">
+                  <span>Default</span>
+               </div>
+            </div>
+         `;
+      }
+   }
+
+   // ── Multi-File Upload Queue ──
+   function uploadFiles(fileList) {
+      if (!fileList || !fileList.length) return;
+      removeEmptyState();
+
+      Array.from(fileList).forEach(function(file) {
+         const error = validateFile(file);
+         if (error) {
+            showRejectedCard(file, error);
+         } else {
+            const card = createUploadCard(file);
+            grid.appendChild(card);
+            uploadSingleFile(file, card);
+         }
+      });
+   }
+
+   // ── Instant Rejection Card ──
+   function showRejectedCard(file, errorMsg) {
+      const card = document.createElement('div');
+      card.className = 'variant-media-card uploading';
+      card.style.opacity = '0';
+      grid.appendChild(card);
+
+      requestAnimationFrame(function() {
+         card.style.transition = 'opacity 0.25s ease';
+         card.style.opacity = '1';
+      });
+
+      const isVideo = file.type.startsWith('video/');
+      const fileUrl = URL.createObjectURL(file);
+      const previewHtml = isVideo
+         ? `<video src="${fileUrl}" class="upload-preview-img" muted preload="metadata"></video>`
+         : `<img src="${fileUrl}" alt="Rejected" class="upload-preview-img" />`;
+
+      const safeName = file.name.length > 18 ? file.name.slice(0, 15) + '...' : file.name;
+
+      card.innerHTML = `
+         ${previewHtml}
+         <div class="upload-progress-wrapper">
+            <div class="upload-progress-track">
+               <div class="upload-progress-fill" style="width: 100%; background: var(--danger);"></div>
+            </div>
+            <div class="upload-progress-info">
+               <span class="upload-filename">${safeName}</span>
+               <span style="color: var(--danger); font-weight: 600;">Rejected</span>
+            </div>
+         </div>
+         <div class="upload-status-overlay upload-status-failed show">
+            <i class="fas fa-times-circle"></i>
+            <span>${errorMsg}</span>
+         </div>
+      `;
+
+      setTimeout(function() {
+         card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+         card.style.opacity = '0';
+         card.style.transform = 'scale(0.85)';
+         setTimeout(function() {
+            card.remove();
+            checkEmptyState();
+         }, 400);
+      }, 3500);
+   }
+
+   // ── Create Uploading Progress Card ──
+   function createUploadCard(file) {
+      const card = document.createElement('div');
+      card.className = 'variant-media-card uploading';
+      card.style.opacity = '0';
+      requestAnimationFrame(function() {
+         card.style.transition = 'opacity 0.25s ease';
+         card.style.opacity = '1';
+      });
+
+      const isVideo = file.type.startsWith('video/');
+      const fileUrl = URL.createObjectURL(file);
+      const previewHtml = isVideo
+         ? `<video src="${fileUrl}" class="upload-preview-img" muted preload="metadata"></video><div class="media-badge-video"><i class="fas fa-play"></i></div>`
+         : `<img src="${fileUrl}" alt="Uploading..." class="upload-preview-img" />`;
+
+      const safeName = file.name.length > 18 ? file.name.slice(0, 15) + '...' : file.name;
+
+      card.innerHTML = `
+         ${previewHtml}
+         <div class="upload-progress-wrapper">
+            <div class="upload-progress-track">
+               <div class="upload-progress-fill" data-bar></div>
+            </div>
+            <div class="upload-progress-info">
+               <span class="upload-filename">${safeName}</span>
+               <span data-percent>0%</span>
+            </div>
+         </div>
+         <div class="upload-status-overlay upload-status-success" data-success>
+            <i class="fas fa-check-circle"></i>
+            <span>Uploaded</span>
+         </div>
+         <div class="upload-status-overlay upload-status-failed" data-failed>
+            <i class="fas fa-times-circle"></i>
+            <span>Failed</span>
+         </div>
+      `;
+      return card;
+   }
+
+   // ── Single File Upload XHR ──
+   function uploadSingleFile(file, card) {
+      const bar = card.querySelector('[data-bar]');
+      const pctText = card.querySelector('[data-percent]');
+      const successOverlay = card.querySelector('[data-success]');
+      const failedOverlay = card.querySelector('[data-failed]');
+      const preview = card.querySelector('.upload-preview-img');
+
+      const xhr = new XMLHttpRequest();
+      const formData = new FormData();
+      formData.append('file', file);
+
+      xhr.upload.addEventListener('progress', function(e) {
+         if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            if (bar) bar.style.width = pct + '%';
+            if (pctText) pctText.textContent = pct + '%';
+         }
+      });
+
+      xhr.addEventListener('load', function() {
+         if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+               const data = JSON.parse(xhr.responseText);
+               if (data.uploaded && data.uploaded.length > 0) {
+                  if (bar) {
+                     bar.style.width = '100%';
+                     bar.style.background = 'var(--success)';
+                  }
+                  if (pctText) pctText.textContent = '100%';
+                  if (preview) preview.style.filter = 'brightness(0.6)';
+                  if (successOverlay) successOverlay.classList.add('show');
+
+                  if (data.total_media !== undefined && countEl) {
+                     countEl.textContent = data.total_media;
+                  }
+
+                  setTimeout(function() {
+                     replaceWithRealCard(card, data.uploaded[0]);
+                  }, 900);
+               } else {
+                  handleUploadError(card, failedOverlay, preview, data.errors);
+               }
+            } catch (err) {
+               handleUploadError(card, failedOverlay, preview, null);
+            }
+         } else {
+            handleUploadError(card, failedOverlay, preview, null);
+         }
+      });
+
+      xhr.addEventListener('error', function() {
+         handleUploadError(card, failedOverlay, preview, null);
+      });
+
+      xhr.open('POST', uploadUrl);
+      xhr.setRequestHeader('X-CSRFToken', csrfToken);
+      xhr.send(formData);
+   }
+
+   function handleUploadError(card, failedOverlay, preview, errors) {
+      const bar = card.querySelector('[data-bar]');
+      if (bar) bar.style.background = 'var(--danger)';
+      if (preview) preview.style.filter = 'brightness(0.3) saturate(0.5)';
+      if (failedOverlay) {
+         failedOverlay.classList.add('show');
+         if (errors && errors.length > 0) {
+            const span = failedOverlay.querySelector('span');
+            if (span) span.textContent = errors[0].errors ? errors[0].errors[0] : 'Failed';
+         }
+      }
+
+      setTimeout(function() {
+         card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+         card.style.opacity = '0';
+         card.style.transform = 'scale(0.85)';
+         setTimeout(function() {
+            card.remove();
+            checkEmptyState();
+         }, 400);
+      }, 3500);
+   }
+
+   // ── Swap Upload Card with Real Card ──
+   function replaceWithRealCard(oldCard, m) {
+      const card = document.createElement('div');
+      card.className = 'variant-media-card' + (m.is_featured ? ' is-featured' : '');
+      card.dataset.id = m.id;
+      card.dataset.original = m.original_url || m.url;
+      card.dataset.type = m.media_type;
+      card.dataset.featured = m.is_featured ? 'true' : 'false';
+
+      let visualHtml = '';
+      if (m.media_type === 'IMAGE') {
+         visualHtml = `
+            <img src="${m.url}" alt="" loading="lazy" class="variant-media-thumb"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="variant-media-fallback" style="display: none;">
+               <i class="fas fa-shirt fallback-icon"></i>
+               <span class="fallback-text">Photo Not Available</span>
+            </div>
+         `;
+      } else {
+         visualHtml = `
+            <div class="video-poster-box"><i class="fas fa-film"></i></div>
+            <div class="media-badge-video"><i class="fas fa-play"></i></div>
+         `;
+      }
+
+      card.innerHTML = `
+         <span class="media-badge-featured"><i class="fas fa-star"></i> Featured</span>
+         ${visualHtml}
+         <div class="media-card-actions">
+            <button type="button"
+                    class="media-action-btn media-action-star ${m.is_featured ? 'active' : ''}"
+                    title="${m.is_featured ? 'Remove featured status' : 'Set as featured cover'}"
+                    data-url="${m.featured_url || ''}">
+               <i class="fas fa-star"></i>
+            </button>
+            <button type="button"
+                    class="media-action-btn media-action-delete"
+                    title="Delete media"
+                    data-url="${m.delete_url || ''}">
+               <i class="fas fa-trash"></i>
+            </button>
+         </div>
+         <div class="media-card-footer">
+            <span>${m.file_size || ''}</span>
+         </div>
+      `;
+
+      card.style.opacity = '0';
+      card.style.transform = 'scale(0.92)';
+      oldCard.replaceWith(card);
+
+      requestAnimationFrame(function() {
+         card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+         card.style.opacity = '1';
+         card.style.transform = 'scale(1)';
+      });
+
+      bindCardEvents(card);
+   }
+
+   // ── Card Interaction Events ──
+   function bindCardEvents(card) {
+      // Star (Toggle Featured)
+      const starBtn = card.querySelector('.media-action-star');
+      if (starBtn) {
+         starBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            fetch(starBtn.dataset.url, {
+               method: 'POST',
+               headers: {'X-CSRFToken': csrfToken},
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+               if (data.success) {
+                  // Un-feature all other cards in the grid
+                  grid.querySelectorAll('.variant-media-card').forEach(function(c) {
+                     c.classList.remove('is-featured');
+                     c.dataset.featured = 'false';
+                     const b = c.querySelector('.media-action-star');
+                     if (b) {
+                        b.classList.remove('active');
+                        b.title = 'Set as featured cover';
+                     }
+                  });
+
+                  if (data.is_featured) {
+                     card.classList.add('is-featured');
+                     card.dataset.featured = 'true';
+                     starBtn.classList.add('active');
+                     starBtn.title = 'Remove featured status';
+                  }
+               }
+            })
+            .catch(function(err) {
+               console.error('Failed to toggle featured media:', err);
+            });
+         });
+      }
+
+      // Delete
+      const delBtn = card.querySelector('.media-action-delete');
+      if (delBtn) {
+         delBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            if (!confirm('Are you sure you want to delete this media item?')) return;
+
+            fetch(delBtn.dataset.url, {
+               method: 'POST',
+               headers: {'X-CSRFToken': csrfToken},
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+               if (data.success) {
+                  card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                  card.style.opacity = '0';
+                  card.style.transform = 'scale(0.8)';
+                  setTimeout(function() {
+                     card.remove();
+                     if (data.total_media !== undefined && countEl) {
+                        countEl.textContent = data.total_media;
+                     }
+                     checkEmptyState();
+                  }, 300);
+               }
+            })
+            .catch(function(err) {
+               console.error('Failed to delete media:', err);
+            });
+         });
+      }
+
+      // Lightbox click
+      card.addEventListener('click', function(e) {
+         if (e.target.closest('.media-card-actions')) return;
+         openLightboxAt(card);
+      });
+   }
+
+   // ── Lightbox Implementation ──
+   function getAllMediaCards() {
+      return Array.from(grid.querySelectorAll('.variant-media-card:not(.uploading)')).filter(function(c) {
+         return c.dataset.original;
+      });
+   }
+
+   function updateLightboxNav() {
+      allMediaCards = getAllMediaCards();
+      const count = allMediaCards.length;
+
+      if (lightboxPrev) lightboxPrev.style.display = count > 1 ? 'flex' : 'none';
+      if (lightboxNext) lightboxNext.style.display = count > 1 ? 'flex' : 'none';
+
+      if (lightboxCounter) {
+         if (count > 1) {
+            lightboxCounter.textContent = (currentMediaIndex + 1) + ' / ' + count;
+            lightboxCounter.style.display = 'block';
+         } else {
+            lightboxCounter.style.display = 'none';
+         }
+      }
+   }
+
+   function openLightboxAt(card) {
+      allMediaCards = getAllMediaCards();
+      currentMediaIndex = allMediaCards.indexOf(card);
+      if (currentMediaIndex === -1) currentMediaIndex = 0;
+
+      renderLightboxContent();
+      lightbox.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+   }
+
+   function renderLightboxContent() {
+      if (!allMediaCards.length || !allMediaCards[currentMediaIndex]) return;
+      const card = allMediaCards[currentMediaIndex];
+      const originalUrl = card.dataset.original;
+      const mediaType = card.dataset.type;
+
+      if (mediaType === 'IMAGE') {
+         lightboxContent.innerHTML = `
+            <img src="${originalUrl}" alt="Garment Photo"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div class="lightbox-media-fallback" style="display: none;">
+               <i class="fas fa-shirt fallback-icon"></i>
+               <span class="fallback-title">Photo Not Available</span>
+               <span class="fallback-subtitle">The image file could not be loaded</span>
+            </div>
+         `;
+      } else {
+         lightboxContent.innerHTML = `
+            <video src="${originalUrl}" controls autoplay
+                   onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"></video>
+            <div class="lightbox-media-fallback" style="display: none;">
+               <i class="fas fa-film fallback-icon"></i>
+               <span class="fallback-title">Video Not Available</span>
+               <span class="fallback-subtitle">The video file could not be loaded</span>
+            </div>
+         `;
+      }
+
+      if (lightboxDownload) {
+         lightboxDownload.href = originalUrl;
+         lightboxDownload.style.display = 'inline-flex';
+      }
+
+      updateLightboxNav();
+   }
+
+   function navigateLightbox(direction) {
+      if (allMediaCards.length <= 1) return;
+      const currentVid = lightboxContent.querySelector('video');
+      if (currentVid) currentVid.pause();
+
+      currentMediaIndex = (currentMediaIndex + direction + allMediaCards.length) % allMediaCards.length;
+      renderLightboxContent();
+   }
+
+   function closeLightbox() {
+      lightbox.style.display = 'none';
+      document.body.style.overflow = '';
+      const currentVid = lightboxContent.querySelector('video');
+      if (currentVid) currentVid.pause();
+   }
+
+   // ── Event Listeners ──
+   // File input
+   if (fileInput) {
+      fileInput.addEventListener('change', function() {
+         uploadFiles(fileInput.files);
+         fileInput.value = '';
+      });
+   }
+
+   // Drag and drop overlay
+   if (gallerySection && dropOverlay) {
+      let dragCounter = 0;
+
+      gallerySection.addEventListener('dragenter', function(e) {
+         e.preventDefault();
+         dragCounter++;
+         dropOverlay.classList.add('active');
+      });
+
+      gallerySection.addEventListener('dragleave', function(e) {
+         e.preventDefault();
+         dragCounter--;
+         if (dragCounter <= 0) {
+            dragCounter = 0;
+            dropOverlay.classList.remove('active');
+         }
+      });
+
+      gallerySection.addEventListener('dragover', function(e) {
+         e.preventDefault();
+      });
+
+      gallerySection.addEventListener('drop', function(e) {
+         e.preventDefault();
+         dragCounter = 0;
+         dropOverlay.classList.remove('active');
+         if (e.dataTransfer && e.dataTransfer.files) {
+            uploadFiles(e.dataTransfer.files);
+         }
+      });
+   }
+
+   // Lightbox controls
+   if (lightboxPrev) {
+      lightboxPrev.addEventListener('click', function(e) {
+         e.stopPropagation();
+         navigateLightbox(-1);
+      });
+   }
+
+   if (lightboxNext) {
+      lightboxNext.addEventListener('click', function(e) {
+         e.stopPropagation();
+         navigateLightbox(1);
+      });
+   }
+
+   if (lightboxClose) {
+      lightboxClose.addEventListener('click', function(e) {
+         e.stopPropagation();
+         closeLightbox();
+      });
+   }
+
+   if (lightbox) {
+      lightbox.addEventListener('click', function(e) {
+         if (e.target === lightbox) closeLightbox();
+      });
+   }
+
+   document.addEventListener('keydown', function(e) {
+      if (lightbox.style.display !== 'flex') return;
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
+         navigateLightbox(-1);
+      } else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
+         navigateLightbox(1);
+      } else if (e.key === 'Escape') {
+         closeLightbox();
+      }
+   });
+
+   // Bind existing cards on page load (excluding placeholder)
+   grid.querySelectorAll('.variant-media-card:not(.default-placeholder-card)').forEach(bindCardEvents);
+
+   // Click on default placeholder card triggers file upload dialog
+   grid.addEventListener('click', function(e) {
+      const placeholder = e.target.closest('#mediaDefaultPlaceholder');
+      if (placeholder && fileInput) {
+         fileInput.click();
+      }
+   });
+})();
+</script>

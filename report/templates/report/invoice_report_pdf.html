@@ -1,0 +1,292 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Invoice Report - {{ shop_details.shop_name|default:"Report" }}
+{% endblock title %}
+{% block style %}
+    <link rel="stylesheet" href="styles/A4.css" />
+{% endblock style %}
+{% block content %}
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="shop-info">
+                    {% if shop_details %}
+                        {% if shop_details.shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+                        <div class="shop-details">
+                            {% if shop_details.address_line_one %}<p>{{ shop_details.address_line_one }}</p>{% endif %}
+                            {% if shop_details.gst_no %}
+                                <p>
+                                    <strong>GST:</strong> {{ shop_details.gst_no }}
+                                </p>
+                            {% endif %}
+                            {% if shop_details.contact_info %}
+                                <p>
+                                    <strong>Contact:</strong> {{ shop_details.contact_info }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="report-info">
+                    <div class="report-title"
+                         style="bookmark-level: 1;
+                                bookmark-label: 'Invoice Report'">Invoice Report</div>
+                    <div class="report-meta">
+                        <p>
+                            <strong>Generated:</strong> {% now "F d, Y h:i A" %}
+                        </p>
+                        <p>
+                            <strong>Total Records:</strong> {{ summery.count }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Date Period Section -->
+        <div class="date-period-section"
+             style="bookmark-level: 1;
+                    bookmark-label: 'Report Period'">
+            <div class="date-period-content">
+                <span class="date-period-label">Report Period:</span>
+                <span class="date-period-value">{{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</span>
+            </div>
+        </div>
+        <!-- Regular Invoices Table -->
+        <div class="table-container">
+            <div class="table-header"
+                 style="bookmark-level: 1;
+                        bookmark-label: 'Regular Invoices'">Regular Invoices</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sl.</th>
+                        <th>Date</th>
+                        <th>Invoice No.</th>
+                        <th>Customer</th>
+                        <th>Invoice Type</th>
+                        <th>Net Amount</th>
+                        <th>CGST</th>
+                        <th>SGST</th>
+                        <th>IGST</th>
+                        <th>Total GST</th>
+                        <th>Total Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if invoices.data %}
+                        {% for item in invoices.data %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.invoice_date|date:"M d, Y" }}</td>
+                                <td>{{ item.invoice_number }}</td>
+                                <td>{{ item.customer.name|default:"N/A" }}</td>
+                                <td>{{ item.get_gst_type_display|default:"N/A" }}</td>
+                                <td>{{ item.total_tax_value|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.igst_amount|currency }}</td>
+                                <td>{{ item.total_gst_amount|currency }}</td>
+                                <td>{{ item.total_payable|currency }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="5">Total</td>
+                            <td>{{ invoices.total_net|currency }}</td>
+                            <td>{{ invoices.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices.total_gst|currency }}</td>
+                            <td>{{ invoices.total_amount|currency }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="11" class="py-5">
+                                <p class="text-muted">No regular invoices found.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Cancelled Invoices Table -->
+        {% if invoices_cancelled.data %}
+            <div class="table-container">
+                <div class="table-header"
+                     style="bookmark-level: 1;
+                            bookmark-label: 'Cancelled Invoices'">Cancelled Invoices</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sl.</th>
+                            <th>Date</th>
+                            <th>Invoice No.</th>
+                            <th>Customer</th>
+                            <th>Invoice Type</th>
+                            <th>Net Amount</th>
+                            <th>CGST</th>
+                            <th>SGST</th>
+                            <th>IGST</th>
+                            <th>Total GST</th>
+                            <th>Total Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in invoices_cancelled.data %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.invoice_date|date:"M d, Y" }}</td>
+                                <td>{{ item.invoice_number }}</td>
+                                <td>{{ item.customer.name|default:"N/A" }}</td>
+                                <td>{{ item.get_gst_type_display|default:"N/A" }}</td>
+                                <td>{{ item.total_tax_value|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.igst_amount|currency }}</td>
+                                <td>{{ item.total_gst_amount|currency }}</td>
+                                <td>{{ item.total_payable|currency }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="5">Total</td>
+                            <td>{{ invoices_cancelled.total_net|currency }}</td>
+                            <td>{{ invoices_cancelled.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices_cancelled.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices_cancelled.total_gst|currency }}</td>
+                            <td>{{ invoices_cancelled.total_amount|currency }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        <!-- Return Invoices Table -->
+        {% if invoices_return.data %}
+            <div class="table-container">
+                <div class="table-header"
+                     style="bookmark-level: 1;
+                            bookmark-label: 'Return Invoices'">Return Invoices</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Sl.</th>
+                            <th>Date</th>
+                            <th>Invoice No.</th>
+                            <th>Customer</th>
+                            <th>Invoice Type</th>
+                            <th>Net Amount</th>
+                            <th>CGST</th>
+                            <th>SGST</th>
+                            <th>IGST</th>
+                            <th>Total GST</th>
+                            <th>Refund Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in invoices_return.data %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ item.updated_at|date:"M d, Y" }}</td>
+                                <td>{{ item.return_number }}</td>
+                                <td>{{ item.customer.name|default:"N/A" }}</td>
+                                <td>{{ item.invoice.get_gst_type_display|default:"N/A" }}</td>
+                                <td>{{ item.total_tax_value|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.cgst_amount|currency }}</td>
+                                <td>{{ item.igst_amount|currency }}</td>
+                                <td>{{ item.total_gst_amount|currency }}</td>
+                                <td>{{ item.refund_amount|currency }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td colspan="5">Total</td>
+                            <td>{{ invoices_return.total_net|currency }}</td>
+                            <td>{{ invoices_return.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices_return.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices_return.total_gst|currency }}</td>
+                            <td>{{ invoices_return.total_amount|currency }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+        <!-- Summary Section -->
+        <div class="table-container">
+            <div class="table-header"
+                 style="bookmark-level: 1;
+                        bookmark-label: 'Summary'">Summary</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Total Count</th>
+                        <th>Total Net Amount</th>
+                        <th>Total CGST</th>
+                        <th>Total CGST</th>
+                        <th>Total SGST</th>
+                        <th>Total GST</th>
+                        <th>Grand Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if invoices.data %}
+                        <tr>
+                            <td class="text-left">Regular Invoices</td>
+                            <td>{{ invoices.total_count }}</td>
+                            <td>{{ invoices.total_net|currency }}</td>
+                            <td>{{ invoices.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices.total_gst|currency }}</td>
+                            <td>{{ invoices.total_amount|currency }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if invoices_cancelled.data %}
+                        <tr>
+                            <td class="text-left">Cancelled Invoices</td>
+                            <td>{{ invoices_cancelled.total_count }}</td>
+                            <td>{{ invoices_cancelled.total_net|currency }}</td>
+                            <td>{{ invoices_cancelled.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices_cancelled.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices_cancelled.total_gst|currency }}</td>
+                            <td>{{ invoices_cancelled.total_amount|currency }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if invoices_return.data %}
+                        <tr>
+                            <td class="text-left">Return Invoices</td>
+                            <td>{{ invoices_return.total_count }}</td>
+                            <td>{{ invoices_return.total_net|currency }}</td>
+                            <td>{{ invoices_return.total_cgst_amount|currency }}</td>
+                            <td>{{ invoices_return.total_cgst_amount|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ invoices_return.total_gst|currency }}</td>
+                            <td>{{ invoices_return.total_amount|currency }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if summery %}
+                        <tr class="total-row">
+                            <td>Grand Total</td>
+                            <td>{{ summery.count }}</td>
+                            <td>{{ summery.net|currency }}</td>
+                            <td>{{ summery.cgst|currency }}</td>
+                            <td>{{ summery.cgst|currency }}</td>
+                            <td>{{ 0|currency }}</td>
+                            <td>{{ summery.gst|currency }}</td>
+                            <td>{{ summery.amount|currency }}</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <p>This is a computer-generated report. No signature required.</p>
+            <p>Generated on {% now "F d, Y \a\t h:i A" %}</p>
+        </div>
+    </div>
+{% endblock content %}

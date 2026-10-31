@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      {% if customer %}
+        <a href="{% url 'customer:detail' customer.id %}"
+           class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Details
+        </a>
+      {% endif %}
+      <a href="{% url 'customer:home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to List
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'customer:home' %}" class="breadcrumb-item">Customers</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if customer %}
+      <a href="{% url 'customer:detail' customer.id %}"
+         class="breadcrumb-item">{{ customer.name }}</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Customer Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Customer Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-user"></i> Customer Details</h5>
+          <!-- Name Field -->
+          <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              {% for error in form.name.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.name.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.name.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Phone Number Field -->
+          <div class="form-group {% if form.phone_number.errors %}has-error{% endif %}">
+            <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }}</label>
+            {{ form.phone_number }}
+            <small class="form-help {% if form.phone_number.errors %}has-error{% endif %}">
+              {% if form.phone_number.errors %}
+                {% for error in form.phone_number.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Enter exactly 10 digits (e.g., 9876543210)</span>
+            </small>
+          </div>
+          <!-- Email Field -->
+          <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              {% for error in form.email.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.email.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.email.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Address Field -->
+          <div class="form-group {% if form.address.errors %}has-error{% endif %}">
+            <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+            {{ form.address }}
+            {% if form.address.errors %}
+              {% for error in form.address.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.address.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.address.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Referred By Field -->
+          <div class="form-group {% if form.referred_by.errors %}has-error{% endif %}">
+            <label for="{{ form.referred_by.id_for_label }}" class="form-label">{{ form.referred_by.label }}</label>
+            {{ form.referred_by }}
+            <small class="form-help {% if form.referred_by.errors %}has-error{% endif %}">
+              {% if form.referred_by.errors %}
+                {% for error in form.referred_by.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">Optional: type to search and select who referred this customer</span>
+            </small>
+          </div>
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              {% if customer %}
+                Update Customer
+              {% else %}
+                Create Customer
+              {% endif %}
+            </button>
+            <div class="cart-options-row">
+              <a class="cart-option-btn text-danger" href="{% url 'customer:home' %}" title="Cancel">
+                <i class="fas fa-times"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+     $(document).ready(function() {
+      Select2Helper.init('#id_referred_by');
+   });
+  </script>
+{% endblock extra_js %}

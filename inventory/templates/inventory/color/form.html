@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if color %}
+    Edit Color - {{ color.name }}
+  {% else %}
+    Create Color
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <div class="page-header">
+    <h2 class="page-title">
+      {% if color %}
+        Edit Color
+      {% else %}
+        Create New Color
+      {% endif %}
+    </h2>
+    <div class="page-actions">
+      {% if color %}
+        <a href="{% url 'inventory:color_home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Back to List
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:color_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i> Back to Colors
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:color_home' %}" class="breadcrumb-item">Colors</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if color %}
+      <span class="breadcrumb-item">{{ color.name }}</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Color Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post"
+            class="details-form"
+            novalidate
+            autocomplete="off"
+            id="new_color">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i> {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Preview -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-eye"></i> Color Preview</h5>
+          <div class="color-preview-container">
+            <div class="color-preview-box" id="colorPreview">
+              <div class="color-swatch" id="colorSwatch"></div>
+              <div class="color-info">
+                <span class="color-name" id="previewColorName">No color selected</span>
+                <span class="color-hex" id="previewColorHex">#FFFFFF</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Details -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-palette"></i> Color Details</h5>
+          <!-- Name -->
+          <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+            <div class="input-with-suggestions">
+              {{ form.name }}
+              <div class="suggestions-dropdown" id="nameSuggestions"></div>
+            </div>
+            <small class="form-help {% if form.name.errors %}has-error{% endif %}">
+              {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">e.g., Red, Blue, Green...</span>
+            </small>
+          </div>
+          <!-- Hex Code -->
+          <div class="form-group {% if form.hex_code.errors %}has-error{% endif %}">
+            <label for="{{ form.hex_code.id_for_label }}" class="form-label">{{ form.hex_code.label }}</label>
+            <div class="input-with-suggestions">
+              {{ form.hex_code }}
+              <div class="suggestions-dropdown" id="hexSuggestions"></div>
+            </div>
+            <small class="form-help {% if form.hex_code.errors %}has-error{% endif %}">
+              {% if form.hex_code.errors %}
+                {% for error in form.hex_code.errors %}
+                  <span class="form-error-inline">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </span>
+                {% endfor %}
+              {% endif %}
+              <span class="form-help-text">e.g., #FF0000, #00FF00...</span>
+            </small>
+          </div>
+        </div>
+        <!-- Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if color %}
+              Update Color
+            {% else %}
+              Create Color
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:color_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <!-- Load external JS -->
+  <script src="{% static 'js/color_form.js' %}"></script>
+  <script>
+  window.initialColor = {
+    name: "{{ color.name|default:'' }}",
+    hex: "{{ color.hex_code|default:'' }}"
+  };
+  </script>
+{% endblock extra_js %}

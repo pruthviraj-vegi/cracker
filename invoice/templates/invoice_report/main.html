@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  Invoice Report
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">Invoice Report</h2>
+    <div class="page-actions">
+      <!-- Date Filter Dropdown -->
+      {% include "common/_date_filter.html" %}
+      <button type="button" class="btn btn-info ms-2" id="downloadReportBtn">
+        <i class="fas fa-download"></i>
+        Download Report
+      </button>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Invoice Report</span>
+  </nav>
+  <!-- Main Layout -->
+  <div class="col">
+    <!-- Invoice Table -->
+    <div class="col-md-12 d-flex flex-column gap-2 ps-1">
+      <div class="table-section" id="reportSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-file-invoice-dollar"></i> Invoice Report
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="report_table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice Number</th>
+                <th>Customer</th>
+                <th>Invoice Type</th>
+                <th>Net Amount</th>
+                <th class="mobile-hide">CGST</th>
+                <th class="mobile-hide">SGST</th>
+                <th class="mobile-hide">IGST</th>
+                <th class="mobile-hide">Total Gst</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody id="report_table_body">
+              <tr>
+                <td colspan="100" class="text-center p-4">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading transactions...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 d-flex flex-column gap-2 ps-1">
+      <div class="table-section" id="cancled_reportSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-file-invoice-dollar"></i> Cancelled Invoice Report
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="cancled_report_table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice Number</th>
+                <th>Customer</th>
+                <th>Invoice Type</th>
+                <th>Net Amount</th>
+                <th class="mobile-hide">CGST</th>
+                <th class="mobile-hide">SGST</th>
+                <th class="mobile-hide">IGST</th>
+                <th class="mobile-hide">Total Gst</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody id="cancled_report_table_body">
+              <tr>
+                <td colspan="100" class="text-center p-4">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading transactions...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-12 d-flex flex-column gap-2 ps-1">
+      <div class="table-section" id="return_reportSection">
+        <div class="table-header">
+          <h3>
+            <i class="fas fa-file-invoice-dollar"></i> Return Invoice Report
+          </h3>
+        </div>
+        <div class="table-container">
+          <table class="data-table" id="return_report_table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Invoice Number</th>
+                <th>Customer</th>
+                <th>Invoice Type</th>
+                <th>Net Amount</th>
+                <th class="mobile-hide">CGST</th>
+                <th class="mobile-hide">SGST</th>
+                <th class="mobile-hide">IGST</th>
+                <th class="mobile-hide">Total Gst</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody id="return_report_table_body">
+              <tr>
+                <td colspan="100" class="text-center p-4">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading transactions...
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+    const urls = {
+      report: '{% url "invoice:report_fetch" %}',
+      report_cancled: '{% url "invoice:report_cancled_fetch" %}',
+      report_return: '{% url "invoice:report_return_fetch" %}',
+      request_pdf: '{% url "report:request_invoice_report_pdf" %}',
+    }
+  </script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Initialize AJAX for all tables - they share the same form
+      initTableAjax('dateFilterForm', 'report_table', urls.report, {
+        method: 'GET',
+        loadingText: 'Loading transactions...',
+        autoLoad: true,
+      }, false)
+
+      initTableAjax('dateFilterForm', 'cancled_report_table', urls.report_cancled, {
+        method: 'GET',
+        loadingText: 'Loading cancelled transactions...',
+        autoLoad: true,
+      }, false)
+
+      initTableAjax('dateFilterForm', 'return_report_table', urls.report_return, {
+        method: 'GET',
+        loadingText: 'Loading return transactions...',
+        autoLoad: true,
+      }, false)
+
+      // Reload all report tables helper
+      function reloadAllTables() {
+        reloadTable('report_table')
+        reloadTable('cancled_report_table')
+        reloadTable('return_report_table')
+      }
+
+      // Initialize centralized date filter dropdown
+      initDateFilter('dateFilter', {
+        onChange: function (data) {
+          reloadAllTables();
+        }
+      });
+
+      // Request Async Report Generation
+      const downloadReportBtn = document.getElementById('downloadReportBtn')
+      if (downloadReportBtn) {
+        downloadReportBtn.addEventListener('click', async function(e) {
+          e.preventDefault()
+          
+          // Disable button and show spinner
+          const originalHTML = downloadReportBtn.innerHTML
+          downloadReportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Requesting...'
+          downloadReportBtn.disabled = true
+          
+          try {
+            // Get form parameters using helper
+            const params = getTableQueryParams('dateFilterForm', 'report_table')
+            
+            // Send POST request
+            const response = await fetch(urls.request_pdf, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: params
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Show success toast (assuming a global toast function exists)
+                if (typeof showToast === 'function') {
+                    showToast('success', data.message);
+                } else {
+                    alert(data.message);
+                }
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast('error', data.message || 'Failed to request report.');
+                } else {
+                    alert(data.message || 'Failed to request report.');
+                }
+            }
+          } catch (error) {
+              console.error('Error requesting report:', error);
+              alert('An error occurred while requesting the report.');
+          } finally {
+              // Restore button
+              downloadReportBtn.innerHTML = originalHTML;
+              downloadReportBtn.disabled = false;
+          }
+        })
+      }
+    })
+  </script>
+{% endblock extra_js %}

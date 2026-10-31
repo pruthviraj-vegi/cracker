@@ -1,0 +1,78 @@
+<div class="modal fade"
+     id="new_cloth_type"
+     tabindex="-1"
+     role="dialog"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title text-center">New Cloth Type</h4>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Simple Category Form for AJAX Modal -->
+        <form method="#" id="add_new_cloth_type" autocomplete="off">
+          {% csrf_token %}
+          <!-- Form Errors -->
+          {% if cloth_type_form.non_field_errors %}
+            <div class="form-errors">
+              {% for error in cloth_type_form.non_field_errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          <!-- Cloth Type Details Section -->
+          <div class="form-section">
+            <h5 class="form-section-title"><i class="fas fa-layer-group"></i> Cloth Type Details</h5>
+            <!-- Name Field -->
+            <div class="form-group {% if cloth_type_form.name.errors %}has-error{% endif %}">
+              <label for="{{ cloth_type_form.name.id_for_label }}" class="form-label">{{ cloth_type_form.name.label }}</label>
+              {{ cloth_type_form.name }}
+              <small class="form-help"><span class="form-help-text">e.g., Cotton, Silk, Polyester, Wool, Denim</span></small>
+              {% if cloth_type_form.name.errors %}
+                <div class="field-errors">
+                  {% for error in cloth_type_form.name.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+            <!-- Description Field -->
+            <div class="form-group {% if cloth_type_form.description.errors %}has-error{% endif %}">
+              <label for="{{ cloth_type_form.description.id_for_label }}"
+                     class="form-label">{{ cloth_type_form.description.label }}</label>
+              {{ cloth_type_form.description }}
+              <small class="form-help"><span class="form-help-text">e.g., Natural cotton fabric, breathable and comfortable</span></small>
+              {% if cloth_type_form.description.errors %}
+                <div class="field-errors">
+                  {% for error in cloth_type_form.description.errors %}
+                    <div class="error-message">
+                      <i class="fas fa-exclamation-circle"></i>
+                      {{ error }}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-save"></i>
+              Create Cloth Type
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }} - Inventory
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      <a href="{% url 'inventory:dashboard' %}" class="btn">
+        <i class="fas fa-arrow-left"></i>
+        Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Barcode Search with Inline Breadcrumbs -->
+  <div class="search-filter-section">
+    <!-- Inline Breadcrumbs -->
+    <nav class="breadcrumb-inline" aria-label="breadcrumb">
+      <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Inventory</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Price Update</span>
+    </nav>
+
+    <form class="search-filter-form"
+          id="barcodeForm"
+          autocomplete="off"
+          onsubmit="return false;">
+        <div class="search-group search-expanded">
+            <i class="fas fa-search search-icon"></i>
+            <input type="search"
+                   name="barcode"
+                   class="search-input"
+                   placeholder="Scan barcode..."
+                   value=""
+                   id="barcode-input"
+                   autofocus>
+        </div>
+        <button type="button" class="btn btn-primary" id="barcode-search-btn">
+            <i class="fas fa-search"></i>
+            Search
+        </button>
+    </form>
+  </div>
+  <div id="barcode-error" class="text-danger small mt-1" style="display:none;"></div>
+
+  <!-- Variant Details + Price Form (initially hidden) -->
+  <div id="variant-details-section" style="display:none;">
+
+    <!-- Variant Info Card -->
+    <div class="card mt-2">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2 mb-2" style="border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+          <h4 id="variant-product-name" class="m-0" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);"></h4>
+          <span id="variant-status-badge" class="status-badge"></span>
+        </div>
+        <p id="variant-full-name" class="small m-0 mb-3" style="color: var(--text-secondary);"></p>
+
+        <div class="d-flex flex-wrap gap-3">
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Barcode</span>
+            <span id="variant-barcode" style="font-weight: 500; font-family: monospace; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Category</span>
+            <span id="variant-category" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Size</span>
+            <span id="variant-size" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Color</span>
+            <span id="variant-color" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">HSN Code</span>
+            <span id="variant-hsn" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">GST %</span>
+            <span id="variant-gst" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Purchase Price</span>
+            <span id="variant-purchase-price" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex: 1; min-width: 140px; padding: 0.5rem 0.75rem; background: var(--bg-surface-hover); border-radius: 6px;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.05em; color: var(--text-secondary);">Stock</span>
+            <span id="variant-stock" style="font-weight: 500; color: var(--text-primary);">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Price Update Card -->
+    <div class="card mt-2">
+      <div class="card-body">
+        <input type="hidden" id="variant-id" value="">
+        <div class="d-flex gap-3">
+          <div class="form-group" style="flex:1;">
+            <label for="id_mrp" class="form-label">MRP (Selling Price) *</label>
+            {{ form.mrp }}
+            <div id="mrp-error" class="invalid-feedback d-block" style="display:none;"></div>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label for="id_discount_percentage" class="form-label">Discount %</label>
+            {{ form.discount_percentage }}
+            <div id="discount-error" class="invalid-feedback d-block" style="display:none;"></div>
+          </div>
+        </div>
+
+        <!-- Price Summary -->
+        <div class="d-flex gap-3 mt-3" style="padding: 0.75rem 1rem; background: var(--bg-surface-hover); border: 1px solid var(--border-color); border-radius: 8px;">
+          <div class="d-flex flex-column gap-1" style="flex:1;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; color: var(--text-secondary);">Current MRP</span>
+            <span id="current-mrp" style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex:1;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; color: var(--text-secondary);">Discount</span>
+            <span id="current-discount" style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">—</span>
+          </div>
+          <div class="d-flex flex-column gap-1" style="flex:1;">
+            <span class="small" style="font-weight: 600; text-transform: uppercase; font-size: 0.7rem; color: var(--text-secondary);">Final Price</span>
+            <span id="final-price" style="font-size: 1.15rem; font-weight: 700; color: var(--primary);">—</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mt-3">
+          <button type="button" id="save-price-btn" class="btn btn-primary">
+            <i class="fas fa-save"></i> Save Changes
+          </button>
+          <button type="button" id="reset-price-btn" class="btn btn-secondary">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update History -->
+    <div id="update-history" class="card mt-2" style="display:none;">
+      <div class="card-body">
+        <h5 class="mb-2">
+          <i class="fas fa-check-circle text-success"></i> Update Log
+        </h5>
+        <div id="update-history-list"></div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+(function() {
+  const LOOKUP_URL = "{% url 'inventory:barcode_lookup' %}";
+  const SAVE_URL = "{% url 'inventory:price_update_save' %}";
+  const BARCODE_BASE_URL = "{% url 'report:barcode' pk=0 %}".replace('/0/', '/{id}/');
+  const CSRF = "{{ csrf_token }}";
+
+  // DOM references
+  const barcodeInput = document.getElementById("barcode-input");
+  const searchBtn = document.getElementById("barcode-search-btn");
+  const errorDiv = document.getElementById("barcode-error");
+  const detailsSection = document.getElementById("variant-details-section");
+
+  const variantIdField = document.getElementById("variant-id");
+  const mrpField = document.getElementById("id_mrp");
+  const discountField = document.getElementById("id_discount_percentage");
+  const savePriceBtn = document.getElementById("save-price-btn");
+  const resetPriceBtn = document.getElementById("reset-price-btn");
+  const updateHistory = document.getElementById("update-history");
+  const updateHistoryList = document.getElementById("update-history-list");
+
+  // State
+  let currentVariant = null;
+
+  // ───── Barcode Search ─────
+  function showError(msg) {
+    errorDiv.textContent = msg;
+    errorDiv.style.display = "block";
+    setTimeout(() => { errorDiv.style.display = "none"; }, 4000);
+  }
+
+  function doSearch() {
+    const barcode = barcodeInput.value.trim();
+    if (!barcode) { showError("Please enter a barcode"); return; }
+
+    errorDiv.style.display = "none";
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching…';
+
+    $.ajax({
+      url: LOOKUP_URL,
+      data: { barcode: barcode },
+      success: function(resp) {
+        if (resp.status === "success") {
+          populateVariant(resp.variant);
+        } else {
+          showError(resp.message || "Not found");
+        }
+      },
+      error: function(xhr) {
+        const msg = xhr.responseJSON ? xhr.responseJSON.message : "Search failed";
+        showError(msg);
+      },
+      complete: function() {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = '<i class="fas fa-search"></i> Search';
+        barcodeInput.select();
+      },
+    });
+  }
+
+  barcodeInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") { e.preventDefault(); doSearch(); }
+  });
+  searchBtn.addEventListener("click", doSearch);
+
+  // ───── Populate Variant Details ─────
+  function populateVariant(v) {
+    currentVariant = v;
+
+    document.getElementById("variant-product-name").textContent = v.product_name;
+    document.getElementById("variant-full-name").textContent = v.full_name;
+    document.getElementById("variant-barcode").textContent = v.barcode;
+    document.getElementById("variant-category").textContent = v.category || "—";
+    document.getElementById("variant-size").textContent = v.size || "—";
+
+    document.getElementById("variant-color").textContent = v.color || "—";
+
+    document.getElementById("variant-hsn").textContent = v.hsn_code || "—";
+    document.getElementById("variant-gst").textContent = v.gst_percentage ? v.gst_percentage + "%" : "—";
+    document.getElementById("variant-purchase-price").textContent = parseFloat(v.purchase_price).toLocaleString("en-IN");
+
+    // Stock with colour coding
+    const stockEl = document.getElementById("variant-stock");
+    const qty = parseFloat(v.quantity);
+    stockEl.textContent = qty;
+    if (v.stock_status === "Out of Stock") {
+      stockEl.style.color = "var(--danger)";
+    } else if (v.stock_status === "Low Stock") {
+      stockEl.style.color = "var(--warning)";
+    } else {
+      stockEl.style.color = "var(--success)";
+    }
+
+    // Status badge
+    const badge = document.getElementById("variant-status-badge");
+    badge.textContent = v.status;
+    badge.className = "status-badge status-" + v.status.toLowerCase();
+
+    // Populate form fields
+    variantIdField.value = v.id;
+    mrpField.value = v.mrp;
+    discountField.value = v.discount_percentage;
+
+    // Update price summary
+    updatePriceSummary();
+
+    // Show sections
+    detailsSection.style.display = "block";
+    updateHistory.style.display = "none";
+
+    // Focus MRP field
+    mrpField.focus();
+    mrpField.select();
+  }
+
+  // ───── Real-time Price Calculations ─────
+  function updatePriceSummary() {
+    const rawMrp = mrpField.value ? mrpField.value.toString().replace(/,/g, "") : "";
+    const rawDiscount = discountField.value ? discountField.value.toString().replace(/,/g, "") : "";
+    const mrp = parseFloat(rawMrp) || 0;
+    const discount = parseFloat(rawDiscount) || 0;
+    let finalPrice = mrp;
+    if (discount > 0) {
+      finalPrice = mrp * (1 - discount / 100);
+    }
+
+    document.getElementById("current-mrp").textContent = mrp.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+    document.getElementById("current-discount").textContent = discount + "%";
+    document.getElementById("final-price").textContent = finalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2 });
+  }
+
+  mrpField.addEventListener("input", updatePriceSummary);
+  discountField.addEventListener("input", updatePriceSummary);
+
+  // ───── Reset ─────
+  resetPriceBtn.addEventListener("click", function() {
+    if (currentVariant) {
+      mrpField.value = currentVariant.mrp;
+      discountField.value = currentVariant.discount_percentage;
+      updatePriceSummary();
+    }
+  });
+
+  // ───── Save ─────
+  savePriceBtn.addEventListener("click", function() {
+    const vId = variantIdField.value;
+    if (!vId) { showError("No variant selected"); return; }
+
+    const mrpVal = mrpField.value ? mrpField.value.toString().replace(/,/g, "").trim() : "";
+    const discountVal = discountField.value ? discountField.value.toString().replace(/,/g, "").trim() : "";
+
+    if (!mrpVal || parseFloat(mrpVal) <= 0) {
+      document.getElementById("mrp-error").textContent = "MRP must be greater than 0";
+      document.getElementById("mrp-error").style.display = "block";
+      return;
+    }
+    document.getElementById("mrp-error").style.display = "none";
+    document.getElementById("discount-error").style.display = "none";
+
+    savePriceBtn.disabled = true;
+    savePriceBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+    $.ajax({
+      url: SAVE_URL,
+      method: "POST",
+      contentType: "application/json",
+      headers: { "X-CSRFToken": CSRF },
+      data: JSON.stringify({
+        variant_id: parseInt(vId),
+        mrp: mrpVal,
+        discount_percentage: discountVal,
+      }),
+      success: function(resp) {
+        if (resp.status === "success") {
+          showNotification(resp.message, "success");
+
+          // Update current variant state
+          currentVariant.mrp = resp.variant.mrp;
+          currentVariant.discount_percentage = resp.variant.discount_percentage;
+          currentVariant.final_price = resp.variant.final_price;
+
+          // Show update history
+          updateHistory.style.display = "block";
+          const now = new Date().toLocaleTimeString("en-IN");
+          updateHistoryList.innerHTML =
+            '<div class="summary-row">' +
+            '<span class="summary-label">' +
+            '<i class="fas fa-check-circle text-success"></i> ' +
+            currentVariant.product_name + '</span>' +
+            '<span class="summary-value">' +
+            parseFloat(resp.variant.mrp).toLocaleString("en-IN") +
+            ' <span class="text-secondary small">(' + now + ')</span></span>' +
+            '</div>' + updateHistoryList.innerHTML;
+
+          // Open barcode page in new tab
+          const barcodeUrl = BARCODE_BASE_URL.replace('{id}', vId);
+          window.open(barcodeUrl, '_blank');
+
+          // Clear and refocus barcode field for next scan
+          barcodeInput.value = "";
+          setTimeout(function() {
+            barcodeInput.focus();
+          }, 100);
+        } else {
+          showNotification(resp.message || "Save failed", "error");
+          if (resp.errors) {
+            if (resp.errors.mrp) {
+              document.getElementById("mrp-error").textContent = resp.errors.mrp;
+              document.getElementById("mrp-error").style.display = "block";
+            }
+            if (resp.errors.discount_percentage) {
+              document.getElementById("discount-error").textContent = resp.errors.discount_percentage;
+              document.getElementById("discount-error").style.display = "block";
+            }
+          }
+        }
+      },
+      error: function(xhr) {
+        const msg = xhr.responseJSON ? xhr.responseJSON.message : "Save failed";
+        showNotification(msg, "error");
+      },
+      complete: function() {
+        savePriceBtn.disabled = false;
+        savePriceBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+      },
+    });
+  });
+
+  // Submit on Enter key in price update fields
+  [mrpField, discountField].forEach(function(input) {
+    if (input) {
+      input.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          if (!savePriceBtn.disabled && variantIdField.value) {
+            savePriceBtn.click();
+          }
+        }
+      });
+    }
+  });
+
+  // Save on Ctrl+S / Cmd+S
+  document.addEventListener("keydown", function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+      e.preventDefault();
+      if (variantIdField.value) savePriceBtn.click();
+    }
+  });
+})();
+</script>
+{% endblock extra_js %}

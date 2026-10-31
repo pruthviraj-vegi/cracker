@@ -1,0 +1,117 @@
+{% load custom_filters %}
+{% if page_obj %}
+  {% for payment in page_obj %}
+    <tr>
+      <td>
+        <div class="payment-number">
+          <strong>#{{ payment.id }}</strong>
+        </div>
+      </td>
+      <td class="mobile-hide">{{ payment.payment_date|date:'M j, Y' }}</td>
+      <td>
+        <strong>{{ payment.amount|currency }}</strong>
+      </td>
+      <td class="mobile-hide">
+        <span class="badge badge-info">{{ payment.get_method_display }}</span>
+      </td>
+      <td class="mobile-hide">
+        {% if payment.transaction_id %}
+          {{ payment.transaction_id }}
+        {% else %}
+          <span class="text-muted">-</span>
+        {% endif %}
+      </td>
+      <td class="mobile-hide">
+        {% if payment.amount != payment.unallocated_amount %}
+          <span class="text-success">{{ payment.amount|sub:payment.unallocated_amount|currency }}</span>
+        {% else %}
+          <span class="text-muted">0.00</span>
+        {% endif %}
+      </td>
+      <td class="mobile-hide">
+        {% if payment.unallocated_amount > 0 %}
+          <span class="text-warning">{{ payment.unallocated_amount|currency }}</span>
+        {% else %}
+          <span class="text-success">0.00</span>
+        {% endif %}
+      </td>
+      <td>
+        <div class="action-buttons">
+          {% if payment.media_count == 1 %}
+            {% with payment.media_files.all|first as single_media %}
+              {% if single_media.is_image %}
+                <a href="{{ single_media.media_file.url }}"
+                   class="btn-action btn-view media-lightbox-trigger"
+                   data-media-url="{{ single_media.media_file.url }}"
+                   data-media-name="{{ single_media.original_filename }}"
+                   title="View Image"><i class="fas fa-eye"></i></a>
+              {% else %}
+                <a href="{{ single_media.media_file.url }}"
+                   target="_blank"
+                   class="btn-action btn-view"
+                   title="View Attachment"><i class="fas fa-eye"></i></a>
+              {% endif %}
+            {% endwith %}
+          {% elif payment.media_count > 1 %}
+            <div class="dropdown d-inline-block">
+              <a href="#"
+                 class="btn-action btn-view"
+                 role="button"
+                 data-bs-toggle="dropdown"
+                 aria-expanded="false"
+                 title="View Attachments ({{ payment.media_count }})">
+                <i class="fas fa-eye"></i>
+                <span class="media-badge">{{ payment.media_count }}</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {% for media in payment.media_files.all %}
+                  <li>
+                    {% if media.is_image %}
+                      <a class="dropdown-item media-lightbox-trigger"
+                         href="{{ media.media_file.url }}"
+                         data-media-url="{{ media.media_file.url }}"
+                         data-media-name="{{ media.original_filename }}">
+                        <i class="fas fa-file-image me-2"></i>
+                        {{ media.original_filename|truncatechars:25 }}
+                      </a>
+                    {% else %}
+                      <a class="dropdown-item" href="{{ media.media_file.url }}" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>
+                        {{ media.original_filename|truncatechars:25 }}
+                      </a>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+          {% if perms.supplier.change_supplierpayment %}
+            <a href="{% url 'supplier:edit_payment' supplier.pk payment.pk %}"
+               class="btn-action btn-edit"
+               title="Edit Payment"><i class="fas fa-edit"></i></a>
+          {% endif %}
+          {% if perms.supplier.delete_supplierpayment %}
+            <a href="{% url 'supplier:delete_payment' supplier.pk payment.pk %}"
+               class="btn-action btn-delete"
+               title="Delete Payment"><i class="fas fa-trash"></i></a>
+          {% endif %}
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="8" class="text-center p-2">
+      <div class="empty-state">
+        <i class="fas fa-credit-card"></i>
+        <h4>No Payments Found</h4>
+        <p>No payments have been recorded for this supplier yet.</p>
+        <a href="{% url 'supplier:create_payment' supplier.pk %}"
+           class="btn btn-primary">
+          <i class="fas fa-plus"></i>
+          Record First Payment
+        </a>
+      </div>
+    </td>
+  </tr>
+{% endif %}

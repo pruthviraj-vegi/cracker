@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    UOM Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">UOM Management</h2>
+        <div class="page-actions">
+            {% if perms.inventory.add_uom %}
+                <a href="{% url 'inventory:uom_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    New UOM
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">UOMs</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All UOMs</span>
+        </nav>
+
+        <form method="#" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search UOMs by name, code, category or description..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable" data-sort="name">Name</th>
+                    <th class="sortable mobile-hide" data-sort="short_code">Code</th>
+                    <th class="sortable mobile-hide" data-sort="category">Category</th>
+                    <th class="mobile-hide">Base Unit</th>
+                    <th class="mobile-hide">Conversion Factor</th>
+                    <th class="sortable" data-sort="is_active">Status</th>
+                    <th class="sortable mobile-hide" data-sort="created_at">Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-3">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Loading UOMs...
+                        </div>
+                        <br>
+                        <br>
+                        <button type="button" class="btn btn-sm" onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "inventory:uom_fetch" %}',
+            suggestions: '{% url "suggestions:uom_all" %}',
+        }
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading UOMs...',
+                includeInputs: false
+            });
+        });
+    </script>
+{% endblock extra_js %}

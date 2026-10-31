@@ -1,0 +1,56 @@
+{% load custom_filters %}
+{% if page_obj %}
+    {% for log in page_obj %}
+        <tr>
+            <td class="mobile-hide">
+                <span class="text-center fw-medium text-primary">
+                    {{ log.get_transaction_type_display }}
+                </span>
+            </td>
+            <td>
+                <span class="fw-medium">
+                    {% if log.quantity_change > 0 %}+{% endif %}{{ log.quantity_change|floatformat:0 }}
+                </span>
+            </td>
+            <td>{{ log.new_quantity|floatformat:0 }}</td>
+            <td class="mobile-hide">{{ log.total_value|currency | default:"-" }}</td>
+            <td class="mobile-hide">
+                {% if log.supplier_invoice %}
+                    <div class="invoice-info-compact">
+                        <span class="invoice-number">{{ log.supplier_invoice.invoice_number }}</span>
+                        <small class="secondary-text">{{ log.supplier_invoice.supplier.name|truncatechars:15 }}</small>
+                    </div>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ log.created_by.full_name | default:"-" }}</td>
+            <td>{{ log.timestamp|date:'M d, Y H:i' }}</td>
+            <td class="mobile-hide">
+                {% if log.notes %}
+                    {% if log.invoice_item.invoice %}
+                        <a href="{% url 'invoice:detail' log.invoice_item.invoice.id %}"
+                           class="text-primary"
+                           target="_blank">
+                            <span title="{{ log.notes }}">{{ log.notes|truncatechars:20 }}</span>
+                        </a>
+                    {% else %}
+                        <span title="{{ log.notes }}">{{ log.notes|truncatechars:20 }}</span>
+                    {% endif %}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="8" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-boxes"></i>
+                <h4>No Logs Found</h4>
+                <p>No logs match your search criteria. Try adjusting your filters or add a new product.</p>
+            </div>
+        </td>
+    </tr>
+{% endif %}

@@ -1,0 +1,311 @@
+<nav class="navbar sidebar" id="sidebar">
+   <ul class="nav-menu" id="navMenu">
+      <li class="nav-item">
+         <a href="{% url 'base:home' %}"
+            class="nav-link {% if request.resolver_match.namespace == 'base' and request.resolver_match.url_name == 'home' %}active{% endif %}">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+         </a>
+      </li>
+      {% if perms.invoice.view_invoice %}
+      <li class="nav-item">
+         <a href="{% url 'base:calendar' %}"
+            class="nav-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Calendar</span>
+         </a>
+      </li>
+      {% endif %}
+      <li class="nav-item">
+         <a href="#" class="nav-link has-dropdown {% if 'cart' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Carts</span>
+         </a>
+         <div class="dropdown-menu">
+            <a href="{% url 'cart:main_page' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'main_page' %}active{% endif %}">View
+               Carts</a>
+            <a href="{% url 'cart:create_cart' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'create_cart' %}active{% endif %}">Create
+               Cart</a>
+            <a href="{% url 'cart:auto_cart_create' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'auto_cart_create' %}active{% endif %}">Auto
+               Create Cart</a>
+         </div>
+      </li>
+      {% if perms.invoice.view_invoice or perms.invoice.view_audittable or perms.invoice.view_returninvoice %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'invoice' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Invoices</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.invoice.view_dashboard %}
+            <a href="{% url 'invoice:dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'invoice' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            {% endif %}
+            {% if perms.invoice.view_invoice %}
+            <a href="{% url 'invoice:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'invoice' and request.resolver_match.url_name == 'home' %}active{% endif %}">All
+               Invoices</a>
+            <a href="{% url 'invoice:search_invoices_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'search_invoices_home' %}active{% endif %}">Search
+               Invoices</a>
+            {% endif %}
+            {% if perms.invoice.view_audittable %}
+            <a href="{% url 'invoice:audit_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'invoices_audit' %}active{% endif %}">Invoices
+               Audit</a>
+            {% endif %}
+            {% if perms.invoice.view_returninvoice %}
+            <a href="{% url 'invoice:return_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'return_home' %}active{% endif %}">Return
+               Invoices</a>
+            {% endif %}
+            {% if perms.invoice.view_audittable %}
+            <a href="{% url 'invoice:report' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'report' %}active{% endif %}">Invoice
+               Report</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.inventory.view_product or perms.inventory.view_variant or perms.inventory.view_category or perms.inventory.view_clothtype or perms.inventory.view_color or perms.inventory.view_size or perms.inventory.view_uom or perms.inventory.view_gsthsncode or perms.inventory.export_reports %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'inventory' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-boxes"></i>
+            <span>Inventory</span>
+         </a>
+         <div class="dropdown-menu dropdown-multicolumn col-2">
+            {% if perms.inventory.view_dashboard %}
+            <a href="{% url 'inventory:dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'inventory' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            {% endif %}
+            {% if perms.inventory.view_product %}
+            <a href="{% url 'inventory_products:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'inventory_products' %}active{% endif %}">All
+               Products</a>
+            <a href="{% url 'inventory_variant:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'inventory_variant' %}active{% endif %}">All
+               Variants</a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            {% if perms.inventory.view_supplier_invoice %}
+            <a href="{% url 'inventory:supplier_invoice' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'supplier_invoice' %}active{% endif %}">Supplier
+               Invoices</a>
+            {% endif %}
+            {% if perms.inventory.view_bulkupload %}
+            <a href="{% url 'inventory_bulk_upload:home' %}"
+               class="dropdown-item {% if 'inventory_bulk_upload' in request.resolver_match.namespace %}active{% endif %}">Bulk
+               Upload</a>
+            {% endif %}
+            {% if perms.inventory.view_low_stock %}
+            <a href="{% url 'inventory:low_stock' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'low_stock' %}active{% endif %}">Low
+               Stock</a>
+            {% endif %}
+            {% if perms.inventory.view_productvariant %}
+            <a href="{% url 'inventory:damaged_stock' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'damaged_stock' %}active{% endif %}">Damaged
+               Stock</a>
+            {% endif %}
+            {% if perms.inventory.change_productvariant %}
+            <a href="{% url 'inventory:price_update' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'price_update' %}active{% endif %}">Price
+               Update</a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            {% if perms.inventory.view_category %}
+            <a href="{% url 'inventory:category_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'category_home' %}active{% endif %}">Categories</a>
+            {% endif %}
+            {% if perms.inventory.view_color %}
+            <a href="{% url 'inventory:color_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'color_home' %}active{% endif %}">Colors</a>
+            {% endif %}
+            {% if perms.inventory.view_size %}
+            <a href="{% url 'inventory:size_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'size_home' %}active{% endif %}">Sizes</a>
+            {% endif %}
+            {% if perms.inventory.view_clothtype %}
+            <a href="{% url 'inventory:cloth_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'cloth_home' %}active{% endif %}">Cloth
+               Types</a>
+            {% endif %}
+            {% if perms.inventory.view_uom %}
+            <a href="{% url 'inventory:uom_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'uom_home' %}active{% endif %}">UOMs</a>
+            {% endif %}
+            {% if perms.inventory.view_gsthsncode %}
+            <a href="{% url 'inventory:gst_hsn_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'gst_hsn_home' %}active{% endif %}">GST HSN
+               Codes</a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'inventory:media_gallery' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'media_gallery' %}active{% endif %}">Media
+               Gallery</a>
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.customer.view_customer or perms.customer.add_customer or perms.customer.view_credit or perms.customer.add_credit %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'customer' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-users"></i>
+            <span>Customers</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.customer.view_dashboard %}
+            <a href="{% url 'customer:dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'customer' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            {% endif %}
+            {% if perms.customer.view_customer %}
+            <a href="{% url 'customer:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'customer' and request.resolver_match.url_name == 'home' %}active{% endif %}">Customer
+               List</a>
+            {% endif %}
+            {% if perms.customer.add_customer %}
+            <a href="{% url 'customer:create' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'customer' and request.resolver_match.url_name == 'create' %}active{% endif %}">Add
+               Customer</a>
+            {% endif %}
+            {% if perms.customer.view_customercreditsummary %}
+            <a href="{% url 'customer:credit_home' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'credit_home' %}active{% endif %}">Credits</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.supplier.view_supplier or perms.supplier.add_supplier %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'supplier' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-truck"></i>
+            <span>Suppliers</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.supplier.view_dashboard %}
+            <a href="{% url 'supplier:dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'supplier' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            {% endif %}
+            {% if perms.supplier.view_supplier %}
+            <a href="{% url 'supplier:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'supplier' and request.resolver_match.url_name == 'home' %}active{% endif %}">Supplier
+               List</a>
+            {% endif %}
+            {% if perms.supplier.add_supplier %}
+            <a href="{% url 'supplier:create' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'supplier' and request.resolver_match.url_name == 'create' %}active{% endif %}">Add
+               Supplier</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.user.view_customuser %}
+      <li class="nav-item">
+         <a href="#" class="nav-link has-dropdown {% if 'user' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-users-cog"></i>
+            <span>Users</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.user.view_dashboard %}
+            <a href="{% url 'user:dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'user' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            {% endif %}
+            {% if perms.user.view_customuser %}
+            <a href="{% url 'user:home' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'user' and request.resolver_match.url_name == 'home' %}active{% endif %}">All
+               Users</a>
+            {% endif %}
+            {% if perms.user.add_customuser %}
+            <a href="{% url 'user:create' %}"
+               class="dropdown-item {% if request.resolver_match.namespace == 'user' and request.resolver_match.url_name == 'create' %}active{% endif %}">Add
+               User</a>
+            {% endif %}
+            {% if perms.user.view_session %}
+            <a href="{% url 'user:sessions' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'sessions' %}active{% endif %}">Sessions</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.security.view_loginevent or perms.security.view_unauthorizedaccess %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'security' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-shield-alt"></i>
+            <span>Security</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.security.view_loginevent %}
+            <a href="{% url 'security:logins' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'logins' %}active{% endif %}">Login
+               Activity</a>
+            {% endif %}
+            {% if perms.security.view_unauthorizedaccess %}
+            <a href="{% url 'security:unauthorized' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'unauthorized' %}active{% endif %}">Unauthorized
+               Activity</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+      {% if perms.api.view_apitoken %}
+      <li class="nav-item">
+         <a href="{% url 'api_tokens:home' %}"
+            class="nav-link {% if 'api_tokens' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-key"></i>
+            <span>API Tokens</span>
+         </a>
+      </li>
+      {% endif %}
+      {% if perms.setting.view_shopdetails or perms.setting.view_reportconfiguration or perms.setting.view_paymentdetails or perms.setting.view_barcodeconfiguration %}
+      <li class="nav-item">
+         <a href="#"
+            class="nav-link has-dropdown {% if 'setting' in request.resolver_match.namespace %}active{% endif %}">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+         </a>
+         <div class="dropdown-menu">
+            {% if perms.setting.view_shopdetails %}
+            <a href="{% url 'setting:shop_settings_dashboard' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'shop_settings_dashboard' %}active{% endif %}">
+               Dashboard</a>
+            <a href="{% url 'setting:shop_details_list' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'shop_details_list' %}active{% endif %}">Shop
+               Details</a>
+            {% endif %}
+            {% if perms.setting.view_reportconfiguration %}
+            <a href="{% url 'setting:report_config_list' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'report_config_list' %}active{% endif %}">Report
+               Configs</a>
+            {% endif %}
+            {% if perms.setting.view_paymentdetails %}
+            <a href="{% url 'setting:payment_details_list' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'payment_details_list' %}active{% endif %}">Payment
+               Methods</a>
+            {% endif %}
+            {% if perms.setting.view_barcodeconfiguration %}
+            <a href="{% url 'setting:barcode_config_list' %}"
+               class="dropdown-item {% if request.resolver_match.url_name == 'barcode_config_list' %}active{% endif %}">Barcode
+               Configs</a>
+            {% endif %}
+         </div>
+      </li>
+      {% endif %}
+   </ul>
+   <!-- Mobile Sidebar Footer: User Info (visible on mobile only) -->
+   <div class="mobile-sidebar-footer">
+      <div class="sidebar-user-avatar">
+         <i class="fas fa-user-circle"></i>
+      </div>
+      <div class="sidebar-user-info">
+         <span class="sidebar-user-name">{{ request.user.full_name|default:request.user.phone_number }}</span>
+         <span class="sidebar-user-role">Staff</span>
+      </div>
+   </div>
+</nav>

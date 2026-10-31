@@ -1,0 +1,85 @@
+{% load custom_filters %}
+{% load static %}
+{% if page_obj %}
+{% for supplier in page_obj %}
+<tr>
+    <td class="mobile-hide">{{ supplier.id }}</td>
+    <td>
+        <div>
+            <span class="font-weight-bold text-primary">{{ supplier.name }}</span>
+            {% if supplier.contact_person %}
+            <div class="text-muted">
+                <small>{{ supplier.contact_person }}</small>
+            </div>
+            {% endif %}
+        </div>
+    </td>
+    <td class="mobile-hide">
+        <span class="text-muted">{{ supplier.city|default:"-" }}</span>
+    </td>
+    <td>
+        <strong>{{ supplier.phone|phone_number }}</strong>
+        {% if supplier.email %}
+        <div class="text-muted">
+            <small>{{ supplier.email }}</small>
+        </div>
+        {% endif %}
+    </td>
+    <td class="mobile-hide">{{ supplier.gstin|default:"-" }}</td>
+    <td>
+        {% if supplier.is_deleted %}
+        <span class="badge badge-danger">
+            <i class="fas fa-times-circle"></i>
+            Inactive
+        </span>
+        {% else %}
+        <span class="badge badge-success">
+            <i class="fas fa-check-circle"></i>
+            Active
+        </span>
+        {% endif %}
+    </td>
+    <td>{{ supplier.annotated_balance_due|currency }}</td>
+    <td class="mobile-hide">{{ supplier.created_at|date:"M d, Y" }}</td>
+    <td class="mobile-hide">{{ supplier.annotated_last_invoice|date:"M d, Y" }}</td>
+    <td>
+        <div class="action-buttons">
+            {% if perms.supplier.view_supplierinvoice or perms.supplier.view_supplierpayment %}
+            <a href="{% url 'supplier:detail' supplier.id %}" class="btn-action btn-view" title="View Details">
+                <i class="fas fa-eye"></i>
+            </a>
+            {% endif %}
+            {% if perms.supplier.add_supplier %}
+            <a href="{% url 'supplier:report' supplier.id %}" class="btn-action btn-info" title="View Report">
+                <i class="fas fa-chart-line"></i>
+            </a>
+            {% endif %}
+            {% if perms.supplier.change_supplier %}
+            <a href="{% url 'supplier:edit' supplier.id %}" class="btn-action btn-edit" title="Edit Supplier">
+                <i class="fas fa-edit"></i>
+            </a>
+            {% endif %}
+            {% if perms.supplier.delete_supplier %}
+            <a href="{% url 'supplier:delete' supplier.id %}" class="btn-action btn-delete" title="Delete Supplier">
+                <i class="fas fa-trash"></i>
+            </a>
+            {% endif %}
+        </div>
+    </td>
+</tr>
+{% endfor %}
+{% else %}
+<tr>
+    <td colspan="100" class="text-center p-2">
+        <div class="empty-state">
+            <i class="fas fa-truck"></i>
+            <h4>No Suppliers Found</h4>
+            <p>No suppliers match your search criteria. Try adjusting your filters or add a new supplier.</p>
+            <a href="{% url 'supplier:create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Add First Supplier
+            </a>
+        </div>
+    </td>
+</tr>
+{% endif %}

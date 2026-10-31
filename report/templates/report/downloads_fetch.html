@@ -1,0 +1,58 @@
+{% load custom_filters %}
+{% for job in page_obj %}
+<tr>
+  <td>{{ job.title }}</td>
+  <td>{{ job.created_at|date:"d M Y, h:i A" }}</td>
+  <td>
+    {% if job.status == 'pending' %}
+      <span class="status-badge status-pending">Pending</span>
+    {% elif job.status == 'processing' %}
+      <span class="status-badge status-processing">Processing</span>
+    {% elif job.status == 'done' %}
+      <span class="status-badge status-done">Done</span>
+    {% elif job.status == 'failed' %}
+      <span class="status-badge status-failed">Failed</span>
+    {% else %}
+      <span class="status-badge">{{ job.status|title }}</span>
+    {% endif %}
+  </td>
+  <td>
+    <div class="action-buttons">
+    {% if job.status == 'done' and job.file %}
+      <a href="{{ job.file.url }}" target="_blank"
+         class="btn-action btn-view"
+         title="View PDF">
+        <i class="fas fa-eye"></i>
+      </a>
+      <a href="{{ job.file.url }}" download
+         class="btn-action btn-edit"
+         title="Download PDF">
+        <i class="fas fa-download"></i>
+      </a>
+    {% elif job.status == 'failed' %}
+      <span class="btn-action opacity-50-transparent text-warning" title="{{ job.error_message }}">
+        <i class="fas fa-exclamation-triangle"></i>
+      </span>
+    {% else %}
+      <span class="btn-action opacity-50-transparent" title="Processing...">
+        <i class="fas fa-spinner fa-spin"></i>
+      </span>
+    {% endif %}
+      <button type="button"
+              class="btn-action btn-delete"
+              title="Delete PDF"
+              onclick="confirmDeleteJob('{{ job.id }}', '{{ job.title|escapejs }}')">
+        <i class="fas fa-trash-alt"></i>
+      </button>
+    </div>
+
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="4" class="text-center p-4 text-muted">
+    <i class="fas fa-inbox fa-2x mb-2 opacity-50"></i><br>
+    No downloads found
+  </td>
+</tr>
+{% endfor %}

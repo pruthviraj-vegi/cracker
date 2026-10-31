@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Products Management
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">Products Management</h2>
+        <div class="page-actions">
+            {% if perms.inventory.add_product %}
+                <a href="{% url 'inventory_products:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    New Product
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Products</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Products</span>
+        </nav>
+
+        <form method="#" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search products by brand, name, or description..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <select name="category" class="filter-select" id="categoryFilter">
+                <option value="">All Categories</option>
+                {% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table -->
+    <div class="table-container">
+        <table class="data-table" id="data_table">
+            <thead>
+                <tr>
+                    <th class="sortable mobile-hide" data-sort="id">ID</th>
+                    <th class="sortable" data-sort="brand">Brand</th>
+                    <th class="sortable mobile-hide" data-sort="name">Name</th>
+                    <th class="sortable mobile-hide" data-sort="category__name">Category</th>
+                    <th class="sortable mobile-hide" data-sort="cloth_type">Cloth Type</th>
+                    <th class="sortable mobile-hide" data-sort="hsn_code">HSN Code</th>
+                    <th>Variants</th>
+                    <th class="sortable mobile-hide" data-sort="hsn_code__gst_percentage">GST %</th>
+                    <th class="sortable" data-sort="status">Status</th>
+                    <th class="sortable mobile-hide" data-sort="created_at">Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="table_body">
+                <!-- Empty table body - data will be loaded via AJAX -->
+                <tr>
+                    <td colspan="100" class="text-center p-3">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Loading products...
+                        <br>
+                        <br>
+                        <button type="button" class="btn btn-sm" onclick="window.retryTableLoad()">
+                            <i class="fas fa-refresh"></i>
+                            Retry
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot id="table_footer">
+                <!-- Pagination will be loaded here via AJAX -->
+            </tfoot>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+        urls = {
+            fetch: '{% url "inventory_products:fetch" %}',
+            suggestions: '{% url "suggestions:product_all" %}',
+        }
+    </script>
+    <!-- Load dependencies -->
+    <script src="{% static 'js/wordSuggestion.js' %}"></script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize word suggestion on search input - jQuery-like syntax!
+            $('#searchInput').wordSuggestion({
+                url: urls.suggestions,
+                placeholder: 'Type to search products...',
+                minLength: 2,
+                onSelect: function(suggestion, input) {
+                    // Auto-reload table when suggestion is selected
+                    reloadTable('data_table');
+                }
+            });
+            
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading products...',
+                includeInputs: false
+            });
+        });
+    </script>
+{% endblock extra_js %}

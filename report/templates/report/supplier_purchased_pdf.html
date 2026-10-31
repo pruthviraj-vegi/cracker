@@ -1,0 +1,110 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Suppliers - {% now "F d, Y" %}
+{% endblock title %}
+{% block style %}
+    <link rel="stylesheet" href="styles/A4.css" />
+{% endblock style %}
+{% block content %}
+    <div class="header-content">
+        <div class="shop-info">
+            {% if shop_details %}
+                {% if shop_details.shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+                <div class="shop-details">
+                    {% if shop_details.address_line_one %}<p>{{ shop_details.address_line_one }}</p>{% endif %}
+                    {% if shop_details.gst_no %}
+                        <p>
+                            <strong>GST:</strong> {{ shop_details.gst_no }}
+                        </p>
+                    {% endif %}
+                    {% if shop_details.contact_info %}
+                        <p>
+                            <strong>Contact:</strong> {{ shop_details.contact_info }}
+                        </p>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="report-info">
+            <div class="report-title">Purchase Orders Report</div>
+            <div class="report-meta">
+                <p>
+                    <strong>Generated:</strong> {% now "F d, Y h:i A" %}
+                </p>
+                <p>
+                    <strong>Total Records:</strong> {{ total_count }}
+                </p>
+            </div>
+        </div>
+    </div>
+    <!-- Date Period Section -->
+    <div class="date-period-section">
+        <div class="date-period-content">
+            <span class="date-period-label">Report Period:</span>
+            <span class="date-period-value">{{ start_date|date:"M d, Y" }} - {{ end_date|date:"M d, Y" }}</span>
+        </div>
+    </div>
+    <!-- Table Section -->
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th class="text-center">Sl.</th>
+                    <th class="text-center">Inv. No.</th>
+                    <th class="text-center">Date</th>
+                    <th class="text-center">Supplier</th>
+                    <th class="text-center">GSTIN</th>
+                    <th class="text-center">Sub Total</th>
+                    <th class="text-center">CGST/SGST</th>
+                    <th class="text-center">IGST</th>
+                    <th class="text-center">Adj.</th>
+                    <th class="text-center">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if data %}
+                    {% for item in data %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td class="text-center">{{ item.invoice_number }}</td>
+                            <td class="text-center date-cell">{{ item.invoice_date|date:"M d, Y" }}</td>
+                            <td class="text-center">{{ item.supplier.name|default:"N/A" }}</td>
+                            <td class="text-center">{{ item.supplier.gstin|default:"N/A" }}</td>
+                            <td class="text-center">{{ item.sub_total|currency }}</td>
+                            <td class="text-center">{{ item.cgst_amount|mul:2|currency }}</td>
+                            <td class="text-center">{{ item.igst_amount|currency }}</td>
+                            <td class="text-center">{{ item.adjustment_amount|currency }}</td>
+                            <td class="text-center">{{ item.total_amount|currency }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="5" class="text-center">Total</td>
+                        <td class="text-center">{{ total_subtotal|currency }}</td>
+                        <td class="text-center">{{ total_cgst|currency }}</td>
+                        <td class="text-center">{{ total_igst|currency }}</td>
+                        <td class="text-center">{{ total_adjustment|currency }}</td>
+                        <td class="text-center">{{ total_amount|currency }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center empty-state">
+                            <p class="text-muted">No purchase orders found matching the criteria.</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Footer Section -->
+    <div class="footer-section">
+        <div class="total-info">
+            <p>
+                <strong>Total Purchase Orders: {{ total_count }}</strong>
+            </p>
+        </div>
+        <p>This is a computer-generated report. No signature required.</p>
+        <p>Generated on {% now "F d, Y \a\t h:i A" %}</p>
+    </div>
+{% endblock content %}

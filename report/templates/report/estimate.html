@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+{% load static %}
+{% load custom_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Estimate - My Billing" />
+    <meta name="keywords" content="estimate, billing, quotation" />
+    <title>{{ details.name }} - Estimate - {{ details.id }}</title>
+    <link rel="stylesheet" href="{% static 'styles/A5.css' %}" />
+    <link rel="shortcut icon"
+          type="image/ico"
+          href="{% static 'images/favicon.ico' %}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-section">
+        <div class="header-data">
+          <!-- Left: Shop Details -->
+          <div class="shop-data">
+            <div class="shop-details">
+              {% if report_config.show_shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+              {% if report_config.show_address %}
+                <p class="shop-address">{{ shop_details.address_line_one }}</p>
+                <p class="shop-address">{{ shop_details.address_line_two }}</p>
+              {% endif %}
+              {% if report_config.show_gst and shop_details.gst_no %}<p class="text-bold">{{ shop_details.gst_no }}</p>{% endif %}
+              {% if report_config.show_contact %}<p class="text-bold">{{ shop_details.contact_info }}</p>{% endif %}
+            </div>
+          </div>
+          <!-- Middle: Logo -->
+          <div class="logo-section">
+            <div class="logo">
+              <img src="{% static 'images/logo.svg' %}"
+                   alt="Logo"
+                   height="60"
+                   width="60" />
+            </div>
+          </div>
+          <!-- Right: Invoice Details -->
+          <div class="invoice-data">
+            <div class="invoice-content">
+              <p>{{ details.name|default:"Walk In" }}</p>
+              <p>
+                Estimate No : <span class="invoice-value">{{ details.id }}</span>
+              </p>
+              <p>
+                Date : <span class="invoice-value">{{ details.created_at|date }}</span>
+              </p>
+            </div>
+          </div>
+        </div>
+        <!-- Bottom: Customer Details -->
+        {% if report_config.show_customer_details %}
+          <div class="customer-section">
+            <div class="customer-content">
+              <h1>{{ details.customer.name }}</h1>
+              <p>{{ details.customer.address|truncatechars:20 }}</p>
+            </div>
+          </div>
+        {% endif %}
+        <div class="content-table">
+          <div class="table-logo">
+            <img src="{% static 'images/logo.svg' %}"
+                 alt="Logo"
+                 height="200"
+                 width="200" />
+          </div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th>Description</th>
+                <th>HSN/SAC</th>
+                <th>Qty</th>
+                <th>UOM</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in values %}
+                <tr>
+                  <td class="text-center">{{ forloop.counter }}</td>
+                  <td>
+                    <div class="font-semibold">{{ item.product_variant.price_name|truncatechars:40 }}</div>
+                  </td>
+                  <td class="text-center">{{ item.hsn_code.code|default:"-" }}</td>
+                  <td class="text-center">{{ item.quantity }}</td>
+                  <td class="text-center">{{ item.product_variant.product.uom.short_code|default:"PCS" }}</td>
+                  <td class="text-right">{{ item.price|currency }}</td>
+                  <td class="text-right font-semibold">{{ item.amount|currency }}</td>
+                </tr>
+              {% endfor %}
+              <!-- Fill remaining space with empty rows for consistent printing -->
+              <tr class="empty-space">
+                <td colspan="7"></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="3" class="font-semibold">Total</td>
+                <td class="text-center font-semibold">{{ details.total_quantity }}</td>
+                <td colspan="2"></td>
+                <td class="text-right highlight font-bold">{{ details.total_amount|currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="bottom-section">
+        <div class="calculation-content">
+          <div class="amount-content">
+            <div class="terms_title">* Rupee In Words *</div>
+            <div class="font-semibold">{{ details.net_amount|currencyToWord }}</div>
+          </div>
+        </div>
+        <div class="total-amount-content">
+          <div>
+            <p>
+              <span class="text-gray-700">Total Amount:</span>
+              <span class="font-semibold">{{ details.total_amount|currency }}</span>
+            </p>
+            {% if details.advance_payment > 0 %}
+              <p>
+                <span class="text-gray-700">Advance:</span>
+                <span class="font-semibold">{{ details.advance_payment|currency }}</span>
+              </p>
+            {% endif %}
+          </div>
+          <hr>
+          <div>
+            <p class="highlight">
+              <span>Total:</span>
+              <span>{{ details.net_amount|currency }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="footer-content">
+        <div class="terms-qrcode-content">
+          <div class="terms-content {% if not report_config.show_qr_code or not qrcode %}full-width{% endif %}">
+            {% if report_config.show_terms_conditions %}
+              <div class="terms-conditions">
+                <h3 class="terms_title">Terms &amp; Conditions</h3>
+                <div class="terms_subject">
+                  {% if report_config.terms_conditions %}
+                    {{ report_config.terms_conditions|linebreaks }}
+                  {% else %}
+                    <em>1. All subjects to local jurisdiction</em>
+                    <em>2. Goods once sold will not be taken back</em>
+                    <em>3. E. &amp; O.E</em>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          {% if report_config.show_qr_code and qrcode %}
+            <div class="qrcode-content">
+              <div class="barcode">
+                <img src="data:image/png;base64,{{ qrcode }}"
+                     alt="QR Code"
+                     height="80"
+                     width="80" />
+              </div>
+            </div>
+          {% endif %}
+        </div>
+        <div class="footer-note-content">
+          {% if report_config.show_thank_you %}
+            <div class="thank-you">
+              <h3>{{ report_config.thank_you_message|default:"Thank You Please Visit Again" }}</h3>
+              <p>This is Computer Generated Invoice, Signature not Required</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <script src="{% static 'js/print.js' %}"></script>
+  </body>
+</html>

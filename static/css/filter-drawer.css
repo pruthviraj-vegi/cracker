@@ -1,0 +1,695 @@
+/* ==========================================================================
+   Filter Drawer & Advanced Filtering Components (Global Reusable Styles)
+   Used across Billing System list and management views
+   ========================================================================== */
+
+/* --- Offcanvas Slide-over Filter Drawer --- */
+.filter-drawer {
+    width: 420px !important;
+    background-color: var(--bg-surface) !important;
+    color: var(--text-primary) !important;
+    z-index: 1060 !important;
+}
+
+/* Default / Right-aligned drawer */
+.filter-drawer,
+.filter-drawer.offcanvas-end {
+    border-left: 1px solid var(--border-color) !important;
+    border-right: none !important;
+    box-shadow: -4px 0 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Left-aligned drawer */
+.filter-drawer.offcanvas-start {
+    border-left: none !important;
+    border-right: 1px solid var(--border-color) !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="dark"] .filter-drawer {
+    background-color: var(--bg-surface) !important;
+}
+
+[data-theme="dark"] .filter-drawer,
+[data-theme="dark"] .filter-drawer.offcanvas-end {
+    border-left-color: var(--border-color) !important;
+    box-shadow: -4px 0 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .filter-drawer.offcanvas-start {
+    border-right-color: var(--border-color) !important;
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.filter-drawer .offcanvas-header {
+    background: var(--bg-surface-hover, var(--bg-surface));
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 1rem 1.25rem;
+}
+
+.filter-drawer .offcanvas-footer {
+    background: var(--bg-surface-hover, var(--bg-surface));
+    border-top: 1px solid var(--border-color) !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+.filter-drawer .offcanvas-body {
+    overflow-y: auto;
+}
+
+/* --- Filter Section Grouping Cards --- */
+.filter-section-group {
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 0.5rem);
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.85rem;
+}
+
+.filter-group-heading {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.filter-header-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(13, 110, 253, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* --- Form Select Safeguards (Prevent chevron repeating in any theme) --- */
+.filter-drawer select.form-select,
+.search-filter-section select.form-select {
+    background-repeat: no-repeat !important;
+    background-position: right 0.75rem center !important;
+    background-size: 16px 12px !important;
+    padding-right: 2.25rem !important;
+}
+
+/* --- Dual Range Slider Component --- */
+.range-slider-container {
+    position: relative;
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    margin: 0.25rem 0 0.5rem 0;
+}
+
+.range-slider-track {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    z-index: 1;
+}
+
+.range-slider-progress {
+    position: absolute;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 3px;
+    z-index: 2;
+    left: 0%;
+    right: 0%;
+}
+
+.range-slider-input {
+    position: absolute;
+    width: 100%;
+    height: 6px;
+    background: none;
+    pointer-events: none;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    z-index: 3;
+}
+
+.range-slider-input::-webkit-slider-thumb {
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.range-slider-input::-moz-range-thumb {
+    height: 18px;
+    width: 18px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.range-slider-input::-webkit-slider-thumb:hover {
+    transform: scale(1.18);
+    background: var(--primary-hover, #1d4ed8);
+}
+
+.range-slider-input::-webkit-slider-thumb:active {
+    transform: scale(1.25);
+    background: var(--primary-hover, #1d4ed8);
+}
+
+.range-display-badge {
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: rgba(13, 110, 253, 0.12);
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    letter-spacing: 0.2px;
+}
+
+/* --- Custom Toggle Switch Component --- */
+.custom-toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 0;
+}
+
+.custom-toggle-switch input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.custom-toggle-slider {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    background-color: var(--border-color);
+    border-radius: 22px;
+    transition: background-color 0.25s ease;
+    flex-shrink: 0;
+    display: inline-block;
+}
+
+.custom-toggle-slider::before {
+    content: "";
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.25s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.custom-toggle-switch input:checked + .custom-toggle-slider {
+    background-color: var(--primary);
+}
+
+.custom-toggle-switch input:checked + .custom-toggle-slider::before {
+    transform: translateX(16px);
+}
+
+.custom-toggle-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* --- Segmented Control (Pills / Radio Tabs) --- */
+.segmented-control-group {
+    display: flex;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 0.375rem);
+    padding: 3px;
+    gap: 4px;
+    width: 100%;
+}
+
+.segmented-control-option {
+    flex: 1;
+    text-align: center;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.775rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+.segmented-control-option input {
+    display: none;
+}
+
+.segmented-control-option.active {
+    background: var(--primary);
+    color: var(--text-on-primary, #ffffff);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* --- Active Filter Tags / Chips --- */
+.filter-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(13, 110, 253, 0.08);
+    color: var(--primary);
+    border: 1px solid rgba(13, 110, 253, 0.25);
+    border-radius: 1rem;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.filter-tag-remove {
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--primary);
+    opacity: 0.7;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.filter-tag-remove:hover {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+/* --- Sortable Header Indicators --- */
+th.sortable {
+    cursor: pointer !important;
+    user-select: none;
+    position: relative;
+}
+
+th.sortable:hover {
+    background-color: var(--bg-surface-hover) !important;
+}
+
+th.sortable .sort-icon {
+    margin-left: 6px;
+    font-size: 0.8rem;
+    opacity: 0.35;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    vertical-align: middle;
+}
+
+th.sortable:hover .sort-icon {
+    opacity: 0.85;
+}
+
+th.sortable.asc .sort-icon,
+th.sortable.desc .sort-icon {
+    opacity: 1 !important;
+    color: var(--primary) !important;
+}
+
+/* --- Filter Funnel Button & Hover Active Filters Preview --- */
+.filter-funnel-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.filter-funnel-btn {
+    height: 36px;
+    padding: 0 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    border-radius: var(--radius-sm, 0.375rem);
+    font-size: 0.82rem;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    position: relative;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.filter-funnel-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background-color: var(--bg-surface-hover, rgba(13, 110, 253, 0.06));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.filter-funnel-btn .filter-icon {
+    font-size: 0.9rem;
+    transition: transform 0.2s ease;
+}
+
+.filter-funnel-btn:hover .filter-icon {
+    transform: scale(1.12);
+}
+
+/* Active State on Funnel Button when filters are applied */
+.filter-funnel-btn.has-active {
+    background-color: rgba(13, 110, 253, 0.12);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.2);
+}
+
+.filter-funnel-btn.has-active .filter-icon {
+    color: var(--primary);
+}
+
+/* Filter Count Badge on Funnel Button */
+.filter-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background-color: var(--primary);
+    color: #ffffff !important;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.2px;
+    animation: badgePop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes badgePop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Hover Preview Popover Dropdown */
+.filter-hover-preview {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 280px;
+    max-width: 360px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 0.5rem);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+    z-index: 1070;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+/* Safe hover buffer pseudo-element between button and preview */
+.filter-hover-preview::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 0;
+    right: 0;
+    height: 10px;
+}
+
+/* Show hover popover when hovering wrapper (only on desktop devices with true mouse hover support) */
+@media (hover: hover) and (pointer: fine) {
+    .filter-funnel-wrapper.show-hover-preview:hover .filter-hover-preview,
+    .filter-hover-preview:hover {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateY(0);
+    }
+}
+
+.filter-hover-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0.85rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-surface-hover, var(--bg-surface));
+    border-radius: var(--radius-md, 0.5rem) var(--radius-md, 0.5rem) 0 0;
+}
+
+.filter-hover-title {
+    font-size: 0.775rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+}
+
+.filter-hover-count {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 1rem;
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.filter-hover-list {
+    padding: 0.6rem 0.85rem;
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.filter-hover-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    background: var(--bg-body);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 0.375rem);
+    padding: 0.4rem 0.65rem;
+    font-size: 0.75rem;
+    transition: background-color 0.15s ease;
+}
+
+.filter-hover-item:hover {
+    background-color: var(--bg-surface-hover, var(--bg-body));
+}
+
+.filter-hover-item-content {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.filter-hover-item-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.filter-hover-item-value {
+    color: var(--text-primary);
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filter-hover-item-remove {
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.1rem 0.25rem;
+    font-size: 0.95rem;
+    line-height: 1;
+    border-radius: 0.25rem;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.filter-hover-item-remove:hover {
+    color: var(--danger, #ef4444);
+    background-color: rgba(239, 68, 68, 0.12);
+}
+
+.filter-hover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.85rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-surface-hover, var(--bg-surface));
+    font-size: 0.725rem;
+    border-radius: 0 0 var(--radius-md, 0.5rem) var(--radius-md, 0.5rem);
+}
+
+.filter-hover-clear-btn {
+    background: none;
+    border: none;
+    color: var(--danger, #ef4444);
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    transition: opacity 0.15s ease;
+}
+
+.filter-hover-clear-btn:hover {
+    text-decoration: underline;
+    opacity: 0.85;
+}
+
+.filter-hover-hint {
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 0.7rem;
+}
+
+/* --- Quick Date Preset Pills --- */
+.date-preset-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+}
+
+.date-preset-btn {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 9999px;
+    background: var(--bg-surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-weight: 500;
+    line-height: 1.2;
+}
+
+.date-preset-btn:hover {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+}
+
+.date-preset-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    font-weight: 600;
+}
+
+/* --- Inline Active Filter Chips Bar (Touch & Mobile Friendly) --- */
+.active-filters-bar {
+    display: none !important;
+}
+
+.active-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    animation: filterChipFadeIn 0.2s ease;
+}
+
+@keyframes filterChipFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.active-filter-chip-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.active-filter-chip-value {
+    font-weight: 700;
+}
+
+.active-filter-chip-remove {
+    cursor: pointer;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--text-secondary);
+    transition: color 0.15s ease;
+}
+
+.active-filter-chip-remove:hover {
+    color: var(--danger, #ef4444);
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 768px), (hover: none) {
+    .active-filters-bar {
+        display: none !important;
+    }
+    .filter-hover-preview {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .filter-drawer {
+        width: 100% !important;
+    }
+}
+
+

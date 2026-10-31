@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Customer Dashboard
+{% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}">
+{% endblock extra_css %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header page-header-sticky">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h2 class="page-title mb-0">Customer Dashboard</h2>
+            <span class="live-store-badge">
+                <span class="live-pulse-dot"></span>
+                Credit &amp; Accounts
+            </span>
+        </div>
+        <div class="page-actions dash-actions-group">
+            <!-- Date Filter Dropdown -->
+            {% include "common/_date_filter.html" with hide_custom=True %}
+            {% if perms.customer.add_customer %}
+                <a href="{% url 'customer:home' %}" class="btn btn-dash-action primary">
+                    <i class="fas fa-users"></i>
+                    All Customers
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'customer:home' %}" class="breadcrumb-item">Customers</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Dashboard</span>
+    </nav>
+
+    <!-- Loading State -->
+    <div id="dashboardLoading" class="loading-container hidden">
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            Loading dashboard data...
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div id="dashboardContent" class="dashboardContent">
+        <!-- ── HERO OVERVIEW TIER ── -->
+        <div class="dash-hero-grid">
+            <!-- Total Sales & Inflow Hero Card -->
+            <div class="dash-hero-card dash-stagger-item" style="--delay: 1;">
+                <div>
+                    <div class="hero-card-header">
+                        <span class="hero-card-title">
+                            <i class="fa-solid fa-chart-line"></i>
+                            Customer Sales &amp; Collections
+                        </span>
+                        <span class="hero-tag">Period Sales</span>
+                    </div>
+                    <div class="hero-val-display">
+                        <span class="hero-number-lg counting-number" id="heroTotalSales" data-count="0">0</span>
+                    </div>
+                    <div class="stat-label-small" style="margin-top: 0.15rem;">
+                        Net billed to customers in selected period
+                    </div>
+                </div>
+
+                <div class="hero-submetrics">
+                    <div class="hero-submetric-item">
+                        <span class="hero-submetric-label">Received Inflow</span>
+                        <div class="hero-submetric-val profit-val">
+                            <span class="counting-number" id="heroTotalReceived" data-count="0">0</span>
+                        </div>
+                    </div>
+                    <div class="hero-submetric-item">
+                        <span class="hero-submetric-label">Period Outstanding</span>
+                        <div class="hero-submetric-val">
+                            <span class="counting-number" id="heroOutstandingBalance" data-count="0">0</span>
+                        </div>
+                    </div>
+                    <div class="hero-submetric-item">
+                        <span class="hero-submetric-label">Total Invoices</span>
+                        <div class="hero-submetric-val">
+                            <span class="counting-number" id="heroTotalInvoices" data-count="0">0</span> bills
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Credit Exposure & Accounts Health -->
+            <div class="dash-hero-card dash-stagger-item" style="--delay: 2;">
+                <div>
+                    <div class="hero-card-header">
+                        <span class="hero-card-title">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                            Credit Exposure &amp; Client Base
+                        </span>
+                        <span class="hero-tag">All-Time Balance</span>
+                    </div>
+                    <div class="health-highlights-row mt-2">
+                        <div class="health-box">
+                            <span class="health-box-label">
+                                <i class="fa-solid fa-triangle-exclamation text-danger"></i>
+                                Total Credit Outstanding
+                            </span>
+                            <div class="health-box-val">
+                                <span class="counting-number" id="totalOutstanding" data-count="{{ total_outstanding|default:0 }}">0</span>
+                            </div>
+                            <span class="health-box-sub">Overall pending customer credit balance</span>
+                        </div>
+                        <div class="health-box">
+                            <span class="health-box-label">
+                                <i class="fa-solid fa-users"></i>
+                                Registered Client Base
+                            </span>
+                            <div class="health-box-val">
+                                <span>{{ total_customers|default:0 }}</span>
+                            </div>
+                            <span class="health-box-sub">Active registered customer accounts</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── ANALYTICS SECTION ── -->
+        <!-- Sales Comparison Chart (Controlled Compact Height) -->
+        <div class="chart-card revenue-chart-card dash-stagger-item" style="--delay: 3;">
+            <div class="chart-header">
+                <h3 class="chart-title">
+                    <i class="fa-solid fa-chart-area me-1"></i>
+                    Customer Sales Trajectory
+                </h3>
+                <div class="chart-summary-stats">
+                    <div class="stat-item">
+                        <span class="stat-label-small">
+                            <span class="legend-dot text-primary"></span>
+                            Current
+                        </span>
+                        <span class="stat-value-small" id="revCurrentTotal">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label-small">
+                            <span class="legend-dot text-secondary"></span>
+                            Previous
+                        </span>
+                        <span class="stat-value-small" id="revPreviousTotal">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label-small">Delta</span>
+                        <span class="stat-change" id="revChange">--</span>
+                    </div>
+                </div>
+            </div>
+            <div class="chart-container-compact">
+                <canvas id="comparisonChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Three Donut Charts in a Single Row -->
+        <div class="charts-three-col-grid dash-stagger-item" style="--delay: 5;">
+            <!-- Invoice Status Donut -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fa-solid fa-file-lines me-1"></i>
+                        Invoice Settlement Status
+                    </h3>
+                </div>
+                <div class="chart-row">
+                    <div class="donut-wrap">
+                        <canvas id="invoiceStatusChart" width="220" height="220"></canvas>
+                        <div class="center-info">
+                            <div class="center-label">TOTAL</div>
+                            <div class="center-val">0</div>
+                            <div class="center-pct">100%</div>
+                        </div>
+                    </div>
+                    <div class="legend" id="invoiceStatusLegend"></div>
+                </div>
+            </div>
+
+            <!-- Payment Type Donut -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fa-solid fa-credit-card me-1"></i>
+                        Payment Type (Cash vs Credit)
+                    </h3>
+                </div>
+                <div class="chart-row">
+                    <div class="donut-wrap">
+                        <canvas id="paymentTypeChart" width="220" height="220"></canvas>
+                        <div class="center-info">
+                            <div class="center-label">TOTAL</div>
+                            <div class="center-val">0</div>
+                            <div class="center-pct">100%</div>
+                        </div>
+                    </div>
+                    <div class="legend" id="paymentTypeLegend"></div>
+                </div>
+            </div>
+
+            <!-- Sales by Top Customers Card -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">
+                        <i class="fa-solid fa-award me-1"></i>
+                        Top Customers by Sales Volume
+                    </h3>
+                </div>
+                <div class="chart-row">
+                    <div class="donut-wrap">
+                        <canvas id="customerChart" width="220" height="220"></canvas>
+                        <div class="center-info">
+                            <div class="center-label">TOTAL</div>
+                            <div class="center-val">0</div>
+                            <div class="center-pct">100%</div>
+                        </div>
+                    </div>
+                    <div class="legend" id="customerLegend"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="dashboardError" class="error-container hidden">
+        <div class="error-message">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Failed to load dashboard data</h3>
+            <p>Please try again or contact support if the problem persists.</p>
+            <button type="button" class="btn btn-primary" id="retryDashboardBtn">
+                <i class="fas fa-refresh"></i>
+                Retry
+            </button>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <!-- Chart.js Library -->
+    <script src="{% static 'assets/plugins/chart/chart-4.5.js' %}"></script>
+    <script src="{% static 'js/modern-charts.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let lastDashboardData = null;
+
+        // Initialize Charts
+        const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+        const invoiceStatusCtx = document.getElementById('invoiceStatusChart').getContext('2d');
+        const paymentTypeCtx = document.getElementById('paymentTypeChart').getContext('2d');
+        const customerCtx = document.getElementById('customerChart').getContext('2d');
+
+        let comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
+        let invoiceStatusChart = ModernCharts.initDoughnut(invoiceStatusCtx);
+        let paymentTypeChart = ModernCharts.initDoughnut(paymentTypeCtx);
+        let customerChart = ModernCharts.initDoughnut(customerCtx);
+
+        // Fetch Data Function
+        async function fetchDashboardData(filter) {
+            try {
+                document.getElementById('dashboardError').style.display = 'none';
+
+                // Subtle loading transition
+                const dashContent = document.getElementById('dashboardContent');
+                dashContent.style.opacity = '0.7';
+
+                let filterVal = 'today';
+                let fromDate = null;
+                let toDate = null;
+
+                if (typeof filter === 'string' && filter) {
+                    filterVal = filter;
+                } else if (filter && typeof filter === 'object') {
+                    filterVal = filter.date_filter || filter.value || filter.data?.date_filter || 'today';
+                    fromDate = filter.from_date || filter.fromDate || filter.data?.from_date;
+                    toDate = filter.to_date || filter.toDate || filter.data?.to_date;
+                }
+
+                let url = `{% url "customer:dashboard_fetch" %}?date_filter=${encodeURIComponent(filterVal)}`;
+                if (fromDate && toDate) {
+                    url += `&from_date=${encodeURIComponent(fromDate)}&to_date=${encodeURIComponent(toDate)}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    lastDashboardData = data;
+                    updateDashboard(data);
+                    dashContent.style.opacity = '1';
+                } else {
+                    throw new Error(data.message || 'Failed to fetch data');
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                document.getElementById('dashboardContent').style.opacity = '1';
+                document.getElementById('dashboardError').style.display = 'flex';
+            }
+        }
+
+        function updateDashboard(data) {
+            if (!data) return;
+            const stats = data.stats || {};
+
+            // 1. Rollup Animated Counters
+            if (typeof updateAllCounters === 'function') {
+                updateAllCounters({
+                    heroTotalSales: stats.total_sales || 0,
+                    heroTotalReceived: stats.total_received || 0,
+                    heroOutstandingBalance: stats.outstanding_balance || 0,
+                    heroTotalInvoices: stats.total_invoices || 0
+                });
+            }
+
+            // 2. Update Revenue Comparison Chart
+            if (data.comparison_data) {
+                const { currentData, previousData } = ModernCharts.updateRevenueChart(comparisonChart, data.comparison_data);
+
+                ModernCharts.updateSummaryStats(currentData, previousData, {
+                    current: 'revCurrentTotal',
+                    previous: 'revPreviousTotal',
+                    change: 'revChange'
+                });
+            }
+
+            // 3. Update Invoice Status Chart
+            ModernCharts.updateDoughnut(
+                invoiceStatusChart,
+                'invoiceStatusLegend',
+                data.payment_status_breakdown,
+                { label: 'payment_status', count: 'count', amount: 'amount', percentage: 'percentage' }
+            );
+
+            // 4. Update Payment Type Chart
+            ModernCharts.updateDoughnut(
+                paymentTypeChart,
+                'paymentTypeLegend',
+                data.payment_type_breakdown,
+                { label: 'payment_type', count: 'count', amount: 'amount', percentage: 'percentage' }
+            );
+
+            // 5. Update Customer Chart
+            ModernCharts.updateDoughnut(
+                customerChart,
+                'customerLegend',
+                data.customer_breakdown,
+                { label: 'customer_name', count: 'count', amount: 'amount', percentage: 'percentage' }
+            );
+        }
+
+        // Initialize styled date filter dropdown
+        initDateFilter('dateFilter', {
+            onChange: function(data) {
+                fetchDashboardData(data);
+            }
+        });
+
+        const retryBtn = document.getElementById('retryDashboardBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                document.getElementById('dashboardError').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'block';
+                const curData = getDateFilterData('dateFilter');
+                fetchDashboardData(curData.isValid ? curData.data : 'today');
+            });
+        }
+
+        // Seamless chart re-render when theme changes (instant, 0ms, zero network calls)
+        document.addEventListener('themeChanged', function() {
+            requestAnimationFrame(function() {
+                comparisonChart.destroy();
+                invoiceStatusChart.destroy();
+                paymentTypeChart.destroy();
+                customerChart.destroy();
+
+                comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
+                invoiceStatusChart = ModernCharts.initDoughnut(invoiceStatusCtx);
+                paymentTypeChart = ModernCharts.initDoughnut(paymentTypeCtx);
+                customerChart = ModernCharts.initDoughnut(customerCtx);
+
+                if (lastDashboardData) {
+                    updateDashboard(lastDashboardData);
+                }
+            });
+        });
+
+        // Initial Load
+        fetchDashboardData('today');
+    });
+    </script>
+{% endblock extra_js %}

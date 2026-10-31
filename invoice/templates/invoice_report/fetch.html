@@ -1,0 +1,27 @@
+{% load custom_filters %}
+{% if page_obj %}
+  {% for value in page_obj %}
+    <tr>
+      <td>{{ value.invoice_date|date:"M j, Y" }}</td>
+      <td>{{ value.invoice_number|default:"-" }}</td>
+      <td>{{ value.customer.name|default:"-" }}</td>
+      <td>{{ value.get_gst_type_display }}</td>
+      <td>{{ value.total_tax_value|currency }}</td>
+      <td class="mobile-hide">{{ value.cgst_amount|currency }}</td>
+      <td class="mobile-hide">{{ value.cgst_amount|currency }}</td>
+      <td class="mobile-hide">{{ value.igst_amount|currency }}</td>
+      <td class="mobile-hide">{{ value.total_gst_amount|currency }}</td>
+      <td>{{ value.total_payable|currency }}</td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="100" class="text-center p-3">
+      <div class="empty-state">
+        <i class="fas fa-file-invoice-dollar"></i>
+        <h4>No Invoices Found</h4>
+        <p>No invoices have been recorded for this date range.</p>
+      </div>
+    </td>
+  </tr>
+{% endif %}

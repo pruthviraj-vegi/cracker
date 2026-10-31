@@ -1,0 +1,30 @@
+{% load custom_filters %}
+{% if page_obj %}
+  {% for data in page_obj %}
+    <tr>
+      <td>{{ data.invoice.invoice_date|date:"M d, Y" }}</td>
+      <td>
+        <a href="{% url 'invoice:detail' data.invoice.id %}"
+           class="text-primary">{{ data.invoice.invoice_number }}</a>
+      </td>
+      <td class="mobile-hide">{{ data.product_variant.product.name }}</td>
+      <td class="mobile-hide">{{ data.quantity|floatformat:2 }}</td>
+      <td class="mobile-hide">{{ data.unit_price|currency }}</td>
+      <td>{{ data.discounted_amount|currency }}</td>
+      <td class="mobile-hide">{{ data.commission_percentage|floatformat:2 }}%</td>
+      <td>
+        <strong class="text-success">{{ data.commission_amount|currency }}</strong>
+      </td>
+    </tr>
+  {% endfor %}
+{% else %}
+  <tr>
+    <td colspan="8" class="text-center p-2">
+      <div class="empty-state">
+        <i class="fas fa-percentage"></i>
+        <h4>No Commission Data Found</h4>
+        <p>No commission data found for the selected filters.</p>
+      </div>
+    </td>
+  </tr>
+{% endif %}

@@ -1,0 +1,154 @@
+<div class="modal fade" id="new_uom" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title text-center">New UOM</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Simple Category Form for AJAX Modal -->
+        <form method="#" id="add_new_uom" autocomplete="off">
+          {% csrf_token %}
+          <!-- Form Errors -->
+          {% if uom_form.non_field_errors %}
+            <div class="form-errors">
+              {% for error in uom_form.non_field_errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-triangle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+          
+          <!-- Name Field -->
+          <div class="form-group {% if uom_form.name.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.name.id_for_label }}" class="form-label">UOM Name</label>
+            {{ uom_form.name }}
+            <small class="form-help"><span class="form-help-text">e.g., Piece, Dozen, Meter, Kilogram</span></small>
+            {% if uom_form.name.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.name.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Short Code Field -->
+          <div class="form-group {% if uom_form.short_code.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.short_code.id_for_label }}" class="form-label">Short Code</label>
+            {{ uom_form.short_code }}
+            <small class="form-help"><span class="form-help-text">e.g., pcs, doz, m, kg</span></small>
+            {% if uom_form.short_code.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.short_code.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Category Field -->
+          <div class="form-group {% if uom_form.category.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.category.id_for_label }}" class="form-label">Category</label>
+            {{ uom_form.category }}
+            <small class="form-help"><span class="form-help-text">e.g., Quantity, Weight, Length, Volume</span></small>
+            {% if uom_form.category.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.category.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+
+          <!-- Conversion Factor Field -->
+          <div class="form-group {% if uom_form.conversion_factor.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.conversion_factor.id_for_label }}" class="form-label">Conversion Factor</label>
+            {{ uom_form.conversion_factor }}
+            <small class="form-help"><span class="form-help-text">e.g., 12 for dozen (1 dozen = 12 pieces)</span></small>
+            {% if uom_form.conversion_factor.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.conversion_factor.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Base Unit Field -->
+          <div class="form-group {% if uom_form.base_unit.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.base_unit.id_for_label }}">
+              {{ uom_form.base_unit }}
+              Base Unit
+            </label>
+            <small class="form-help"><span class="form-help-text">Mark if this is the base unit for conversions</span></small>
+            {% if uom_form.base_unit.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.base_unit.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Is Active Field -->
+          <div class="form-group {% if uom_form.is_active.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.is_active.id_for_label }}">
+              {{ uom_form.is_active }}
+              Is Active
+            </label>
+            <small class="form-help"><span class="form-help-text">Whether this UOM is active or not</span></small>
+            {% if uom_form.is_active.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.is_active.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          
+          <!-- Description Field -->
+          <div class="form-group {% if uom_form.description.errors %}has-error{% endif %}">
+            <label for="{{ uom_form.description.id_for_label }}">Description (Optional)</label>
+            {{ uom_form.description }}
+            <small class="form-help"><span class="form-help-text">Optional notes about this UOM</span></small>
+            {% if uom_form.description.errors %}
+              <div class="field-errors">
+                {% for error in uom_form.description.errors %}
+                  <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    {{ error }}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <!-- Submit Button -->
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary">Add UOM</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div> 

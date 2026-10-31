@@ -1,0 +1,107 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    All Varinats - {% now "F d, Y" %}
+{% endblock title %}
+{% block style %}
+    <link rel="stylesheet" href="styles/A4.css" />
+{% endblock style %}
+{% block content %}
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="shop-info">
+                    {% if shop_details %}
+                        {% if shop_details.shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+                        <div class="shop-details">
+                            {% if shop_details.address_line_one %}<p>{{ shop_details.address_line_one }}</p>{% endif %}
+                            {% if shop_details.gst_no %}
+                                <p>
+                                    <strong>GST:</strong> {{ shop_details.gst_no }}
+                                </p>
+                            {% endif %}
+                            {% if shop_details.contact_info %}
+                                <p>
+                                    <strong>Contact:</strong> {{ shop_details.contact_info }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="report-info">
+                    <div class="report-title">Variants List</div>
+                    <div class="report-meta">
+                        <p>
+                            <strong>Generated:</strong> {% now "F d, Y h:i A" %}
+                        </p>
+                        <p>
+                            <strong>Total Records:</strong> {{ total_count }}
+                        </p>
+                        <p>
+                            <strong>Total Outstanding:</strong> {{ total_outstanding|currency }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Table Section -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">ID</th>
+                        <th>Barcode</th>
+                        <th>Name</th>
+                        <th>Brand</th>
+                        <th>Category</th>
+                        <th>Quantity</th>
+                        <th>MRP</th>
+                        <th>Discount</th>
+                        <th>Final Price</th>
+                        <th>Created At</th>
+                        <th>Updated At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if variants %}
+                        {% for variant in variants %}
+                            <tr>
+                                <td class="text-center">{{ variant.id }}</td>
+                                <td>{{ variant.barcode|default:"-" }}</td>
+                                <td>
+                                    <strong class="text-primary">{{ variant.product.name|default:"N/A" }}</strong>
+                                </td>
+                                <td class="text-muted">{{ variant.product.brand|default:"-" }} {{ variant.size.name }} {{ variant.color.name }}</td>
+                                <td class="text-muted">{{ variant.product.category.name|default:"-" }}</td>
+                                <td class="text-center">{{ variant.quantity|default:"-" }}</td>
+                                <td class="text-center">{{ variant.mrp|currency }}</td>
+                                <td class="text-center">{{ variant.discount_percentage|default:"-" }}</td>
+                                <td class="text-center">{{ variant.final_price|currency }}</td>
+                                <td>{{ variant.created_at|date:"M d, Y" }}</td>
+                                <td>{{ variant.updated_at|date:"M d, Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="100" class="text-center empty-state">
+                                <p class="text-muted">No variants found matching the criteria.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <div class="total-info">
+                <p>
+                    <strong>Total Variants: {{ total_count }}</strong>
+                </p>
+            </div>
+            <p>This is a computer-generated report. No signature required.</p>
+            <p>Generated on {% now "F d, Y \a\t h:i A" %}</p>
+        </div>
+    </div>
+{% endblock content %}

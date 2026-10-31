@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Payment Methods
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">Payment Methods</h1>
+        <div class="page-actions">
+            {% if perms.setting.view_paymentdetails %}
+                <a href="{% url 'setting:payment_details_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Payment Method
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'setting:shop_settings_dashboard' %}"
+               class="breadcrumb-item">Settings</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Payment Methods</span>
+        </nav>
+
+        <form method="get" class="search-filter-form">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search by name, UPI ID, bank..."
+                       value="{{ search_query }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search_query %}
+                <a href="{% url 'setting:payment_details_list' %}" class="btn">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Payment Details Table -->
+    <div class="table-container">
+        {% if payments %}
+            <table class="data-table">
+                <thead>
+                    <!-- Desktop Header -->
+                    <tr class="mobile-hide">
+                        <th>Payment Name</th>
+                        <th class="mobile-hide">Type</th>
+                        <th>Details</th>
+                        <th>Status</th>
+                        <th class="mobile-hide">Priority</th>
+                        <th>Actions</th>
+                    </tr>
+                    <!-- Mobile Header (<768px) -->
+                    <tr class="mobile-table-row">
+                        <th>Payment & Details</th>
+                        <th>Status & Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                        <tr>
+                            <!-- Desktop Cells -->
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ payment.payment_name }}</strong>
+                                    {% if payment.is_default %}<span class="badge badge-success">Default</span>{% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                <span class="badge badge-info">{{ payment.get_payment_type_display }}</span>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    {% if payment.payment_type == 'UPI' %}
+                                        <strong>{{ payment.upi_id }}</strong>
+                                    {% elif payment.payment_type == 'BANK' %}
+                                        <strong>{{ payment.bank_name }}</strong>
+                                        <div class="secondary-text">{{ payment.account_number }}</div>
+                                    {% elif payment.payment_type == 'QR' %}
+                                        {% if payment.qr_code_image %}
+                                            <a href="{{ payment.qr_code_image.url }}" target="_blank">View QR</a>
+                                        {% else %}
+                                            No Image
+                                        {% endif %}
+                                    {% else %}
+                                        {{ payment.description|truncatechars:30 }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                {% if payment.is_active %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">{{ payment.display_order }}</td>
+                            <td class="mobile-hide">
+                                <div class="action-buttons">
+                                    {% if perms.setting.view_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_detail' payment.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_edit' payment.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_delete' payment.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Mobile Cells (<768px) -->
+                            <td class="mobile-table-cell">
+                                <div>
+                                    <strong class="text-primary">{{ payment.payment_name }}</strong>
+                                    {% if payment.is_default %}<span class="badge badge-success ms-1">Default</span>{% endif %}
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    <span class="badge badge-info me-1">{{ payment.get_payment_type_display }}</span>
+                                    {% if payment.payment_type == 'UPI' %}
+                                        <code>{{ payment.upi_id }}</code>
+                                    {% elif payment.payment_type == 'BANK' %}
+                                        {{ payment.bank_name }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-table-cell">
+                                <div>
+                                    {% if payment.is_active %}
+                                        <span class="status-badge status-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="action-buttons mt-1">
+                                    {% if perms.setting.view_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_detail' payment.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_edit' payment.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_paymentdetails %}
+                                        <a href="{% url 'setting:payment_details_delete' payment.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Pagination -->
+            {% if payments.paginator.num_pages > 1 %}
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Showing {{ payments.start_index }} to {{ payments.end_index }} of {{ payments.paginator.count }} entries
+                    </div>
+                    <div class="pagination-controls">
+                        {% if payments.has_previous %}
+                            <a href="?page={{ payments.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                               class="btn btn-sm">Previous</a>
+                        {% endif %}
+                        {% for num in payments.paginator.page_range %}
+                            {% if payments.number == num %}
+                                <span class="btn btn-sm btn-primary">{{ num }}</span>
+                            {% elif num > payments.number|add:'-3' and num < payments.number|add:'3' %}
+                                <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                                   class="btn btn-sm">{{ num }}</a>
+                            {% endif %}
+                        {% endfor %}
+                        {% if payments.has_next %}
+                            <a href="?page={{ payments.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                               class="btn btn-sm">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-credit-card empty-state-icon"></i>
+                <h3>No Payment Methods Found</h3>
+                <p>Add payment methods to accept payments from your customers.</p>
+                <a href="{% url 'setting:payment_details_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Payment Method
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}

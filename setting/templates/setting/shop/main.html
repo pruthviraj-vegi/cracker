@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Shop Details
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">Shop Details</h1>
+        <div class="page-actions">
+            {% if perms.setting.add_shopdetails %}
+                <a href="{% url 'setting:shop_details_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Shop Details
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Address</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">All Address</span>
+        </nav>
+
+        <form method="get" class="search-filter-form">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search by shop name, city, state, or phone..."
+                       value="{{ search_query }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </form>
+    </div>
+    <!-- Shop Details Table -->
+    <div class="table-container">
+        {% if shops %}
+            <table class="data-table">
+                <thead>
+                    <!-- Desktop Header -->
+                    <tr class="mobile-hide">
+                        <th>Shop Name</th>
+                        <th class="mobile-hide">Address</th>
+                        <th>Contact</th>
+                        <th class="mobile-hide">GST Number</th>
+                        <th>Status</th>
+                        <th class="mobile-hide">Created</th>
+                        <th>Actions</th>
+                    </tr>
+                    <!-- Mobile Header (<768px) -->
+                    <tr class="mobile-table-row">
+                        <th>Shop & Address</th>
+                        <th>Status & Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for shop in shops %}
+                        <tr>
+                            <!-- Desktop Cells -->
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ shop.shop_name }}</strong>
+                                    {% if shop.logo %}<small><i class="fas fa-image"></i> Has Logo</small>{% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ shop.city }}, {{ shop.state }}</strong>
+                                    <br>
+                                    <div class="secondary-text">{{ shop.pincode }}</div>
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ shop.phone_number }}</strong>
+                                    {% if shop.phone_two %}
+                                        <br>
+                                        <div class="secondary-text">{{ shop.phone_two }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                {% if shop.gst_no %}
+                                    <span class="badge badge-info">{{ shop.gst_no }}</span>
+                                {% else %}
+                                    <span class="text-muted">No GST</span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">
+                                {% if shop.is_active %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">
+                                <small>{{ shop.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="action-buttons">
+                                    {% if perms.setting.view_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_detail' shop.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_edit' shop.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_delete' shop.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Mobile Cells (<768px) -->
+                            <td class="mobile-table-cell">
+                                <div>
+                                    <strong class="text-primary">{{ shop.shop_name }}</strong>
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ shop.city }}, {{ shop.state }}
+                                    <br>
+                                    <i class="fas fa-phone me-1"></i>{{ shop.phone_number }}
+                                </div>
+                            </td>
+                            <td class="mobile-table-cell">
+                                <div>
+                                    {% if shop.is_active %}
+                                        <span class="status-badge status-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="action-buttons mt-1">
+                                    {% if perms.setting.view_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_detail' shop.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_edit' shop.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_shopdetails %}
+                                        <a href="{% url 'setting:shop_details_delete' shop.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-store empty-state-icon"></i>
+                <h3>No Shop Details Found</h3>
+                <p>Get started by adding your shop details to generate professional invoices.</p>
+                <a href="{% url 'setting:shop_details_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Shop Details
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}

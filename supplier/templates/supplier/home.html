@@ -1,0 +1,452 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  Suppliers Management
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">Suppliers</h2>
+    <div class="page-actions">
+      {% if perms.supplier.download_report %}
+        <a href="#" id="downloadBtn" class="btn btn-primary">
+          <i class="fas fa-download"></i>
+          Download
+        </a>
+      {% endif %}
+      {% if perms.supplier.download_report %}
+        <button type="button" class="btn btn-info" id="downloadReportBtn">
+          <i class="fas fa-download"></i>
+          Download Report
+        </button>
+      {% endif %}
+      {% if perms.supplier.add_supplier %}
+        <a href="{% url 'supplier:create' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i>
+          Add Supplier
+        </a>
+      {% endif %}
+    </div>
+  </div>
+  <!-- Search and Filter Section with Inline Breadcrumbs -->
+  <div class="search-filter-section">
+    <!-- Inline Breadcrumbs -->
+    <nav class="breadcrumb-inline" aria-label="breadcrumb">
+      <a href="{% url 'supplier:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">All Suppliers</span>
+    </nav>
+
+    <form method="get"
+          class="search-filter-form"
+          id="searchForm"
+          autocomplete="off">
+      <div class="search-group search-expanded">
+        <i class="fas fa-search search-icon"></i>
+        <input type="search"
+               name="search"
+               class="search-input"
+               placeholder="Search suppliers by name, contact, phone, email, or GSTIN..."
+               id="searchInput"
+               autofocus />
+      </div>
+
+      <!-- Funnel Button with Active Count & Hover Preview Popover -->
+      <div class="filter-funnel-wrapper" id="filterFunnelWrapper">
+        <button type="button" class="filter-funnel-btn" id="openFilterDrawerBtn" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer" aria-controls="filterDrawer" title="Open Filters Drawer">
+          <i class="fas fa-filter filter-icon"></i>
+          <span class="filter-btn-text d-none d-sm-inline">Filters</span>
+          <span id="activeFilterBadge" class="filter-count-badge d-none">0</span>
+        </button>
+
+        <!-- Floating Hover Preview (shows active filter names and values on hover) -->
+        <div class="filter-hover-preview d-none d-md-block" id="filterHoverPreview" role="tooltip" aria-hidden="true">
+          <div class="filter-hover-header">
+            <span class="filter-hover-title">
+              <i class="fas fa-filter me-1 text-primary"></i> Active Filters
+            </span>
+            <span class="filter-hover-count" id="filterHoverCount">0</span>
+          </div>
+          <div class="filter-hover-list" id="filterHoverList">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="filter-hover-footer">
+            <button type="button" class="filter-hover-clear-btn" id="filterHoverClearAll">
+              <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+            <span class="filter-hover-hint">Click button to edit</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-search"></i>
+        Search
+      </button>
+
+      <!-- Slide-over Filter Offcanvas Drawer (Right Side) -->
+      <div class="offcanvas offcanvas-end filter-drawer" tabindex="-1" id="filterDrawer" aria-labelledby="filterDrawerLabel">
+        <div class="offcanvas-header border-bottom">
+          <div class="d-flex align-items-center">
+            <div class="filter-header-icon me-2">
+              <i class="fas fa-sliders-h text-primary"></i>
+            </div>
+            <div>
+              <h5 class="offcanvas-title font-weight-bold mb-0" id="filterDrawerLabel">Filter Suppliers</h5>
+              <small class="text-muted">Filter by status, balance due, GSTIN &amp; city</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+          <!-- Section 1: Supplier & Account Status -->
+          <div class="filter-section-group mb-3">
+            <h6 class="filter-group-heading">
+              <i class="fas fa-user-shield text-primary me-2"></i>Account &amp; Status
+            </h6>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="statusFilter" class="form-label font-weight-bold">Status</label>
+                <select name="status" class="form-select" id="statusFilter">
+                  <option value="">Active Only</option>
+                  <option value="inactive">Inactive / Deleted</option>
+                  <option value="all">All Suppliers</option>
+                </select>
+              </div>
+              <div class="col-6">
+                <label for="balanceStatusFilter" class="form-label font-weight-bold">Balance Due</label>
+                <select name="balance_status" class="form-select" id="balanceStatusFilter">
+                  <option value="">All Balances</option>
+                  <option value="outstanding">Has Balance Due (&gt; 0)</option>
+                  <option value="cleared">Cleared / Zero (= 0)</option>
+                  <option value="advance">In Advance / Credit (&lt; 0)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <!-- GST Registered Toggle -->
+              <label class="custom-toggle-switch">
+                <input type="checkbox" name="gst_only" id="gstOnlyCheck" value="1">
+                <span class="custom-toggle-slider"></span>
+                <span class="custom-toggle-label">GST Registered Only</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 2: Balance Due Range with Dual Range Slider -->
+          <div class="filter-section-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <h6 class="filter-group-heading mb-0">
+                <i class="fas fa-coins text-primary me-2"></i>Balance Due Range
+              </h6>
+              <span class="range-display-badge" id="balanceRangeDisplay">0.00 - {{ slider_max_balance|default:"1200000" }}.00</span>
+            </div>
+
+            <!-- Dual Range Slider for Balance Due -->
+            <div class="range-slider-container">
+              <div class="range-slider-track"></div>
+              <div class="range-slider-progress" id="balanceRangeProgress"></div>
+              <input type="range" class="range-slider-input" id="minBalanceRange" min="0" max="{{ slider_max_balance|default:"1200000" }}" step="1000" value="0">
+              <input type="range" class="range-slider-input" id="maxBalanceRange" min="0" max="{{ slider_max_balance|default:"1200000" }}" step="1000" value="{{ slider_max_balance|default:"1200000" }}">
+            </div>
+
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <label for="minBalanceFilter" class="form-label text-muted small mb-1">Min Balance</label>
+                <input type="number"
+                       name="min_balance"
+                       id="minBalanceFilter"
+                       class="form-control form-control-sm"
+                       placeholder="0.00"
+                       step="0.01"
+                       min="0"
+                       max="{{ slider_max_balance|default:"1200000" }}">
+              </div>
+              <div class="col-6">
+                <label for="maxBalanceFilter" class="form-label text-muted small mb-1">Max Balance</label>
+                <input type="number"
+                       name="max_balance"
+                       id="maxBalanceFilter"
+                       class="form-control form-control-sm"
+                       placeholder="{{ slider_max_balance|default:"1200000" }}.00"
+                       step="0.01"
+                       min="0"
+                       max="{{ slider_max_balance|default:"1200000" }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Location / City -->
+          <div class="filter-section-group mb-3">
+            <h6 class="filter-group-heading">
+              <i class="fas fa-map-marker-alt text-primary me-2"></i>Location
+            </h6>
+            <div class="mb-2">
+              <label for="cityFilter" class="form-label font-weight-bold">City</label>
+              <select name="city" class="form-select" id="cityFilter">
+                <option value="">All Cities</option>
+                {% for city in cities %}
+                  <option value="{{ city }}">{{ city }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Section 4: Created Date Range -->
+          <div class="filter-section-group mb-3">
+            <h6 class="filter-group-heading">
+              <i class="fas fa-calendar-alt text-primary me-2"></i>Registration Date
+            </h6>
+            <!-- Quick Date Presets -->
+            <div class="date-preset-group">
+              <button type="button" class="date-preset-btn" data-preset="today" data-from="#createdFromFilter" data-to="#createdToFilter">Today</button>
+              <button type="button" class="date-preset-btn" data-preset="this_month" data-from="#createdFromFilter" data-to="#createdToFilter">This Month</button>
+              <button type="button" class="date-preset-btn" data-preset="last_month" data-from="#createdFromFilter" data-to="#createdToFilter">Last Month</button>
+              <button type="button" class="date-preset-btn" data-preset="this_fy" data-from="#createdFromFilter" data-to="#createdToFilter">This FY</button>
+            </div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label for="createdFromFilter" class="form-label text-muted small mb-1">From Date</label>
+                <input type="date"
+                       name="created_from"
+                       id="createdFromFilter"
+                       class="form-control form-control-sm"
+                       title="Registration from date">
+              </div>
+              <div class="col-6">
+                <label for="createdToFilter" class="form-label text-muted small mb-1">To Date</label>
+                <input type="date"
+                       name="created_to"
+                       id="createdToFilter"
+                       class="form-control form-control-sm"
+                       title="Registration to date">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drawer Actions (Sticky Footer) -->
+        <div class="offcanvas-footer p-3 border-top d-flex gap-2">
+          <button type="button" class="btn btn-secondary flex-fill" id="resetModalFiltersBtn">
+            <i class="fas fa-undo me-1"></i> Reset
+          </button>
+          <button type="button" class="btn btn-primary flex-fill" id="applyModalFiltersBtn">
+            <i class="fas fa-check me-1"></i> Apply Filters
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+  <!-- Suppliers Table -->
+  <div class="table-container">
+    <table class="data-table" id="data_table" data-sort="">
+      <thead>
+        <tr>
+          <th class="sortable mobile-hide" data-sort="id">ID</th>
+          <th class="sortable" data-sort="name">Supplier Name</th>
+          <th class="mobile-hide">Address</th>
+          <th class="sortable" data-sort="phone">Phone</th>
+          <th class="sortable mobile-hide" data-sort="gstin">GSTIN</th>
+          <th>Status</th>
+          <th class="sortable" data-sort="balance_due">Balance Due</th>
+          <th class="sortable mobile-hide" data-sort="created_at">Created</th>
+          <th class="mobile-hide">Last Invoice</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table_body">
+        <tr>
+          <td colspan="100" class="text-center p-2">
+            <div class="loading">
+              <i class="fas fa-spinner fa-spin"></i>
+              Loading suppliers...
+            </div>
+            <br>
+            <br>
+            <button type="button"
+                    class="btn btn-sm"
+                    onclick="document.dispatchEvent(new Event('reloadTable'))">
+              <i class="fas fa-refresh"></i>
+              Retry
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <!-- Download Report Modal -->
+  <div class="modal-overlay" id="downloadReportModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Download Purchase Orders Report</h4>
+        <button type="button"
+                class="btn-close"
+                id="closeDownloadModal"
+                aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="downloadReportForm" class="d-flex flex-column gap-2">
+          <div class="form-group mb-3">
+            <label for="reportDateFilter" class="form-label">Select Date Range</label>
+            {% include "common/_date_filter.html" with filter_id="reportDateFilter" wrap_form=False container_class="w-100" custom_class="w-100" %}
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelDownloadBtn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submitDownloadBtn">
+          <i class="fas fa-download"></i>
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    urls = {
+      fetch: '{% url "supplier:fetch" %}',
+      suggestions: '{% url "suggestions:supplier_all" %}',
+      suppliers_pdf: '{% url "report:suppliers_pdf" %}',
+      purchase_orders_pdf: '{% url "report:purchase_orders_pdf" %}',
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Server max bound for slider
+      const maxBalanceVal = parseFloat("{{ slider_max_balance|default:'1200000' }}") || 1200000;
+
+      // Initialize Dual Range Slider for Balance Due
+      const balanceSlider = initDualRangeSlider({
+        minRange: '#minBalanceRange',
+        maxRange: '#maxBalanceRange',
+        progress: '#balanceRangeProgress',
+        minInput: '#minBalanceFilter',
+        maxInput: '#maxBalanceFilter',
+        display: '#balanceRangeDisplay',
+        min: 0,
+        max: maxBalanceVal,
+        step: 1000,
+        gap: 1000,
+        format: 'decimal'
+      });
+
+      // Initialize Declarative Filter Drawer Controller with URL Sync & Date Presets
+      initFilterDrawer({
+        drawerId: 'filterDrawer',
+        formId: 'searchForm',
+        tableId: 'data_table',
+        syncUrl: true,
+        filters: [
+          { id: 'statusFilter', key: 'status', label: 'Status', type: 'select' },
+          { id: 'balanceStatusFilter', key: 'balance_status', label: 'Balance', type: 'select' },
+          { id: 'gstOnlyCheck', key: 'gst_only', label: 'GST', type: 'checkbox', text: 'Registered Only' },
+          { slider: balanceSlider, key: 'balance_range', minKey: 'min_balance', maxKey: 'max_balance', label: 'Balance Range', type: 'slider', format: 'decimal' },
+          { id: 'cityFilter', key: 'city', label: 'City', type: 'select' },
+          { fromId: 'createdFromFilter', toId: 'createdToFilter', key: 'created_date', label: 'Created', type: 'daterange' }
+        ]
+      });
+    });
+  </script>
+  <script src="{% static 'js/wordSuggestion.js' %}"></script>
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      $('#searchInput').wordSuggestion({
+        url: urls.suggestions,
+        placeholder: 'Type to search suppliers...',
+        minLength: 2,
+        onSelect: function() { reloadTable('data_table'); }
+      });
+
+      $('#searchForm').ajax({
+        tableId: 'data_table',
+        url: urls.fetch,
+        placeholder: 'Loading suppliers...',
+        includeInputs: false,
+        sortable: true
+      });
+      initTableSorting('data_table');
+    });
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        downloadTablePDF('searchForm', 'data_table', urls.suppliers_pdf);
+      });
+    }
+
+    // Download Report Modal functionality
+    const downloadModal = document.getElementById('downloadReportModal')
+    const downloadReportBtn = document.getElementById('downloadReportBtn')
+    const closeModalBtn = document.getElementById('closeDownloadModal')
+    const cancelBtn = document.getElementById('cancelDownloadBtn')
+    const submitBtn = document.getElementById('submitDownloadBtn')
+    
+    if (!downloadModal || !downloadReportBtn || !closeModalBtn || !cancelBtn || !submitBtn) {
+      console.warn('Download report modal elements not found')
+    } else {
+      let dropdownInitialized = false
+
+      // Open modal
+      downloadReportBtn.addEventListener('click', function () {
+        downloadModal.style.display = 'flex'
+        
+        // Initialize dropdown after modal is shown (only once)
+        if (!dropdownInitialized && typeof convertSelectToStyledDropdown !== 'undefined') {
+          setTimeout(() => {
+            if (!window.reportDateFilter_styled) {
+              const selectElement = document.getElementById('reportDateFilter')
+              if (selectElement) {
+                window.reportDateFilter_styled = convertSelectToStyledDropdown('reportDateFilter')
+                dropdownInitialized = true
+              }
+            } else {
+              dropdownInitialized = true
+            }
+          }, 100)
+        }
+      })
+
+      // Close modal handlers
+      function closeModal() {
+        downloadModal.style.display = 'none'
+      }
+
+      closeModalBtn.addEventListener('click', closeModal)
+      cancelBtn.addEventListener('click', closeModal)
+
+      // Close on backdrop click
+      downloadModal.addEventListener('click', function(e) {
+        if (e.target === downloadModal) {
+          closeModal()
+        }
+      })
+
+      // Submit download
+      submitBtn.addEventListener('click', function() {
+        const filterResult = getDateFilterData('reportDateFilter')
+
+        if (!filterResult.isValid) {
+          showNotification(filterResult.error, 'error')
+          return
+        }
+
+        setButtonLoading(submitBtn, true, 'Generating...')
+        const downloadUrl = buildDateFilterUrl(urls.purchase_orders_pdf, filterResult.data)
+
+        try {
+          window.open(downloadUrl, '_blank')
+          setTimeout(() => {
+            closeModal()
+            setButtonLoading(submitBtn, false)
+          }, 500)
+        } catch (error) {
+          showNotification(error, 'error')
+          setButtonLoading(submitBtn, false)
+        }
+      })
+    }
+  </script>
+{% endblock extra_js %}

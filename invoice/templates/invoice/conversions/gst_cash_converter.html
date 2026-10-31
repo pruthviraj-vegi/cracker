@@ -1,0 +1,896 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    GST to Cash Converter
+{% endblock title %}
+{% block content %}
+    {% csrf_token %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">
+            GST to Cash Converter
+            {% if date_range_info != "All invoices" %}<span class="text-muted">({{ date_range_info }})</span>{% endif %}
+        </h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:home' %}" class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Invoices
+            </a>
+            <button id="exportBtn" class="btn btn-secondary" onclick="exportChanges()">
+                <i class="fas fa-download"></i>
+                Export Changes
+            </button>
+            <button id="submitBtn" class="btn btn-primary" onclick="submitConversions()">
+                <i class="fas fa-check"></i>
+                Submit Conversions
+            </button>
+        </div>
+    </div>
+    <!-- Date Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">GST Cash Converter</span>
+        </nav>
+
+        <form method="get" class="search-filter-form">
+            <div class="search-group search-expanded">
+                <i class="fas fa-calendar-alt search-icon"></i>
+                <input type="date"
+                       name="start_date"
+                       value="{{ start_date|default:'' }}"
+                       class="search-input"
+                       placeholder="Start Date">
+                <span class="date-separator">to</span>
+                <input type="date"
+                       name="end_date"
+                       value="{{ end_date|default:'' }}"
+                       class="search-input"
+                       placeholder="End Date">
+            </div>
+            <select class="filter-select"
+                    id="quickDateRange"
+                    onchange="setQuickDateRange(this.value)">
+                <option value="">Quick Date Range</option>
+                <option value="thisMonth">This Month</option>
+                <option value="lastMonth">Last Month</option>
+                <option value="thisQuarter">This Quarter</option>
+                <option value="lastQuarter">Last Quarter</option>
+                <option value="thisFinancialYear">This Financial Year</option>
+                <option value="lastFinancialYear">Last Financial Year</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-filter"></i>
+                Apply Filter
+            </button>
+            <a href="{% url 'invoice:gst_cash_converter' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+                Clear
+            </a>
+        </form>
+    </div>
+    <!-- Main Layout -->
+    <div class="col d-flex flex-row gap-2">
+        <!-- Left Column - GST Section -->
+        <div class="col-md-6">
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-receipt"></i> GST Invoices ({{ gst_invoices.count }})
+                        <span class="badge badge-info" id="gstTotal">{{ gst_total|floatformat:0 }}</span>
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div id="gstSection"
+                         class="drag-section"
+                         ondrop="drop(event)"
+                         ondragover="allowDrop(event)">
+                        <!-- GST items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Right Column - Cash Section -->
+        <div class="col-md-6">
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-money-bill-wave"></i> Cash Invoices ({{ cash_invoices.count }})
+                        <span class="badge badge-info" id="cashTotal">{{ cash_total|floatformat:0 }}</span>
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div id="cashSection"
+                         class="drag-section"
+                         ondrop="drop(event)"
+                         ondragover="allowDrop(event)">
+                        <!-- Cash items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Export Results Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Export Results</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <pre id="exportData"></pre>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn btn-primary" onclick="copyToClipboard()">Copy to Clipboard</button>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_css %}
+    <style>
+/* Date Filter Styles - Matching Home Page Search */
+.search-filter-section {
+    margin-bottom: 1.5rem;
+}
+
+.date-separator {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+
+/* Responsive Design for Date Filter */
+@media (max-width: 768px) {
+    
+    
+    .date-separator {
+        margin: 0;
+    }
+    
+}
+
+/* Drag and Drop Styles */
+.drag-section {
+    min-height: 500px;
+    max-height: 600px;
+    border: 2px dashed var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+    background: var(--bg-surface);
+    overflow-y: auto;
+}
+
+.drag-section.drag-over {
+    border-color: var(--primary);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.drag-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: move;
+    transition: all 0.2s ease;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.drag-item:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+}
+
+.drag-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+.drag-item.moved {
+    border-color: var(--warning);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.drag-item.moved-back {
+    border-color: var(--success);
+    background: rgba(25, 135, 84, 0.1);
+}
+
+.drag-item.flash-animation {
+    animation: flashHighlight 1s ease-in-out;
+}
+
+@keyframes flashHighlight {
+    0% { 
+        background: rgba(255, 193, 7, 0.3);
+        transform: scale(1.02);
+    }
+    50% { 
+        background: rgba(255, 193, 7, 0.2);
+        transform: scale(1.01);
+    }
+    100% { 
+        background: rgba(255, 193, 7, 0.1);
+        transform: scale(1);
+    }
+}
+
+.item-info {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.item-id {
+    font-weight: var(--heading-weight);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    line-height: 1.2;
+}
+
+.item-description {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    line-height: 1.2;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+
+.item-date {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    line-height: 1.2;
+    margin: 0;
+}
+
+.item-amount {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.9rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+}
+
+.move-btn {
+    background: var(--secondary);
+    color: var(--text-on-primary);
+    border: none;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.5rem;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.move-btn:hover {
+    background: var(--secondary-hover);
+    transform: scale(1.05);
+}
+
+.empty-section {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+    font-style: italic;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: var(--bg-surface);
+    border-radius: 0.5rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.close {
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close:hover {
+    color: var(--text-primary);
+}
+
+.modal-body {
+    padding: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.modal-body pre {
+    background: var(--bg-body);
+    padding: 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* Badge Styles */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.375rem;
+    margin-left: 0.5rem;
+}
+
+.badge-info {
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .col-md-6 {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .drag-item {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .item-info {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+    
+    .item-amount {
+        text-align: left;
+        font-size: 0.85rem;
+    }
+    
+    .item-actions {
+        justify-content: flex-end;
+    }
+    
+    .drag-section {
+        min-height: 300px;
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 480px) {
+    .drag-item {
+        padding: 0.5rem;
+    }
+    
+    .item-description {
+        max-width: 150px;
+    }
+    
+    .move-btn {
+        min-width: 28px;
+        height: 28px;
+        padding: 0.25rem;
+    }
+}
+    </style>
+{% endblock extra_css %}
+{% block extra_js %}
+    <script>
+// Quick date range functions
+function setQuickDateRange(range) {
+    if (!range) return; // Don't do anything if no option selected
+    
+    const today = new Date();
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    
+    let startDate, endDate;
+    
+    switch(range) {
+        case 'thisMonth':
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            break;
+        case 'lastMonth':
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+            break;
+        case 'thisQuarter':
+            const currentQuarter = Math.floor(today.getMonth() / 3);
+            const quarterStartMonth = currentQuarter * 3;
+            startDate = new Date(today.getFullYear(), quarterStartMonth, 1);
+            endDate = new Date(today.getFullYear(), quarterStartMonth + 3, 0);
+            break;
+        case 'lastQuarter':
+            const lastQuarter = Math.floor(today.getMonth() / 3) - 1;
+            const lastQuarterStartMonth = lastQuarter < 0 ? 9 : lastQuarter * 3; // Handle Q4 of previous year
+            const lastQuarterYear = lastQuarter < 0 ? today.getFullYear() - 1 : today.getFullYear();
+            startDate = new Date(lastQuarterYear, lastQuarterStartMonth, 1);
+            endDate = new Date(lastQuarterYear, lastQuarterStartMonth + 3, 0);
+            break;
+        case 'thisFinancialYear':
+            // Financial year starts from April (month 3)
+            if (today.getMonth() >= 3) {
+                // Current financial year started in April of current year
+                startDate = new Date(today.getFullYear(), 3, 1); // April 1st
+                endDate = new Date(today.getFullYear() + 1, 2, 31); // March 31st next year
+            } else {
+                // Current financial year started in April of previous year
+                startDate = new Date(today.getFullYear() - 1, 3, 1); // April 1st last year
+                endDate = new Date(today.getFullYear(), 2, 31); // March 31st this year
+            }
+            break;
+        case 'lastFinancialYear':
+            // Previous financial year
+            if (today.getMonth() >= 3) {
+                // Last financial year was April previous year to March this year
+                startDate = new Date(today.getFullYear() - 1, 3, 1); // April 1st last year
+                endDate = new Date(today.getFullYear(), 2, 31); // March 31st this year
+            } else {
+                // Last financial year was April year before last to March last year
+                startDate = new Date(today.getFullYear() - 2, 3, 1); // April 1st year before last
+                endDate = new Date(today.getFullYear() - 1, 2, 31); // March 31st last year
+            }
+            break;
+    }
+    
+    if (startDateInput && endDateInput) {
+        startDateInput.value = formatDate(startDate);
+        endDateInput.value = formatDate(endDate);
+        const startISO = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`;
+        const endISO = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+        startDateInput.setAttribute('data-iso-date', startISO);
+        endDateInput.setAttribute('data-iso-date', endISO);
+        if (startDateInput._animatedDatePickerInstance) {
+            startDateInput._animatedDatePickerInstance.selectedDate = startDate;
+        }
+        if (endDateInput._animatedDatePickerInstance) {
+            endDateInput._animatedDatePickerInstance.selectedDate = endDate;
+        }
+    }
+}
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${day}-${month}-${year}`;
+}
+
+// Real invoice data from Django backend
+const invoiceData = [
+    {% for invoice in gst_invoices %}
+    {
+        id: {{ invoice.id }},
+        description: "{{ invoice.customer.name }} - {{ invoice.invoice_number }}",
+        amount: {{ invoice.amount }},
+        original: "gst",
+        invoice_number: "{{ invoice.invoice_number }}",
+        customer_name: "{{ invoice.customer.name }}",
+        invoice_date: "{{ invoice.invoice_date|date:'M d, Y' }}"
+    },
+    {% endfor %}
+    {% for invoice in cash_invoices %}
+    {
+        id: {{ invoice.id }},
+        description: "{{ invoice.customer.name }} - {{ invoice.invoice_number }}",
+        amount: {{ invoice.amount }},
+        original: "cash",
+        invoice_number: "{{ invoice.invoice_number }}",
+        customer_name: "{{ invoice.customer.name }}",
+        invoice_date: "{{ invoice.invoice_date|date:'M d, Y' }}"
+    },
+    {% endfor %}
+];
+
+let items = [];
+
+/**
+ * Initialize the application
+ */
+function init() {
+    // Initialize items with current section set to original
+    items = invoiceData.map(item => ({
+        ...item,
+        current: item.original,
+        conversion: "none",
+        moved: false
+    }));
+    
+    renderItems();
+    updateTotals();
+}
+
+/**
+ * Render all items in their current sections
+ */
+function renderItems() {
+    const gstSection = document.getElementById('gstSection');
+    const cashSection = document.getElementById('cashSection');
+    
+    // Clear sections
+    gstSection.innerHTML = '';
+    cashSection.innerHTML = '';
+    
+    // Group items by current section and sort by invoice ID
+    const gstItems = items.filter(item => item.current === 'gst').sort((a, b) => a.id - b.id);
+    const cashItems = items.filter(item => item.current === 'cash').sort((a, b) => a.id - b.id);
+    
+    // Render GST items
+    if (gstItems.length === 0) {
+        gstSection.innerHTML = '<div class="empty-section">No GST invoices</div>';
+    } else {
+        gstItems.forEach(item => {
+            gstSection.appendChild(createItemElement(item));
+        });
+    }
+    
+    // Render Cash items
+    if (cashItems.length === 0) {
+        cashSection.innerHTML = '<div class="empty-section">No Cash invoices</div>';
+    } else {
+        cashItems.forEach(item => {
+            cashSection.appendChild(createItemElement(item));
+        });
+    }
+}
+
+/**
+ * Create DOM element for an item
+ */
+function createItemElement(item) {
+    const div = document.createElement('div');
+    div.className = 'drag-item';
+    div.draggable = true;
+    div.setAttribute('data-id', item.id);
+    div.setAttribute('data-original', item.original);
+    div.setAttribute('data-current', item.current);
+    div.setAttribute('data-amount', item.amount);
+    div.setAttribute('data-conversion', item.conversion);
+    div.setAttribute('data-moved', item.moved);
+    div.setAttribute('tabindex', '0');
+    
+    // Add moved class for visual highlighting
+    if (item.moved) {
+        div.classList.add('moved');
+    }
+    
+    div.innerHTML = `
+        <div class="item-info">
+            <div class="item-details">
+                <div class="item-id">${item.invoice_number}</div>
+                <div class="item-description">${item.customer_name}</div>
+                <div class="item-date">${item.invoice_date}</div>
+            </div>
+            <div class="item-amount">${item.amount.toLocaleString()}</div>
+        </div>
+        <div class="item-actions">
+            <button class="move-btn" onclick="toggleItem(${item.id})" title="Move to ${item.current === 'gst' ? 'Cash' : 'GST'}">
+                <i class="fas fa-arrow-${item.current === 'gst' ? 'right' : 'left'}"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add drag event listeners
+    div.addEventListener('dragstart', handleDragStart);
+    div.addEventListener('dragend', handleDragEnd);
+    
+    // Add keyboard accessibility
+    div.addEventListener('keydown', handleKeyDown);
+    
+    return div;
+}
+
+/**
+ * Handle drag start event
+ */
+function handleDragStart(e) {
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.outerHTML);
+    e.dataTransfer.setData('text/plain', e.target.getAttribute('data-id'));
+}
+
+/**
+ * Handle drag end event
+ */
+function handleDragEnd(e) {
+    e.target.classList.remove('dragging');
+}
+
+/**
+ * Allow drop event
+ */
+function allowDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drag-over');
+}
+
+/**
+ * Handle drop event
+ */
+function drop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    
+    const itemId = parseInt(e.dataTransfer.getData('text/plain'));
+    const targetSection = e.currentTarget.id === 'gstSection' ? 'gst' : 'cash';
+    
+    moveItem(itemId, targetSection);
+}
+
+/**
+ * Move item to target section
+ */
+function moveItem(itemId, targetSection) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const previousSection = item.current;
+    item.current = targetSection;
+    
+    // Update conversion status
+    if (item.current !== item.original) {
+        item.conversion = `${item.original}-to-${item.current}`;
+        item.moved = true;
+    } else {
+        item.conversion = "none";
+        item.moved = false;
+    }
+    
+    // Re-render and update totals
+    renderItems();
+    updateTotals();
+    
+    // Flash animation for moved items
+    setTimeout(() => {
+        const element = document.querySelector(`[data-id="${itemId}"]`);
+        if (element) {
+            // Add flash animation class
+            element.classList.add('flash-animation');
+            
+            // Remove flash animation class after animation, but keep moved class if item is still moved
+            setTimeout(() => {
+                element.classList.remove('flash-animation');
+                // Ensure moved class is applied if item is still moved
+                if (item.moved) {
+                    element.classList.add('moved');
+                } else {
+                    element.classList.remove('moved');
+                }
+            }, 1000);
+        }
+    }, 100);
+}
+
+/**
+ * Toggle item between sections (keyboard accessibility)
+ */
+function toggleItem(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const targetSection = item.current === 'gst' ? 'cash' : 'gst';
+    moveItem(itemId, targetSection);
+}
+
+/**
+ * Handle keyboard navigation
+ */
+function handleKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const itemId = parseInt(e.target.getAttribute('data-id'));
+        toggleItem(itemId);
+    }
+}
+
+/**
+ * Update totals for both sections
+ */
+function updateTotals() {
+    const gstTotal = items
+        .filter(item => item.current === 'gst')
+        .reduce((sum, item) => sum + item.amount, 0);
+    
+    const cashTotal = items
+        .filter(item => item.current === 'cash')
+        .reduce((sum, item) => sum + item.amount, 0);
+    
+    document.getElementById('gstTotal').textContent = `${gstTotal.toLocaleString()}`;
+    document.getElementById('cashTotal').textContent = `${cashTotal.toLocaleString()}`;
+}
+
+/**
+ * Export changes to JSON format
+ */
+function exportChanges() {
+    const movedItems = items.filter(item => item.moved);
+    
+    const exportData = movedItems.map(item => ({
+        id: item.id,
+        originalSection: item.original,
+        currentSection: item.current,
+        amount: item.amount,
+        conversionDirection: item.conversion,
+        convertedValue: null // Backend will handle conversion
+    }));
+    
+    // Display in modal
+    document.getElementById('exportData').textContent = JSON.stringify(exportData, null, 2);
+    document.getElementById('exportModal').style.display = 'flex';
+}
+
+/**
+ * Close modal
+ */
+function closeModal() {
+    document.getElementById('exportModal').style.display = 'none';
+}
+
+/**
+ * Copy export data to clipboard
+ */
+function copyToClipboard() {
+    const exportData = document.getElementById('exportData').textContent;
+    navigator.clipboard.writeText(exportData).then(() => {
+        alert('Data copied to clipboard!');
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+    });
+}
+
+/**
+ * Submit conversions to backend
+ */
+function submitConversions() {
+    const movedItems = items.filter(item => item.moved);
+    
+    if (movedItems.length === 0) {
+        alert('No conversions to submit. Please move some invoices between sections first.');
+        return;
+    }
+    
+    // Prepare conversion data
+    const conversionData = {
+        conversions: movedItems.map(item => ({
+            id: item.id,
+            originalSection: item.original,
+            currentSection: item.current,
+            amount: item.amount,
+            conversionDirection: item.conversion,
+            invoiceNumber: item.invoice_number,
+            customerName: item.customer_name,
+            invoiceDate: item.invoice_date
+        })),
+        dateRange: {
+            startDate: '{{ start_date|default:"" }}',
+            endDate: '{{ end_date|default:"" }}'
+        },
+        totals: {
+            gstTotal: items.filter(item => item.current === 'gst').reduce((sum, item) => sum + item.amount, 0),
+            cashTotal: items.filter(item => item.current === 'cash').reduce((sum, item) => sum + item.amount, 0)
+        }
+    };
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    submitBtn.disabled = true;
+    
+    // Send to backend
+    fetch('{% url "invoice:submit_conversions" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify(conversionData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully processed ${data.converted_count} conversions!`);
+            // Optionally redirect or refresh
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error occurred'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error submitting conversions. Please try again.');
+    })
+    .finally(() => {
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+// Remove drag-over class when leaving drop zones
+document.addEventListener('dragleave', function(e) {
+    if (e.target.classList.contains('drag-section')) {
+        e.target.classList.remove('drag-over');
+    }
+});
+
+// Initialize the application when page loads
+document.addEventListener('DOMContentLoaded', init);
+    </script>
+{% endblock extra_js %}

@@ -1,0 +1,131 @@
+/* Screen styles */
+@media screen {
+  body {
+    background-color: #b9b9b9;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    font-size: 0.6rem;
+    font-weight: bold;
+  }
+}
+
+/* Print styles */
+@media print {
+  @page {
+    size: 110mm 25mm;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: white;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 0.9rem;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .wrapper {
+    width: 110mm;
+    height: 25mm;
+    margin: 0;
+    padding: 2px;
+    background-color: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    text-align: center;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+}
+
+.wrapper {
+  max-width: 110mm;
+  max-height: 25mm;
+  margin: 0 auto;
+  background-color: #ffffff;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  text-align: center;
+  height: 25mm;
+}
+
+.slot {
+  max-width: 55mm;
+  max-height: 25mm;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+.data_section {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 2px;
+  margin-inline: 10px;
+}
+
+.text_section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2px;
+  align-items: flex-start;
+}
+
+.shop-name {
+  font-size: 1rem;
+}
+
+.text_section .details {
+  font-size: 0.5rem;
+  max-width: 25mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.code {
+  font-size: 0.8rem;
+}
+
+.amount_section {
+  display: flex;
+  flex-direction: column;
+  padding: 2px;
+  align-items: center;
+  justify-content: space-evenly;
+  padding-right: 15px;
+}
+
+.price-text {
+  font-size: 0.6rem;
+}
+
+.price {
+  font-size: 1rem;
+}
+
+.image img {
+  width: 40mm;
+  height: 25px;
+  print-color-adjust: exact;
+}
+
+/* Hide elements during print */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

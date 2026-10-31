@@ -1,0 +1,87 @@
+{% load custom_filters %}
+{% load static %}
+<!-- Table Body Content -->
+{% if page_obj %}
+    {% for gst_hsn in page_obj %}
+        <tr>
+            <td class="mobile-hide">{{ gst_hsn.id }}</td>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary">{{ gst_hsn.code }}</span>
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-info">{{ gst_hsn.gst_percentage }}%</span>
+            </td>
+            <td class="mobile-hide">
+                <span class="badge badge-secondary">{{ gst_hsn.cess_rate }}%</span>
+            </td>
+            <td class="mobile-hide">
+                {% if gst_hsn.effective_from %}
+                    <span class="text-muted">{{ gst_hsn.effective_from|date:"M d, Y" }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">
+                <div class="description-cell">
+                    {% if gst_hsn.description %}
+                        <span class="text-muted" title="{{ gst_hsn.description }}">{{ gst_hsn.description|truncatechars:50 }}</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                {% if gst_hsn.is_active %}
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check"></i>
+                        Active
+                    </span>
+                {% else %}
+                    <span class="status-badge status-inactive">
+                        <i class="fas fa-times"></i>
+                        Inactive
+                    </span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ gst_hsn.created_at|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    {% if perms.inventory.change_gsthsncode %}
+                        <a href="{% url 'inventory:gst_hsn_edit' gst_hsn.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit HSN Code">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.inventory.delete_gsthsncode %}
+                        <a href="{% url 'inventory:gst_hsn_delete' gst_hsn.id %}"
+                           class="btn-action btn-delete"
+                           title="Delete HSN Code">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <!-- Empty state -->
+    <tr>
+        <td colspan="100" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-barcode"></i>
+                <h4>No HSN Codes Found</h4>
+                <p>No HSN codes match your search criteria. Try adjusting your filters or add a new HSN code.</p>
+                {% if perms.inventory.add_gsthsncode %}
+                    <a href="{% url 'inventory:gst_hsn_create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Add First HSN Code
+                    </a>
+                {% endif %}
+            </div>
+        </td>
+    </tr>
+{% endif %}
+<!-- Pagination separated from table content -->

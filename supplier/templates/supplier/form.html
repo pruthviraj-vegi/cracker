@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      {% if supplier %}
+        <a href="{% url 'supplier:detail' supplier.pk %}"
+           class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Details
+        </a>
+      {% endif %}
+      <a href="{% url 'supplier:home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to List
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'supplier:home' %}" class="breadcrumb-item">Suppliers</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if supplier %}
+      <a href="{% url 'supplier:detail' supplier.pk %}"
+         class="breadcrumb-item">{{ supplier.name }}</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Supplier Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Supplier Details Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-truck"></i> Supplier Details</h5>
+
+           <div class="row">
+            <div class="col-md-6">
+          <!-- Name Field -->
+              <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                {{ form.name }}
+                <small class="form-help {% if form.name.errors %}has-error{% endif %}">
+                  {% if form.name.errors %}
+                    {% for error in form.name.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the name of the supplier</span>
+                </small>
+              </div>
+              </div>
+              <div class="col-md-6">
+            
+              <!-- Contact Person Field -->
+              <div class="form-group {% if form.contact_person.errors %}has-error{% endif %}">
+                <label for="{{ form.contact_person.id_for_label }}" class="form-label">{{ form.contact_person.label }}</label>
+                {{ form.contact_person }}
+                <small class="form-help {% if form.contact_person.errors %}has-error{% endif %}">
+                  {% if form.contact_person.errors %}
+                    {% for error in form.contact_person.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the contact person of the supplier</span>
+                </small>
+              </div>
+              </div>
+              <div class="col-md-6">
+              <!-- Phone Field -->
+              <div class="form-group {% if form.phone.errors %}has-error{% endif %}">
+                <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                {{ form.phone }}
+                <small class="form-help {% if form.phone.errors %}has-error{% endif %}">
+                  {% if form.phone.errors %}
+                    {% for error in form.phone.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter exactly 10 digits (e.g., 9876543210)</span>
+                </small>
+              </div>
+              </div>
+              <div class="col-md-6">
+              <div class="form-group {% if form.email.errors %}has-error{% endif %}">
+                <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                {{ form.email }}
+                <small class="form-help {% if form.email.errors %}has-error{% endif %}">
+                  {% if form.email.errors %}
+                    {% for error in form.email.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the email of the supplier</span>
+                </small>
+              </div>
+              </div>
+              <div class="col-md-6">
+              <div class="form-group {% if form.gstin.errors %}has-error{% endif %}">
+                <label for="{{ form.gstin.id_for_label }}" class="form-label">{{ form.gstin.label }}</label>
+                {{ form.gstin }}
+                <small class="form-help {% if form.gstin.errors %}has-error{% endif %}">
+                  {% if form.gstin.errors %}
+                    {% for error in form.gstin.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the GSTIN of the supplier</span>
+                </small>
+              </div>
+              </div>
+          </div>
+        </div>
+        <!-- Address Section -->
+        <div class="form-section">
+          <h5 class="section-title"><i class="fas fa-map-marker-alt"></i> Address Details</h5>
+          <div class="row">
+            <div class="col-md-6">
+            <!-- First Line Field -->
+              <div class="form-group {% if form.first_line.errors %}has-error{% endif %}">
+                <label for="{{ form.first_line.id_for_label }}" class="form-label">{{ form.first_line.label }}</label>
+                {{ form.first_line }}
+                <small class="form-help {% if form.first_line.errors %}has-error{% endif %}">
+                  {% if form.first_line.errors %}
+                    {% for error in form.first_line.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the first line of address</span>
+                </small>
+              </div>
+              </div>
+            <div class="col-md-6">
+            <!-- Second Line Field -->
+                <div class="form-group {% if form.second_line.errors %}has-error{% endif %}">
+                  <label for="{{ form.second_line.id_for_label }}" class="form-label">{{ form.second_line.label }}</label>
+                  {{ form.second_line }}
+                  <small class="form-help {% if form.second_line.errors %}has-error{% endif %}">
+                    {% if form.second_line.errors %}
+                      {% for error in form.second_line.errors %}
+                        <span class="form-error-inline">
+                          <i class="fas fa-exclamation-circle"></i>
+                          {{ error }}
+                        </span>
+                      {% endfor %}
+                    {% endif %}
+                    <span class="form-help-text">Enter the second line of address (optional)</span>
+                  </small>
+                </div>
+            </div>
+            <div class="col-md-6">
+            <!-- City Field -->
+              <div class="form-group {% if form.city.errors %}has-error{% endif %}">
+                <label for="{{ form.city.id_for_label }}" class="form-label">{{ form.city.label }}</label>
+                {{ form.city }}
+                <small class="form-help {% if form.city.errors %}has-error{% endif %}">
+                  {% if form.city.errors %}
+                    {% for error in form.city.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the city</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+            <!-- State Field -->
+              <div class="form-group {% if form.state.errors %}has-error{% endif %}">
+                <label for="{{ form.state.id_for_label }}" class="form-label">{{ form.state.label }}</label>
+                {{ form.state }}
+                <small class="form-help {% if form.state.errors %}has-error{% endif %}">
+                  {% if form.state.errors %}
+                    {% for error in form.state.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the state</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+            <!-- Pincode Field -->
+              <div class="form-group {% if form.pincode.errors %}has-error{% endif %}">
+                <label for="{{ form.pincode.id_for_label }}" class="form-label">{{ form.pincode.label }}</label>
+                {{ form.pincode }}
+                <small class="form-help {% if form.pincode.errors %}has-error{% endif %}">
+                  {% if form.pincode.errors %}
+                    {% for error in form.pincode.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the pincode</span>
+                </small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <!-- Country Field -->
+              <div class="form-group {% if form.country.errors %}has-error{% endif %}">
+                <label for="{{ form.country.id_for_label }}" class="form-label">{{ form.country.label }}</label>
+                {{ form.country }}
+                <small class="form-help {% if form.country.errors %}has-error{% endif %}">
+                  {% if form.country.errors %}
+                    {% for error in form.country.errors %}
+                      <span class="form-error-inline">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {{ error }}
+                      </span>
+                    {% endfor %}
+                  {% endif %}
+                  <span class="form-help-text">Enter the country</span>
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if supplier %}
+              Update Supplier
+            {% else %}
+              Create Supplier
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'supplier:home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

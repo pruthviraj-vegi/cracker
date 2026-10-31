@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  Invoices Management
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="heading page-title">Invoices Management</h2>
+    <div class="page-actions">
+      <a href="{% url 'cart:auto_cart_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        New Cart
+      </a>
+    </div>
+  </div>
+  <!-- Search and Filter Section with Inline Breadcrumbs -->
+  <div class="search-filter-section">
+    <!-- Inline Breadcrumbs -->
+    <nav class="breadcrumb-inline" aria-label="breadcrumb">
+      <a href="#" class="breadcrumb-item">Invoices</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">All Invoices</span>
+    </nav>
+
+    <form method="get"
+          class="search-filter-form"
+          id="searchForm"
+          autocomplete="off">
+      <div class="search-group search-expanded">
+        <i class="fas fa-search search-icon"></i>
+        <input type="search"
+               name="search"
+               class="search-input"
+               placeholder="Search invoices by number, customer name, phone, or notes..."
+               value=""
+               id="searchInput"
+               autofocus>
+      </div>
+
+      <!-- Funnel Button with Active Count & Hover Preview Popover -->
+      <div class="filter-funnel-wrapper" id="filterFunnelWrapper">
+        <button type="button" class="filter-funnel-btn" id="openFilterDrawerBtn" data-bs-toggle="offcanvas" data-bs-target="#filterDrawer" aria-controls="filterDrawer" title="Open Filters Drawer">
+          <i class="fas fa-filter filter-icon"></i>
+          <span class="filter-btn-text d-none d-sm-inline">Filters</span>
+          <span id="activeFilterBadge" class="filter-count-badge d-none">0</span>
+        </button>
+
+        <!-- Floating Hover Preview (shows active filter names and values on hover) -->
+        <div class="filter-hover-preview d-none d-md-block" id="filterHoverPreview" role="tooltip" aria-hidden="true">
+          <div class="filter-hover-header">
+            <span class="filter-hover-title">
+              <i class="fas fa-filter me-1 text-primary"></i> Active Filters
+            </span>
+            <span class="filter-hover-count" id="filterHoverCount">0</span>
+          </div>
+          <div class="filter-hover-list" id="filterHoverList">
+            <!-- Populated dynamically via JS -->
+          </div>
+          <div class="filter-hover-footer">
+            <button type="button" class="filter-hover-clear-btn" id="filterHoverClearAll">
+              <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+            <span class="filter-hover-hint">Click button to edit</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-search"></i>
+        Search
+      </button>
+
+      <!-- Slide-over Filter Offcanvas Drawer (Right Side) -->
+      <div class="offcanvas offcanvas-end filter-drawer" tabindex="-1" id="filterDrawer" aria-labelledby="filterDrawerLabel">
+        <div class="offcanvas-header border-bottom">
+          <div class="d-flex align-items-center">
+            <div class="filter-header-icon me-2">
+              <i class="fas fa-sliders-h text-primary"></i>
+            </div>
+            <div>
+              <h5 class="offcanvas-title font-weight-bold mb-0" id="filterDrawerLabel">Filter Invoices</h5>
+              <small class="text-muted">Filter by bill type, payment status, amount &amp; dates</small>
+            </div>
+          </div>
+          <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-3">
+          <!-- Section 1: Classification & Status -->
+          <div class="filter-section-group mb-3">
+            <h6 class="filter-group-heading">
+              <i class="fas fa-file-invoice text-primary me-2"></i>Invoice Type &amp; Status
+            </h6>
+            <div class="row g-2 mb-3">
+              <div class="col-6">
+                <label for="billTypesFilter" class="form-label font-weight-bold">Bill Type</label>
+                <select name="bill_types" class="form-select" id="billTypesFilter">
+                  <option value="">All Bill Types</option>
+                  {% for value, label in bill_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-6">
+                <label for="paymentTypeFilter" class="form-label font-weight-bold">Payment Type</label>
+                <select name="payment_type" class="form-select" id="paymentTypeFilter">
+                  <option value="">All Payment Types</option>
+                  {% for value, label in payment_type_choices %}
+                    <option value="{{ value }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label for="statusFilter" class="form-label font-weight-bold">Payment Status</label>
+              <select name="status" class="form-select" id="statusFilter">
+                <option value="">All Statuses</option>
+                {% for value, label in payment_status_choices %}
+                  <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <!-- Cancelled Invoices Toggle -->
+              <label class="custom-toggle-switch">
+                <input type="checkbox" name="is_cancelled" id="isCancelledCheck" value="1">
+                <span class="custom-toggle-slider"></span>
+                <span class="custom-toggle-label">Cancelled Invoices Only</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section 2: Invoice Amount Range with Dual Range Slider -->
+          <div class="filter-section-group mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <h6 class="filter-group-heading mb-0">
+                <i class="fas fa-coins text-primary me-2"></i>Invoice Amount Range
+              </h6>
+              <span class="range-display-badge" id="amountRangeDisplay">0.00 - {{ slider_max_amount|default:"100000" }}.00</span>
+            </div>
+
+            <!-- Dual Range Slider for Amount -->
+            <div class="range-slider-container">
+              <div class="range-slider-track"></div>
+              <div class="range-slider-progress" id="amountRangeProgress"></div>
+              <input type="range" class="range-slider-input" id="minAmountRange" min="0" max="{{ slider_max_amount|default:"100000" }}" step="500" value="0">
+              <input type="range" class="range-slider-input" id="maxAmountRange" min="0" max="{{ slider_max_amount|default:"100000" }}" step="500" value="{{ slider_max_amount|default:"100000" }}">
+            </div>
+
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <label for="minAmountFilter" class="form-label text-muted small mb-1">Min Amount</label>
+                <input type="number"
+                       name="min_amount"
+                       id="minAmountFilter"
+                       class="form-control form-control-sm"
+                       placeholder="0.00"
+                       step="0.01"
+                       min="0"
+                       max="{{ slider_max_amount|default:"100000" }}">
+              </div>
+              <div class="col-6">
+                <label for="maxAmountFilter" class="form-label text-muted small mb-1">Max Amount</label>
+                <input type="number"
+                       name="max_amount"
+                       id="maxAmountFilter"
+                       class="form-control form-control-sm"
+                       placeholder="{{ slider_max_amount|default:"100000" }}.00"
+                       step="0.01"
+                       min="0"
+                       max="{{ slider_max_amount|default:"100000" }}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Period & Financial Year -->
+          <div class="filter-section-group mb-3">
+            <h6 class="filter-group-heading">
+              <i class="fas fa-calendar-alt text-primary me-2"></i>Dates &amp; Financial Year
+            </h6>
+            <div class="mb-3">
+              <label for="financialYearFilter" class="form-label font-weight-bold">Financial Year</label>
+              <select name="financial_year" class="form-select" id="financialYearFilter">
+                <option value="">All Financial Years</option>
+                {% for year in financial_years %}
+                  <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mb-3">
+              <label class="form-label font-weight-bold mb-1">Invoice Date Range</label>
+              <!-- Quick Date Presets -->
+              <div class="date-preset-group">
+                <button type="button" class="date-preset-btn" data-preset="today" data-from="#dateFromFilter" data-to="#dateToFilter">Today</button>
+                <button type="button" class="date-preset-btn" data-preset="this_month" data-from="#dateFromFilter" data-to="#dateToFilter">This Month</button>
+                <button type="button" class="date-preset-btn" data-preset="last_month" data-from="#dateFromFilter" data-to="#dateToFilter">Last Month</button>
+                <button type="button" class="date-preset-btn" data-preset="this_fy" data-from="#dateFromFilter" data-to="#dateToFilter">This FY</button>
+              </div>
+              <div class="row g-2">
+                <div class="col-6">
+                  <input type="date"
+                         name="date_from"
+                         id="dateFromFilter"
+                         class="form-control form-control-sm"
+                         title="Invoice from date">
+                </div>
+                <div class="col-6">
+                  <input type="date"
+                         name="date_to"
+                         id="dateToFilter"
+                         class="form-control form-control-sm"
+                         title="Invoice to date">
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="form-label font-weight-bold mb-1">Due Date Range</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <input type="date"
+                         name="due_date_from"
+                         id="dueDateFromFilter"
+                         class="form-control form-control-sm"
+                         title="Due from date">
+                </div>
+                <div class="col-6">
+                  <input type="date"
+                         name="due_date_to"
+                         id="dueDateToFilter"
+                         class="form-control form-control-sm"
+                         title="Due to date">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Drawer Actions (Sticky Footer) -->
+        <div class="offcanvas-footer p-3 border-top d-flex gap-2">
+          <button type="button" class="btn btn-secondary flex-fill" id="resetModalFiltersBtn">
+            <i class="fas fa-undo me-1"></i> Reset
+          </button>
+          <button type="button" class="btn btn-primary flex-fill" id="applyModalFiltersBtn">
+            <i class="fas fa-check me-1"></i> Apply Filters
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </div>
+  <!-- Data Table -->
+  <div class="table-container">
+    <table class="data-table" id="data_table">
+      <thead>
+        <tr>
+          <th class="sortable" data-sort="invoice_number">Invoice #</th>
+          <th class="sortable" data-sort="customer__name">Customer</th>
+          <th class="sortable mobile-hide" data-sort="payment_type">Type</th>
+          <th class="sortable" data-sort="amount">Amount</th>
+          <th class="sortable" data-sort="payment_status">Status</th>
+          <th class="sortable mobile-hide" data-sort="invoice_date">Date</th>
+          <th class="sortable mobile-hide" data-sort="due_date">Due Date</th>
+          <th class="sortable mobile-hide" data-sort="sold_by__username">Sold By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="table_body">
+        <!-- Empty table body - data will be loaded via AJAX -->
+        <tr>
+          <td colspan="100" class="text-center p-3">
+            <i class="fas fa-spinner fa-spin"></i>
+            Loading invoices...
+            <br>
+            <br>
+            <button type="button"
+                    class="btn btn-sm btn-outline-primary"
+                    onclick="window.retryTableLoad()">
+              <i class="fas fa-refresh"></i>
+              Retry
+            </button>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot id="table_footer">
+        <!-- Pagination will be loaded here via AJAX -->
+      </tfoot>
+    </table>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+        urls = {
+            fetch: '{% url "invoice:fetch" %}',
+            suggestions: '{% url "suggestions:invoice_all" %}',
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Server max bound for amount slider
+            const maxAmountVal = parseFloat("{{ slider_max_amount|default:'100000' }}") || 100000;
+
+            // Initialize Dual Range Slider for Invoice Amount
+            const amountSlider = initDualRangeSlider({
+                minRange: '#minAmountRange',
+                maxRange: '#maxAmountRange',
+                progress: '#amountRangeProgress',
+                minInput: '#minAmountFilter',
+                maxInput: '#maxAmountFilter',
+                display: '#amountRangeDisplay',
+                min: 0,
+                max: maxAmountVal,
+                step: 500,
+                gap: 500,
+                format: 'decimal'
+            });
+
+            // Initialize Declarative Filter Drawer Controller with URL Sync & Date Presets
+            initFilterDrawer({
+                drawerId: 'filterDrawer',
+                formId: 'searchForm',
+                tableId: 'data_table',
+                syncUrl: true,
+                filters: [
+                    { id: 'billTypesFilter', key: 'bill_types', label: 'Bill Type', type: 'select' },
+                    { id: 'paymentTypeFilter', key: 'payment_type', label: 'Payment', type: 'select' },
+                    { id: 'statusFilter', key: 'status', label: 'Status', type: 'select' },
+                    { id: 'isCancelledCheck', key: 'is_cancelled', label: 'Invoices', type: 'checkbox', text: 'Cancelled Only' },
+                    { slider: amountSlider, key: 'amount_range', minKey: 'min_amount', maxKey: 'max_amount', label: 'Amount', type: 'slider', format: 'decimal' },
+                    { id: 'financialYearFilter', key: 'financial_year', label: 'FY', type: 'select' },
+                    { fromId: 'dateFromFilter', toId: 'dateToFilter', key: 'invoice_date', label: 'Inv Date', type: 'daterange' },
+                    { fromId: 'dueDateFromFilter', toId: 'dueDateToFilter', key: 'due_date', label: 'Due Date', type: 'daterange' }
+                ]
+            });
+        });
+  </script>
+  <!-- Load dependencies -->
+  <script src="{% static 'js/wordSuggestion.js' %}"></script>
+  <script src="{% static 'js/fetchData.js' %}"></script>
+  <script>
+        // Simple, clean initialization - just like Select2!
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize word suggestion on search input - jQuery-like syntax!
+            $('#searchInput').wordSuggestion({
+                url: urls.suggestions,
+                placeholder: 'Type to search invoices...',
+                minLength: 2,
+                onSelect: function(suggestion, input) {
+                    // Auto-reload table when suggestion is selected
+                    reloadTable('data_table');
+                }
+            });
+            
+            // Initialize table AJAX on search form - jQuery-like syntax!
+            $('#searchForm').ajax({
+                tableId: 'data_table',
+                url: urls.fetch,
+                placeholder: 'Loading invoices...',
+                includeInputs: false,
+                sortable: true
+            });
+            initTableSorting('data_table');
+        });
+  </script>
+{% endblock extra_js %}

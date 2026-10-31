@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+read me/*
+venv/*
+__pycache__/*
+.vscode/*
+logs/*
+.cursor/*
+.env
+staticfiles/*
+ai/*
+*.md
+docs/*
+.pylintrc
+media/*
+.claude/*
+graphify-out/*

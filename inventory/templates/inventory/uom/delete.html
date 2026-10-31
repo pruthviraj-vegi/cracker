@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  Delete UOM - {{ uom.name }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">Delete UOM</h2>
+    <div class="page-actions">
+      <a href="{% url 'inventory:uom_home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to List
+      </a>
+      <a href="{% url 'inventory:uom_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to UOMs
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:uom_home' %}" class="breadcrumb-item">UOMs</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-item">{{ uom.name }}</span>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Delete</span>
+  </nav>
+  <!-- Delete Confirmation -->
+  <div class="form-container">
+    <div class="form-card">
+      <!-- Warning Message -->
+      <div class="delete-warning">
+        <div class="warning-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+          <h3>Are you sure you want to delete this UOM?</h3>
+          <p>This action cannot be undone. The UOM will be permanently removed from the system.</p>
+        </div>
+      </div>
+      <!-- UOM Details -->
+      <div class="customer-details">
+        <h4 class="details-title">UOM Information</h4>
+        <div class="detail-row">
+          <div class="detail-label">UOM Name:</div>
+          <div class="detail-value">{{ uom.name }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Short Code:</div>
+          <div class="detail-value">{{ uom.short_code }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Category:</div>
+          <div class="detail-value">{{ uom.category }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Base Unit:</div>
+          <div class="detail-value">
+            {% if uom.base_unit %}
+              <span class="status-badge status-active">Yes</span>
+            {% else %}
+              <span class="status-badge status-inactive">No</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Conversion Factor:</div>
+          <div class="detail-value">{{ uom.conversion_factor }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Status:</div>
+          <div class="detail-value">
+            {% if uom.is_active %}
+              <span class="status-badge status-active">Active</span>
+            {% else %}
+              <span class="status-badge status-inactive">Inactive</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if uom.description %}
+          <div class="detail-row">
+            <div class="detail-label">Description:</div>
+            <div class="detail-value">{{ uom.description }}</div>
+          </div>
+        {% endif %}
+        <div class="detail-row">
+          <div class="detail-label">Created:</div>
+          <div class="detail-value">{{ uom.created_at|date:'F j, Y' }}</div>
+        </div>
+      </div>
+      <!-- Confirmation Form -->
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="confirm_delete" class="form-label">
+            <input type="checkbox"
+                   id="confirm_delete"
+                   name="confirm_delete"
+                   required
+                   class="form-checkbox" />
+            <span class="checkbox-label">I understand that this action cannot be undone</span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+            <i class="fas fa-trash"></i>
+            Delete UOM
+          </button>
+          <a href="{% url 'inventory:uom_home' %}" class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const confirmCheckbox = document.getElementById('confirm_delete')
+      const deleteBtn = document.getElementById('deleteBtn')
+    
+      confirmCheckbox.addEventListener('change', function () {
+        deleteBtn.disabled = !this.checked
+      })
+    
+      // Prevent accidental form submission
+      const form = document.querySelector('.delete-form')
+      form.addEventListener('submit', function (e) {
+        if (!confirmCheckbox.checked) {
+          e.preventDefault()
+          alert('Please confirm that you understand this action cannot be undone.')
+          return false
+        }
+    
+        // Final confirmation
+        if (!confirm('Are you absolutely sure you want to delete this UOM? This action cannot be undone.')) {
+          e.preventDefault()
+          return false
+        }
+      })
+    })
+  </script>
+{% endblock extra_js %}

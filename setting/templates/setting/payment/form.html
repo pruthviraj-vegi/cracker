@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    {{ page_title }}
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">{{ page_title }}</h1>
+        <div class="page-actions">
+            <a href="{% url 'setting:payment_details_list' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    <div class="form-container">
+        <div class="form-card">
+            <form method="post"
+                  enctype="multipart/form-data"
+                  class="details-form"
+                  novalidate
+                  autocomplete="off">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="form-errors">
+                        {% for error in form.non_field_errors %}
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                <!-- Basic Information Section -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.payment_name.id_for_label }}" class="form-label">{{ form.payment_name.label }}</label>
+                                {{ form.payment_name }}
+                                <small class="form-help"><span class="form-help-text">{{ form.payment_name.help_text }}</span></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.payment_type.id_for_label }}" class="form-label">{{ form.payment_type.label }}</label>
+                                {{ form.payment_type }}
+                                <small class="form-help"><span class="form-help-text">{{ form.payment_type.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.shop.id_for_label }}" class="form-label">{{ form.shop.label }}</label>
+                                {{ form.shop }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.display_order.id_for_label }}" class="form-label">{{ form.display_order.label }}</label>
+                                {{ form.display_order }}
+                                <small class="form-help"><span class="form-help-text">{{ form.display_order.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">{{ form.is_active.label }}</label>
+                                <div class="mt-half-rem">
+                                    {{ form.is_active }}
+                                    <span class="form-help-text">{{ form.is_active.help_text }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">{{ form.is_default.label }}</label>
+                                <div class="mt-half-rem">
+                                    {{ form.is_default }}
+                                    <span class="form-help-text">{{ form.is_default.help_text }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Conditional Sections -->
+                <!-- UPI Details -->
+                <div class="form-section" id="section-upi">
+                    <h3 class="section-title"><i class="fas fa-mobile-alt"></i> UPI Details</h3>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.upi_id.id_for_label }}" class="form-label">{{ form.upi_id.label }}</label>
+                                {{ form.upi_id }}
+                                <small class="form-help"><span class="form-help-text">{{ form.upi_id.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bank Details -->
+                <div class="form-section" id="section-bank">
+                    <h3 class="section-title"><i class="fas fa-university"></i> Bank Account Details</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.account_holder_name.id_for_label }}" class="form-label">
+                                    {{ form.account_holder_name.label }}
+                                </label>
+                                {{ form.account_holder_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.bank_name.id_for_label }}" class="form-label">{{ form.bank_name.label }}</label>
+                                {{ form.bank_name }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.account_number.id_for_label }}" class="form-label">{{ form.account_number.label }}</label>
+                                {{ form.account_number }}
+                                <small class="form-help"><span class="form-help-text">{{ form.account_number.help_text }}</span></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.ifsc_code.id_for_label }}" class="form-label">{{ form.ifsc_code.label }}</label>
+                                {{ form.ifsc_code }}
+                                <small class="form-help"><span class="form-help-text">{{ form.ifsc_code.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.branch_name.id_for_label }}" class="form-label">{{ form.branch_name.label }}</label>
+                                {{ form.branch_name }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- QR Code Details -->
+                <div class="form-section" id="section-qr">
+                    <h3 class="section-title"><i class="fas fa-qrcode"></i> QR Code Details</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.qr_code_image.id_for_label }}" class="form-label">{{ form.qr_code_image.label }}</label>
+                                {{ form.qr_code_image }}
+                                <small class="form-help"><span class="form-help-text">{{ form.qr_code_image.help_text }}</span></small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.qr_code_url.id_for_label }}" class="form-label">{{ form.qr_code_url.label }}</label>
+                                {{ form.qr_code_url }}
+                                <small class="form-help"><span class="form-help-text">{{ form.qr_code_url.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Additional Details -->
+                <div class="form-section">
+                    <h3 class="section-title"><i class="fas fa-file-alt"></i> Additional Information</h3>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                <small class="form-help"><span class="form-help-text">{{ form.description.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="{{ form.counter_name.id_for_label }}" class="form-label">{{ form.counter_name.label }}</label>
+                                {{ form.counter_name }}
+                                <small class="form-help"><span class="form-help-text">{{ form.counter_name.help_text }}</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> {{ form_action }} Payment Method
+                    </button>
+                    <div class="cart-options-row">
+                        <a class="cart-option-btn text-danger" href="{% url 'setting:payment_details_list' %}" title="Cancel">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const typeSelect = document.getElementById('{{ form.payment_type.id_for_label }}');
+        const upiSection = document.getElementById('section-upi');
+        const bankSection = document.getElementById('section-bank');
+        const qrSection = document.getElementById('section-qr');
+
+        function toggleSections() {
+            const type = typeSelect.value;
+            
+            // Reset all
+            upiSection.style.display = 'none';
+            bankSection.style.display = 'none';
+            qrSection.style.display = 'none';
+
+            if (type === 'UPI') {
+                upiSection.style.display = 'block';
+                qrSection.style.display = 'block'; // UPI often has QR
+            } else if (type === 'BANK') {
+                bankSection.style.display = 'block';
+            } else if (type === 'QR') {
+                qrSection.style.display = 'block';
+            }
+        }
+
+        typeSelect.addEventListener('change', toggleSections);
+        toggleSections(); // Initial state
+    });
+    </script>
+{% endblock content %}

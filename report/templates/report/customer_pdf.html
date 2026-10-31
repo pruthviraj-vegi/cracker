@@ -1,0 +1,108 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    Customers List - {% now "F d, Y" %}
+{% endblock title %}
+{% block style %}
+    <link rel="stylesheet" href="styles/A4.css" />
+{% endblock style %}
+{% block content %}
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <div class="header-content">
+                <div class="shop-info">
+                    {% if shop_details %}
+                        {% if shop_details.shop_name %}<div class="shop-name">{{ shop_details.shop_name }}</div>{% endif %}
+                        <div class="shop-details">
+                            {% if shop_details.address_line_one %}<p>{{ shop_details.address_line_one }}</p>{% endif %}
+                            {% if shop_details.gst_no %}
+                                <p>
+                                    <strong>GST:</strong> {{ shop_details.gst_no }}
+                                </p>
+                            {% endif %}
+                            {% if shop_details.contact_info %}
+                                <p>
+                                    <strong>Contact:</strong> {{ shop_details.contact_info }}
+                                </p>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="report-info">
+                    <div class="report-title">Customers List</div>
+                    <div class="report-meta">
+                        <p>
+                            <strong>Generated:</strong> {% now "F d, Y h:i A" %}
+                        </p>
+                        <p>
+                            <strong>Total Records:</strong> {{ total_count }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Table Section -->
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">ID</th>
+                        <th>Name</th>
+                        <th>Phone Number</th>
+                        <th>Email</th>
+                        <th>Address</th>
+                        <th class="text-center">Status</th>
+                        <th>Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if customers %}
+                        {% for customer in customers %}
+                            <tr>
+                                <td class="text-center">{{ customer.id }}</td>
+                                <td>
+                                    <strong class="text-primary">{{ customer.name|default:"N/A" }}</strong>
+                                </td>
+                                <td>{{ customer.phone_number|phone_number|default:"-" }}</td>
+                                <td class="text-muted">{{ customer.email|default:"-" }}</td>
+                                <td class="text-muted">
+                                    {% if customer.address %}
+                                        {{ customer.address|truncatewords:10 }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if customer.is_deleted %}
+                                        <span class="status-badge status-inactive">Inactive</span>
+                                    {% else %}
+                                        <span class="status-badge status-active">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ customer.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="100" class="text-center empty-state">
+                                <p class="text-muted">No customers found matching the criteria.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <div class="total-info">
+                <p>
+                    <strong>Total Customers: {{ total_count }}</strong>
+                </p>
+            </div>
+            <p>This is a computer-generated report. No signature required.</p>
+            <p>Generated on {% now "F d, Y \a\t h:i A" %}</p>
+        </div>
+    </div>
+{% endblock content %}

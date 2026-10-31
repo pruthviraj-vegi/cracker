@@ -1,0 +1,558 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {{ title }}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">{{ title }}</h2>
+        <div class="page-actions">
+            {% if not invoice.is_cancelled %}
+                {% if invoice.customer.get_default_customer.pk != invoice.customer.pk %}
+                    <a href="javascript:void(0);"
+                       onclick="sendInvoice('{{ invoice.id }}')"
+                       class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i>
+                        Send Invoice
+                    </a>
+                {% endif %}
+                {% if perms.invoice.add_returninvoice %}
+                    <a href="{% url 'invoice:create_auto_return_invoice' invoice.id %}"
+                       class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create Return
+                    </a>
+                {% endif %}
+                {% if perms.invoice.change_invoice %}
+                    <a href="{% url 'invoice:edit' invoice.id %}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i>
+                        Edit Invoice
+                    </a>
+                {% endif %}
+            {% endif %}
+            {% if shop_details.is_direct_print_enabled %}
+                <button type="button"
+                        class="btn btn-primary"
+                        id="directPrintBtn"
+                        data-main-action="true"
+                        data-url="{% url 'report:direct_print_invoice' invoice.id %}">
+                    <i class="fas fa-print"></i>
+                    Print Invoice
+                </button>
+                <a href="{% url 'report:invoice_pdf' invoice.id %}"
+                   class="btn btn-outline-secondary"
+                   target="_blank">
+                    <i class="fas fa-file-pdf"></i>
+                    View PDF
+                </a>
+            {% else %}
+                <a href="{% url 'report:invoice_pdf' invoice.id %}"
+                   class="btn btn-primary"
+                   data-main-action="true"
+                   target="_blank">
+                    <i class="fas fa-print"></i>
+                    Print Invoice
+                </a>
+            {% endif %}
+            {% if not invoice.is_cancelled %}
+                {% if perms.invoice.add_invoicecancellation %}
+                    <a href="{% url 'invoice:cancel_invoice' invoice.id %}"
+                       class="btn btn-warning">
+                        <i class="fas fa-ban"></i>
+                        Cancel Invoice
+                    </a>
+                {% endif %}
+                {% if perms.invoice.delete_invoice %}
+                    <a href="{% url 'invoice:delete' invoice.id %}"
+                       class="btn btn-danger"
+                       onclick="return confirm('⚠️ WARNING: Are you sure you want to delete Invoice #{{ invoice.invoice_number|escapejs }}?\n\nThis action cannot be undone and will permanently delete this invoice.');">
+                        <i class="fas fa-trash"></i>
+                        Delete Invoice
+                    </a>
+                {% endif %}
+            {% else %}
+                <span class="btn btn-danger disabled">
+                    <i class="fas fa-times-circle"></i>
+                    CANCELLED
+                </span>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ invoice.invoice_number }}</span>
+    </nav>
+    <!-- Main Layout -->
+    <div class="col d-flex flex-row detail-layout two-column-layout">
+        <!-- Left Column - Invoice Details & Sticky Summary Sidebar -->
+        <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+            <!-- Invoice Details Column -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-file-invoice"></i> Invoice Details
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="detail-name-compact">
+                        <h4>{{ invoice.invoice_number }}</h4>
+                        <span class="detail-status status-badge status-{{ invoice.payment_status|lower }}">{{ invoice.get_payment_status_display }}</span>
+                    </div>
+                    <div class="detail-contact-compact">
+                        <div class="contact-item">
+                            <i class="fas fa-user"></i>
+                            <span><strong>Customer:</strong> {{ invoice.customer.name }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <span><strong>Phone:</strong> {{ invoice.customer.phone_number|phone_number }}</span>
+                        </div>
+                        {% if invoice.customer.email %}
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span><strong>Email:</strong> {{ invoice.customer.email }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="contact-item">
+                            <i class="fas fa-calendar"></i>
+                            <span><strong>Date:</strong> {{ invoice.invoice_date|date:"M d, Y" }}</span>
+                        </div>
+                        {% if invoice.due_date %}
+                            <div class="contact-item">
+                                <i class="fas fa-clock"></i>
+                                <span><strong>Due Date:</strong>
+                                    {% if invoice.is_overdue %}
+                                        <span class="text-danger">{{ invoice.due_date|date:"M d, Y" }} (Overdue)</span>
+                                    {% else %}
+                                        {{ invoice.due_date|date:"M d, Y" }}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        {% endif %}
+                        <div class="contact-item">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span><strong>Type:</strong> {{ invoice.get_payment_type_display }}</span>
+                        </div>
+                        {% if invoice.notes %}
+                            <div class="contact-item">
+                                <i class="fas fa-sticky-note"></i>
+                                <span><strong>Notes:</strong> {{ invoice.notes|truncatechars:50 }}</span>
+                            </div>
+                        {% endif %}
+                        {% if invoice.is_cancelled %}
+                            <div class="contact-item">
+                                <i class="fas fa-times-circle"></i>
+                                <span><strong>Cancelled At:</strong> {{ invoice.cancelled_at|date:"M d, Y" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Summary Cards -->
+            <div class="sidebar-card" id="amountSummaryCard">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-calculator"></i> Amount Summary
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="summary-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Subtotal</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.total_payable|currency_nonDecimal }}</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.remaining_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Due</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-card" id="paymentSummaryCard">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-credit-card"></i> Payment Summary
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="summary-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.advance_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Advance</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.paid_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Paid</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ invoice.remaining_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Balance</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Return Summary Card -->
+            {% if return_invoices.exists %}
+                <div class="sidebar-card" id="returnSummaryCard">
+                    <div class="sidebar-card-header">
+                        <h3 class="sidebar-card-title">
+                            <i class="fas fa-undo"></i> Return Summary
+                        </h3>
+                    </div>
+                    <div class="sidebar-card-body">
+                        <div class="summary-stats-grid">
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_return_amount|currency_nonDecimal }}</span>
+                                <span class="stat-label">Refunded</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ total_return_items }}</span>
+                                <span class="stat-label">Items</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number">{{ return_invoices.count }}</span>
+                                <span class="stat-label">Returns</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Tables -->
+        <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+            <!-- Invoice Items Table -->
+            <div class="table-section" id="itemsSection">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-boxes"></i> Invoice Items ({{ invoice.invoice_items.count }})
+                    </h3>
+                </div>
+                {% if invoice.invoice_items.exists %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="mobile-hide">Variant</th>
+                                    <th>Quantity</th>
+                                    <th class="mobile-hide">MRP</th>
+                                    <th class="mobile-hide">Unit Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in invoice.invoice_items.all %}
+                                    <tr>
+                                        <td>
+                                            <div class="product-info">
+                                                <strong><a href="{% url 'inventory_products:details' item.product_variant.product.id %}"
+   target="_blank">{{ item.product_variant.product.brand }}</a></strong>
+                                                <br>
+                                                <small class="text-muted">{{ item.product_variant.product.category.name }}</small>
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <div class="variant-info">
+                                                <strong><a href="{% url 'inventory_variant:details' item.product_variant.id %}"
+   target="_blank">{{ item.product_variant.simple_name }}</a></strong>
+                                                <br>
+                                                {% if item.product_variant.size %}
+                                                    <small class="text-muted">Size: {{ item.product_variant.size.name }}</small>
+                                                {% endif %}
+                                                {% if item.product_variant.color %}
+                                                    <small class="text-muted">Color: {{ item.product_variant.color.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="quantity-info">
+                                                <strong>{{ item.get_return_available_quantity|floatformat:2 }}</strong>
+                                                {% if item.get_return_available_quantity != item.quantity %}
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        Original: {{ item.quantity|floatformat:2 }}
+                                                        <span class="text-danger">(-{{ item.quantity|sub:item.get_return_available_quantity|floatformat:2 }} returned)</span>
+                                                    </small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">{{ item.mrp|currency }}</td>
+                                        <td class="mobile-hide">{{ item.unit_price|currency }}</td>
+                                        <td>
+                                            <strong>{{ item.amount|currency }}</strong>
+                                            {% if item.discount_amount_per_unit > 0 %}
+                                                <br>
+                                                <small class="text-muted">-{{ item.total_discount_amount|currency }}</small>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h4>No Items Found</h4>
+                        <p>This invoice doesn't have any items associated with it.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Payment History Table -->
+            {% if invoice.paid_amount > 0 or invoice.advance_amount > 0 %}
+                <div class="table-section" id="paymentsSection">
+                    <div class="table-header">
+                        <h3>
+                            <i class="fas fa-credit-card"></i> Payment History
+                        </h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if invoice.advance_amount > 0 %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-info">Advance</span>
+                                        </td>
+                                        <td>{{ invoice.advance_amount|currency }}</td>
+                                        <td>{{ invoice.invoice_date|date:"M j, Y" }}</td>
+                                        <td>
+                                            <span class="status-badge status-success">Received</span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if invoice.paid_amount > 0 %}
+                                    <tr>
+                                        <td>
+                                            <span class="badge badge-secondary">Payment</span>
+                                        </td>
+                                        <td>{{ invoice.paid_amount|currency }}</td>
+                                        <td>{{ invoice.updated_at|date:"M j, Y" }}</td>
+                                        <td>
+                                            <span class="status-badge status-success">Received</span>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+            <!-- Return Items Details -->
+            {% if return_items_with_details %}
+                <div class="table-section" id="returnsSection">
+                    <div class="table-header">
+                        <h3>
+                            <i class="fas fa-boxes"></i> Return Items Details
+                        </h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Return Invoice</th>
+                                    <th>Product</th>
+                                    <th class="mobile-hide">Variant</th>
+                                    <th class="mobile-hide">Original Qty</th>
+                                    <th>Returned Qty</th>
+                                    <th class="mobile-hide">Unit Price</th>
+                                    <th>Total Amount</th>
+                                    <th class="mobile-hide">Condition</th>
+                                    <th class="mobile-hide">Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in return_items_with_details %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.return_invoice.return_number|default:"N/A" }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ item.return_invoice.get_status_display }}</small>
+                                        </td>
+                                        <td>
+                                            <div class="product-info">
+                                                <strong>{{ item.product_variant.product.brand }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ item.product_variant.product.category.name }}</small>
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <div class="variant-info">
+                                                <strong>{{ item.product_variant.simple_name }}</strong>
+                                                {% if item.product_variant.size %}
+                                                    <br>
+                                                    <small class="text-muted">Size: {{ item.product_variant.size.name }}</small>
+                                                {% endif %}
+                                                {% if item.product_variant.color %}
+                                                    <br>
+                                                    <small class="text-muted">Color: {{ item.product_variant.color.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">{{ item.quantity_original|floatformat:2 }}</td>
+                                        <td>
+                                            <strong class="text-danger">{{ item.quantity_returned|floatformat:2 }}</strong>
+                                        </td>
+                                        <td class="mobile-hide">{{ item.unit_price|currency }}</td>
+                                        <td>
+                                            <strong>{{ item.total_amount|currency }}</strong>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <span class="badge badge-secondary">{{ item.get_condition_display }}</span>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <span class="badge badge-info">{{ item.get_return_reason_display }}</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+            <!-- Calculations Section -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-calculator"></i> Calculations
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div class="total-amount-display">
+                        <div class="total-row">
+                            <span class="total-label">Sub Total:</span>
+                            <span class="total-value">{{ invoice.amount|currency }}</span>
+                        </div>
+                        {% if invoice.discount_amount > 0 %}
+                            <div class="total-row">
+                                <span class="total-label">Discount:</span>
+                                <span class="total-value text-danger">- {{ invoice.discount_amount|currency }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="total-row">
+                            <span class="total-label">Original Total:</span>
+                            <span class="total-value">{{ invoice.total_payable|currency }}</span>
+                        </div>
+                        {% if total_return_amount > 0 %}
+                            <div class="total-row">
+                                <span class="total-label">Returns:</span>
+                                <span class="total-value text-danger">- {{ total_return_amount|currency }}</span>
+                            </div>
+                        {% endif %}
+                        {% if invoice.advance_amount > 0 %}
+                            <div class="total-row">
+                                <span class="total-label">Advance:</span>
+                                <span class="total-value text-success">{{ invoice.advance_amount|currency }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="total-row total-final">
+                            <span class="total-label">Final Balance:</span>
+                            <span class="total-value">{{ invoice.net_amount_due|currency }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Summary card click handlers
+        const amountSummaryCard = document.getElementById('amountSummaryCard')
+        const paymentSummaryCard = document.getElementById('paymentSummaryCard')
+        const returnSummaryCard = document.getElementById('returnSummaryCard')
+        const itemsSection = document.getElementById('itemsSection')
+        const paymentsSection = document.getElementById('paymentsSection')
+        const returnsSection = document.getElementById('returnsSection')
+    
+        amountSummaryCard.addEventListener('click', function () {
+            itemsSection.scrollIntoView({ behavior: 'smooth' })
+        })
+    
+        if (paymentsSection) {
+            paymentSummaryCard.addEventListener('click', function () {
+                paymentsSection.scrollIntoView({ behavior: 'smooth' })
+            })
+        }
+        
+        if (returnSummaryCard && returnsSection) {
+            returnSummaryCard.addEventListener('click', function () {
+                returnsSection.scrollIntoView({ behavior: 'smooth' })
+            })
+        }
+    })
+    </script>
+    <script>
+        function sendInvoice(id) {
+            $.ajax({
+                url: '/report/send-invoice/' + id + '/',
+                type: 'GET',
+                success: function (response) {
+                    if (response.success) {
+                        showNotification('Invoice sent successfully', 'success')
+                    } else {
+                        showNotification(response.message || 'Failed to send invoice', 'error')
+                    }
+                },
+                error: function (xhr, status, error) {
+                    let errorMessage = 'Error sending invoice';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        errorMessage = response.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = error || errorMessage;
+                    }
+                    showNotification(errorMessage, 'error')
+                }
+            });
+        }
+
+        $(document).on('click', '#directPrintBtn', function () {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Printing...');
+            
+            $.ajax({
+                url: btn.data('url'),
+                type: 'GET',
+                success: function (response) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    if (response.success) {
+                        showNotification(response.message || 'Invoice sent to printer successfully', 'success');
+                    } else {
+                        showNotification(response.error || 'Failed to print', 'error');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    btn.prop('disabled', false).html(originalHtml);
+                    let errorMessage = 'Error communicating with printer';
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        errorMessage = response.error || errorMessage;
+                    } catch (e) {}
+                    showNotification(errorMessage, 'error');
+                }
+            });
+        });
+    </script>
+{% endblock extra_js %}

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {% if gsthsncode %}
+    Edit GST HSN Code
+  {% else %}
+    Create GST HSN Code
+  {% endif %}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">
+      {% if gsthsncode %}
+        Edit GST HSN Code
+      {% else %}
+        Create New GST HSN Code
+      {% endif %}
+    </h2>
+    <div class="page-actions">
+      {% if gsthsncode %}
+        <a href="{% url 'inventory:gst_hsn_home' %}" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to List
+        </a>
+      {% endif %}
+      <a href="{% url 'inventory:gst_hsn_home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to HSN Codes
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'inventory:gst_hsn_home' %}" class="breadcrumb-item">GST HSN Codes</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if gsthsncode %}
+      <span class="breadcrumb-item">{{ gsthsncode.code }}</span>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Edit Form -->
+  <div class="form-container">
+    <div class="form-card">
+      <form method="post" class="row" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        
+        <!-- HSN Code Field -->
+        <div class="col-md-6 {% if form.code.errors %}has-error{% endif %}">
+          <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+          {{ form.code }}
+          <small class="form-help"><span class="form-help-text">e.g., 61091000 (6-8 digits)</span></small>
+          {% if form.code.errors %}
+            <div class="field-errors">
+              {% for error in form.code.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- GST Percentage Field -->
+        <div class="col-md-6 {% if form.gst_percentage.errors %}has-error{% endif %}">
+          <label for="{{ form.gst_percentage.id_for_label }}" class="form-label">{{ form.gst_percentage.label }}</label>
+          {{ form.gst_percentage }}
+          <small class="form-help"><span class="form-help-text">e.g., 12.00 (0.00 - 40.00)</span></small>
+          {% if form.gst_percentage.errors %}
+            <div class="field-errors">
+              {% for error in form.gst_percentage.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Cess Rate Field -->
+        <div class="col-md-6 {% if form.cess_rate.errors %}has-error{% endif %}">
+          <label for="{{ form.cess_rate.id_for_label }}" class="form-label">{{ form.cess_rate.label }}</label>
+          {{ form.cess_rate }}
+          <small class="form-help"><span class="form-help-text">e.g., 0.00 (0.00 - 25.00)</span></small>
+          {% if form.cess_rate.errors %}
+            <div class="field-errors">
+              {% for error in form.cess_rate.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Effective From Field -->
+        <div class="col-md-6 {% if form.effective_from.errors %}has-error{% endif %}">
+          <label for="{{ form.effective_from.id_for_label }}" class="form-label">{{ form.effective_from.label }}</label>
+          {{ form.effective_from }}
+          <small class="form-help"><span class="form-help-text">Date from which this HSN code is effective</span></small>
+          {% if form.effective_from.errors %}
+            <div class="field-errors">
+              {% for error in form.effective_from.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Is Active Field -->
+        <div class="col-md-6 {% if form.is_active.errors %}has-error{% endif %}">
+          <label for="{{ form.is_active.id_for_label }}" class="form-label">
+            {{ form.is_active }}
+            {{ form.is_active.label }}
+          </label>
+          <small class="form-help"><span class="form-help-text">Whether this HSN code is active or not</span></small>
+          {% if form.is_active.errors %}
+            <div class="field-errors">
+              {% for error in form.is_active.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <!-- Description Field -->
+        <div class="col-md-12 {% if form.description.errors %}has-error{% endif %}">
+          <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+          {{ form.description }}
+          <small class="form-help"><span class="form-help-text">Optional description of the HSN code</span></small>
+          {% if form.description.errors %}
+            <div class="field-errors">
+              {% for error in form.description.errors %}
+                <div class="error-message">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if gsthsncode %}
+              Update HSN Code
+            {% else %}
+              Create HSN Code
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'inventory:gst_hsn_home' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

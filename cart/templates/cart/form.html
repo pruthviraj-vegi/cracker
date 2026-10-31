@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">{{ title }}</h2>
+    <div class="page-actions">
+      {% if cart %}
+        <a href="{% url 'cart:get_cart_data' cart.id %}"
+           class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Cart
+        </a>
+      {% endif %}
+      <a href="{% url 'cart:main_page' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to Carts
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'cart:main_page' %}" class="breadcrumb-item">Carts</a>
+    <span class="breadcrumb-separator">/</span>
+    {% if cart %}
+      <a href="{% url 'cart:get_cart_data' cart.id %}" class="breadcrumb-item">{{ cart.name }}</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Edit</span>
+    {% else %}
+      <span class="breadcrumb-active">Create New</span>
+    {% endif %}
+  </nav>
+  <!-- Cart Form -->
+  <div class="form-container col-md-6">
+    <div class="form-card">
+      <form method="post" class="details-form" novalidate autocomplete="off">
+        {% csrf_token %}
+        <!-- Form Errors -->
+        {% if form.non_field_errors %}
+          <div class="form-errors">
+            {% for error in form.non_field_errors %}
+              <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <!-- Cart Details Section -->
+        <div class="form-section">
+          <h5 class="section-title">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="header-icon">
+              <path d="M18 17H6V15H18V17ZM18 13H6V11H18V13ZM18 9H6V7H18V9ZM3 22L4.5 20.5L6 22L7.5 20.5L9 22L10.5 20.5L12 22L13.5 20.5L15 22L16.5 20.5L18 22L19.5 20.5L21 22V2L19.5 3.5L18 2L16.5 3.5L15 2L13.5 3.5L12 2L10.5 3.5L9 2L7.5 3.5L6 2L4.5 3.5L3 2V22Z"/>
+            </svg>
+            Cart Details
+          </h5>
+          <!-- Name Field -->
+          <div class="form-group {% if form.name.errors %}has-error{% endif %}">
+            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.errors %}
+              {% for error in form.name.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.name.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.name.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Advance Payment Field -->
+          <div class="form-group {% if form.advance_payment.errors %}has-error{% endif %}">
+            <label for="{{ form.advance_payment.id_for_label }}" class="form-label">{{ form.advance_payment.label }}</label>
+            {{ form.advance_payment }}
+            {% if form.advance_payment.errors %}
+              {% for error in form.advance_payment.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.advance_payment.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.advance_payment.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Status Field -->
+          <div class="form-group {% if form.status.errors %}has-error{% endif %}">
+            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              {% for error in form.status.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.status.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.status.help_text }}</span></small>
+            {% endif %}
+          </div>
+          <!-- Notes Field -->
+          <div class="form-group {% if form.notes.errors %}has-error{% endif %}">
+            <label for="{{ form.notes.id_for_label }}" class="form-label">{{ form.notes.label }}</label>
+            {{ form.notes }}
+            {% if form.notes.errors %}
+              {% for error in form.notes.errors %}
+                <small class="form-help form-error-inline">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ error }}
+                </small>
+              {% endfor %}
+            {% elif form.notes.help_text %}
+              <small class="form-help"><span class="form-help-text">{{ form.notes.help_text }}</span></small>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i>
+            {% if cart %}
+              Update Cart
+            {% else %}
+              Create Cart
+            {% endif %}
+          </button>
+          <div class="cart-options-row">
+            <a class="cart-option-btn text-danger" href="{% url 'cart:main_page' %}" title="Cancel">
+              <i class="fas fa-times"></i>
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

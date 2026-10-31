@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - Access Denied</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            text-align: center;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .lock-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 40px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .lock {
+            width: 120px;
+            height: 140px;
+            background: linear-gradient(145deg, #4a5568, #2d3748);
+            border-radius: 20px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .lock::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            border: 15px solid #4a5568;
+            border-radius: 50%;
+            border-bottom: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            25% { transform: translateX(-50%) rotate(-5deg); }
+            75% { transform: translateX(-50%) rotate(5deg); }
+        }
+
+        .keyhole {
+            position: absolute;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .keyhole-top {
+            width: 20px;
+            height: 20px;
+            background: #1a202c;
+            border-radius: 50%;
+            margin: 0 auto;
+        }
+
+        .keyhole-bottom {
+            width: 8px;
+            height: 25px;
+            background: #1a202c;
+            margin: 0 auto;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .glow {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(255, 107, 107, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.5;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        h1 {
+            font-size: 80px;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        h2 {
+            font-size: 32px;
+            color: #f0f0f0;
+            margin-bottom: 15px;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        p {
+            font-size: 18px;
+            color: #e0e0e0;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: fadeInUp 1.4s ease-out;
+        }
+
+        .button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            background: #f8f8f8;
+        }
+
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: particleFloat 8s infinite ease-in-out;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) translateX(100px);
+                opacity: 0;
+            }
+        }
+
+        .error-code {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            animation: fadeInDown 0.6s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="lock-container">
+            <div class="glow"></div>
+            <div class="lock">
+                <div class="keyhole">
+                    <div class="keyhole-top"></div>
+                    <div class="keyhole-bottom"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="error-code">
+            <h1>403</h1>
+        </div>
+        
+        <h2>Access Denied</h2>
+        <p>
+            Sorry, you don't have permission to access this resource.<br>
+            Please contact the administrator if you believe this is a mistake.
+        </p>
+        
+        <a href="/" class="button">Go Back Home</a>
+    </div>
+
+    <script>
+        // Create floating particles
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 30;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Random starting position
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.top = Math.random() * 100 + '%';
+            
+            // Random delay for staggered animation
+            particle.style.animationDelay = Math.random() * 8 + 's';
+            
+            // Random size
+            const size = Math.random() * 6 + 4;
+            particle.style.width = size + 'px';
+            particle.style.height = size + 'px';
+            
+            particlesContainer.appendChild(particle);
+        }
+
+        // Add shake animation to lock when page loads
+        window.addEventListener('load', () => {
+            const lock = document.querySelector('.lock');
+            setTimeout(() => {
+                lock.style.animation = 'shake 0.5s ease-in-out';
+            }, 500);
+        });
+
+        // Add interactive hover effect to lock
+        const lockContainer = document.querySelector('.lock-container');
+        lockContainer.addEventListener('mouseenter', () => {
+            lockContainer.style.animation = 'none';
+            lockContainer.style.transform = 'scale(1.1)';
+        });
+
+        lockContainer.addEventListener('mouseleave', () => {
+            lockContainer.style.animation = 'float 3s ease-in-out infinite';
+            lockContainer.style.transform = 'scale(1)';
+        });
+    </script>
+</body>
+</html>

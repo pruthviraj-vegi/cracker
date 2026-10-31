@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    {{ page_title }}
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">{{ page_title }}</h1>
+        <div class="page-actions">
+            {% if perms.setting.change_barcodeconfiguration %}
+                <a href="{% url 'setting:barcode_config_edit' config.pk %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Configuration
+                </a>
+            {% endif %}
+            <a href="{% url 'setting:barcode_config_list' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    <div class="details-container">
+        <div class="details-card">
+            <div class="details-header">
+                <div class="details-title">
+                    <h2>{{ config.config_name }}</h2>
+                    {% if config.is_default %}<span class="badge badge-success">Default</span>{% endif %}
+                </div>
+                <div class="details-status">
+                    {% if config.is_active %}
+                        <span class="status-badge status-active">
+                            <i class="fas fa-check-circle"></i> Active
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-inactive">
+                            <i class="fas fa-times-circle"></i> Inactive
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="details-body">
+                <!-- Basic Info -->
+                <div class="details-section">
+                    <h3 class="section-title">Basic Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Barcode Type</label>
+                            <p>{{ config.get_barcode_type_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Label Size</label>
+                            <p>{{ config.get_label_size_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Paper Size</label>
+                            <p>{{ config.get_paper_size_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Shop</label>
+                            <p>{{ config.shop.shop_name }}</p>
+                        </div>
+                        {% if config.label_size == 'CUSTOM' %}
+                            <div class="info-item">
+                                <label>Custom Dimensions</label>
+                                <p>{{ config.custom_label_width }}mm x {{ config.custom_label_height }}mm</p>
+                            </div>
+                        {% endif %}
+                        <div class="info-item">
+                            <label>Heading Text</label>
+                            <p>
+                                {% if config.show_heading %}
+                                    {{ config.heading_text|default:"(Shop Name)" }}
+                                {% else %}
+                                    <span class="text-muted">Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Layout -->
+                <div class="details-section">
+                    <h3 class="section-title">Layout Settings</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Grid Arrangement</label>
+                            <p>{{ config.labels_per_row }} per row x {{ config.labels_per_column }} per column</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Page Margins</label>
+                            <p>Top: {{ config.margin_top }}mm, Left: {{ config.margin_left }}mm</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Label Spacing</label>
+                            <p>Horizontal: {{ config.spacing_horizontal }}mm, Vertical: {{ config.spacing_vertical }}mm</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Options -->
+                <div class="details-section">
+                    <h3 class="section-title">Display Options</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Product Name</label>
+                            <p>{% if config.show_product_name %}<span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>{% else %}<span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>{% endif %}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Product Code</label>
+                            <p>{% if config.show_product_code %}<span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>{% else %}<span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>{% endif %}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Price</label>
+                            <p>{% if config.show_price %}<span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>{% else %}<span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>{% endif %}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Barcode</label>
+                            <p>{% if config.show_barcode %}<span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>{% else %}<span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>{% endif %}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Shop Logo</label>
+                            <p>{% if config.show_shop_logo %}<span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>{% else %}<span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>{% endif %}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Style Settings -->
+                <div class="details-section">
+                    <h3 class="section-title">Style Settings</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Font Size</label>
+                            <p>{{ config.font_size }}px</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Barcode Height</label>
+                            <p>{{ config.barcode_height }}px</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Border Style</label>
+                            <p>
+                                {% if config.show_border %}
+                                    {{ config.get_border_style_display }}
+                                {% else %}
+                                    None
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="details-footer">
+                <div class="meta-info">
+                    <small>Created on {{ config.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

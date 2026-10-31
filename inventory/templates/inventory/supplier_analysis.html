@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {{ supplier.name }} - Inventory Analysis
+{% endblock title %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}">
+{% endblock extra_css %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">{{ supplier.name }} - Inventory Analysis</h2>
+        <div class="page-actions">
+            <a href="{% url 'supplier:detail' supplier.id %}"
+               class="btn btn-info">
+                <i class="fas fa-user"></i>
+                Supplier Profile
+            </a>
+            <a href="{% url 'inventory:supplier_invoice' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                All Supplier Invoices
+            </a>
+        </div>
+    </div>
+
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Inventory</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'inventory:supplier_invoice' %}" class="breadcrumb-item">Supplier Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ supplier.name }}</span>
+    </nav>
+
+    <!-- Supplier Analysis Dashboard Hero Tier -->
+    <div class="dash-hero-grid detail-dash-grid">
+        <!-- 1. Purchases & Profit Hero Card -->
+        <div class="dash-hero-card">
+            <div>
+                <div class="hero-card-header">
+                    <span class="hero-card-title">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                        Purchases &amp; Invoicing
+                    </span>
+                    <span class="hero-tag">
+                        {{ all_invoices_count }} Invoice{{ all_invoices_count|pluralize }} ({{ active_invoices_count }} active)
+                    </span>
+                </div>
+                <div class="hero-val-display">
+                    <span class="hero-number-lg">{{ total_invoice_amount|currency }}</span>
+                    <span class="stat-label-small ms-1">total invoiced</span>
+                </div>
+            </div>
+
+            <div class="hero-submetrics">
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Sales Revenue</span>
+                    <div class="hero-submetric-val">{{ total_sales_revenue|currency }}</div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Gross Profit</span>
+                    <div class="hero-submetric-val {% if total_profit > 0 %}text-success{% elif total_profit < 0 %}text-danger{% endif %}">
+                        {{ total_profit|currency }} <small class="text-secondary">({{ profit_margin|floatformat:1 }}%)</small>
+                    </div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Intake Valuation</span>
+                    <div class="hero-submetric-val">{{ total_stock_in_value|currency }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Stock Movement & Sell-Through Hero Card -->
+        <div class="dash-hero-card">
+            <div>
+                <div class="hero-card-header">
+                    <span class="hero-card-title">
+                        <i class="fa-solid fa-boxes-stacked"></i>
+                        Stock &amp; Sell-Through
+                    </span>
+                    <span class="hero-tag text-success">
+                        <i class="fa-solid fa-chart-line me-1"></i>{{ sold_percentage|floatformat:1 }}% Sold
+                    </span>
+                </div>
+                <div class="hero-val-display">
+                    <span class="hero-number-lg">{{ total_remaining|floatformat:0 }}</span>
+                    <span class="stat-label-small ms-1">units remaining</span>
+                </div>
+
+                <!-- Split Progress Meter -->
+                <div class="cashflow-bar-wrapper mt-2">
+                    <div class="cashflow-bar-track">
+                        <div class="cashflow-fill-sold"
+                             style="width: {{ sold_percentage|floatformat:1 }}%;"
+                             data-bs-toggle="tooltip"
+                             data-bs-placement="top"
+                             title="Sold: {{ sold_percentage|floatformat:1 }}% ({{ total_sales|floatformat:0 }} units)">
+                        </div>
+                        <div class="cashflow-fill-remaining"
+                             style="width: {{ remaining_percentage|floatformat:1 }}%;"
+                             data-bs-toggle="tooltip"
+                             data-bs-placement="top"
+                             title="Remaining: {{ remaining_percentage|floatformat:1 }}% ({{ total_remaining|floatformat:0 }} units)">
+                        </div>
+                        {% if total_damage > 0 %}
+                        <div class="cashflow-fill-damage"
+                             style="width: {{ damage_percentage|floatformat:1 }}%;"
+                             data-bs-toggle="tooltip"
+                             data-bs-placement="top"
+                             title="Damaged: {{ damage_percentage|floatformat:1 }}% ({{ total_damage|floatformat:0 }} units)">
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="hero-submetrics">
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Units Sold</span>
+                    <div class="hero-submetric-val">{{ total_sales|floatformat:0 }}</div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Damaged Units</span>
+                    <div class="hero-submetric-val {% if total_damage > 0 %}text-danger{% endif %}">
+                        {{ total_damage|floatformat:0 }} <small class="text-secondary">({{ total_damage_value|currency }})</small>
+                    </div>
+                </div>
+                <div class="hero-submetric-item">
+                    <span class="hero-submetric-label">Total Stock In</span>
+                    <div class="hero-submetric-val">{{ total_stock_in|floatformat:0 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-filter-section mt-2">
+        <form method="get" class="search-filter-form" id="searchForm" autocomplete="off">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search products, brand, barcode, color, size..."
+                       id="searchInput"
+                       autofocus>
+            </div>
+            <select name="status" class="filter-select" id="statusFilter">
+                <option value="">All Status</option>
+                <option value="in_stock">In Stock</option>
+                <option value="low_stock">Low Stock (≤ 5)</option>
+                <option value="sold_out">Sold Out</option>
+                <option value="selling_well">Selling Well (≥ 50%)</option>
+                <option value="slow_moving">Slow Moving (&lt; 50%)</option>
+                <option value="damaged">Has Damaged Stock</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+
+    <!-- Products Table -->
+    <div class="table-container">
+        <table class="data-table"
+               id="supplierProductsTable"
+               data-sort="-stock_in_quantity">
+            <thead>
+                <tr>
+                    <th class="sortable" data-sort="brand">Product</th>
+                    <th>Size</th>
+                    <th>Color</th>
+                    <th class="sortable" data-sort="barcode">Barcode</th>
+                    <th>Invoices</th>
+                    <th class="sortable" data-sort="stock_in_quantity">Stock In</th>
+                    <th class="sortable" data-sort="sales_quantity">Sales</th>
+                    <th class="sortable" data-sort="damage_quantity">Damage</th>
+                    <th class="sortable" data-sort="remaining_quantity">Remaining</th>
+                    <th class="sortable sensitive-col" data-sort="purchase_price">Purchase Price</th>
+                    <th class="sortable" data-sort="selling_price">Selling Price</th>
+                    <th>Revenue</th>
+                    <th class="sortable sensitive-col" data-sort="profit">Profit</th>
+                    <th class="sortable" data-sort="sold_percentage">Sold %</th>
+                    <th>Stock Status</th>
+                    <th class="text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="16" class="text-center empty-state-container p-3">
+                        <div class="empty-state">
+                            <i class="fas fa-boxes"></i>
+                            <h4>No Products Found</h4>
+                            <p>No products found for this supplier.</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fetchUrl = '{% url "inventory:supplier_inventory_analysis_fetch" supplier_id %}';
+
+        initTableAjax('searchForm', 'supplierProductsTable', fetchUrl, {
+            loadingText: 'Loading supplier products...',
+            autoLoad: true,
+        }, true);
+
+        initTableSorting('supplierProductsTable');
+
+        // Toggle Purchase Price & Profit Columns (F9 shortcut & button)
+        const table = document.getElementById('supplierProductsTable');
+        const toggleBtn = document.getElementById('toggleSensitiveBtn');
+        const toggleIcon = document.getElementById('toggleSensitiveIcon');
+        const toggleText = document.getElementById('toggleSensitiveText');
+
+        function toggleSensitive(forceState) {
+            if (!table) return;
+            const isVisible = forceState !== undefined ? forceState : !table.classList.contains('show-sensitive');
+            table.classList.toggle('show-sensitive', isVisible);
+            if (toggleIcon) {
+                toggleIcon.className = isVisible ? 'fas fa-eye' : 'fas fa-eye-slash';
+            }
+            if (toggleText) {
+                toggleText.textContent = isVisible ? 'Hide Cost (F9)' : 'Cost & Profit (F9)';
+            }
+            sessionStorage.setItem('supplier_analysis_show_sensitive', isVisible ? '1' : '0');
+        }
+
+        // Restore state if previously toggled in this browser session
+        if (sessionStorage.getItem('supplier_analysis_show_sensitive') === '1') {
+            toggleSensitive(true);
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleSensitive();
+            });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'F9' || e.keyCode === 120) {
+                e.preventDefault();
+                toggleSensitive();
+            }
+        });
+    });
+    </script>
+{% endblock extra_js %}

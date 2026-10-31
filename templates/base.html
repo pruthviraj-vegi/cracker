@@ -1,0 +1,205 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <meta name="description"
+          content="Billing System for managing invoices, payments, and clients." />
+    <meta name="keywords"
+          content="billing, invoices, payments, clients, management, system" />
+    <title>
+      {% block title %}
+        Billing System
+      {% endblock title %}
+    </title>
+    <!-- Resource Hints for Performance (offline-friendly) -->
+    <link rel="dns-prefetch" href="//localhost:8000">
+    <link rel="shortcut icon"
+          type="image/ico"
+          href="{% static 'images/favicon.ico' %}" />
+    <!-- Local Offline Fonts (Inter & Plus Jakarta Sans) -->
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}">
+    <!-- Critical CSS (load synchronously) -->
+    <link rel="stylesheet"
+          href="{% static 'assets/plugins/bootstrap/css/bootstrap.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/desktop.css' %}">
+    <link rel="stylesheet" href="{% static 'css/mobile.css' %}">
+    <!-- Sidebar Layout CSS — Mobile-first sidebar navigation -->
+    <link rel="stylesheet" href="{% static 'css/sidebar-layout.css' %}" />
+    <!-- Custom Page & Component Styles -->
+    <link rel="stylesheet" href="{% static 'styles/custom.css' %}" />
+    <!-- Select2 CSS - Load early for forms (local) -->
+    <link rel="stylesheet"
+          href="{% static 'assets/plugins/select2/css/select2.min.css' %}" />
+    <link rel="stylesheet"
+          href="{% static 'assets/plugins/select2/css/selectTheme.css' %}" />
+    <!-- Datelite DatePicker CSS -->
+    <link rel="stylesheet" href="{% static 'assets/plugins/datelite.css' %}" />
+    <!-- Animated Date & Time Picker CSS -->
+    <link rel="stylesheet" href="{% static 'css/animated-datepicker.css' %}" />
+    <!-- Reusable Filter Drawer & Advanced Filter Components CSS -->
+    <link rel="stylesheet" href="{% static 'css/filter-drawer.css' %}" />
+    <!-- Non-critical CSS (load with JavaScript) -->
+    <script>
+      // Load non-critical CSS asynchronously
+      function loadCSS(href) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.media = 'all';
+        document.head.appendChild(link);
+      }
+      
+      // Load CSS after page load (ensure local Font Awesome loaded if not already)
+      window.addEventListener('load', function() {
+        const hasFA = !!document.querySelector('link[href*="fontawesom.min.css"]');
+        if (!hasFA) {
+          loadCSS('{% static "assets/plugins/fontawesome/css/fontawesom.min.css" %}');
+        }
+      });
+    </script>
+    <!-- Fallback for critical icons -->
+    <style>
+      html { font-size: 16px; }
+      /* Minimal icon fallbacks */
+      .fas, .far, .fab { 
+        font-family: 'Font Awesome 5 Free', 'Font Awesome 5 Brands', sans-serif; 
+        font-weight: 900;
+      }
+    </style>
+    <script>
+      // Prevent FOUC for theme
+      (function() {
+        var theme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
+    {% block extra_css %}
+    {% endblock extra_css %}
+  </head>
+  <body>
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger-btn" id="sidebarToggle" aria-label="Toggle navigation">
+          <i class="fas fa-bars"></i>
+        </button>
+        <a href="{% url 'base:home' %}" class="logo">
+          <img src="{% static 'images/logo.svg' %}"
+               height="30"
+               width="30"
+               alt="Logo"
+               loading="eager"
+               fetchpriority="high"
+               class="logo-img"
+               onerror="this.style.display='none'" />
+          <span class="logo-text">Billing System</span>
+        </a>
+      </div>
+      <div class="topbar-right">
+        <a href="{% url 'report:downloads_page' %}" class="top-bar-btn" title="Downloads">
+          <i class="fas fa-download"></i>
+        </a>
+        <div class="notification-wrapper" id="notificationWrapper">
+          <button class="top-bar-btn notification-btn" id="notificationBtn" aria-label="Notifications">
+            <i class="fas fa-bell"></i>
+            {% if request.notification_count > 0 %}
+              <span class="notification-badge" id="notificationBadge">{{ request.notification_count|default:"" }}</span>
+            {% else %}
+              <span class="notification-badge d-none" id="notificationBadge"></span>
+            {% endif %}
+          </button>
+          <!-- Notification Dropdown Panel -->
+          <div class="notification-panel" id="notificationPanel">
+            <div class="notification-panel-header">
+              <span class="notification-panel-title">Notifications</span>
+              <button class="notification-panel-mark-all" id="markAllReadBtn" title="Mark all as read">
+                <i class="fas fa-check-double"></i> Mark all read
+              </button>
+            </div>
+            <div class="notification-panel-body" id="notificationPanelBody">
+              <div class="notification-panel-loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="top-bar-btn theme-toggle" id="themeToggle">
+          <i class="fas fa-moon"></i>
+        </button>
+        <a href="{% url 'base:logout' %}"
+           class="top-bar-btn logout-btn"
+           title="{{ request.user }}">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="hidden sm:inline"></span>
+        </a>
+      </div>
+    </header>
+    <!-- Navigation Bar -->
+    {% include "navbar.html" %}
+    <!-- Sidebar Overlay (mobile backdrop) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <!-- Main Content -->
+    <main class="main-content">
+      {% block content %}<!-- Content will be injected here -->{% endblock %}
+    </main>
+    <!-- Critical JavaScript (load synchronously) -->
+    <script src="{% static 'assets/js/jquery-3.7.1.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <!-- Critical UI functionality (load early) -->
+    <script>
+      // Global Notification URLs
+      window.NOTIF_URLS = {
+        count: "{% url 'notification:count' %}",
+        list:  "{% url 'notification:list' %}",
+        markAllRead: "{% url 'notification:mark_all_read' %}",
+        markRead: "{% url 'notification:mark_read' notification_id=0 %}".replace('/0/', '/{id}/')
+      };
+      window.csrfToken = '{{ csrf_token }}';
+    </script>
+    <!-- Global Utility JS Module -->
+    <script src="{% static 'js/utils.js' %}"></script>
+    <script src="{% static 'js/main.js' %}" defer></script>
+    <!-- Form Submit Guard - Prevents duplicate form submissions -->
+    <script src="{% static 'js/form-submit-guard.js' %}"></script>
+    <!-- Select2 - Load early for forms -->
+    <script src="{% static 'assets/plugins/select2/js/select2.min.js' %}" defer></script>
+    <script src="{% static 'js/select2-init.js' %}" defer></script>
+    <!-- Datelite DatePicker JS -->
+    <script src="{% static 'assets/plugins/DatePicker.js' %}" defer></script>
+    {% if redirect_url %}
+    <script>
+      // Open barcode in new tab
+      window.open("{{ redirect_url }}", '_blank');
+    </script>
+    {% endif %}
+    <script src="{% static 'js/notifications-panel.js' %}"></script>
+    <!-- Sidebar Navigation JS -->
+    <script src="{% static 'js/sidebar.js' %}"></script>
+    <!-- Animated Date & Time Picker JS (auto-inits all .form-date-input) -->
+    <script src="{% static 'js/animated-datepicker.js' %}"></script>
+    <!-- Styled Date Filter Dropdown & Date Utilities -->
+    <script src="{% static 'js/dropdown_style.js' %}"></script>
+    <!-- Segmented Select Toggle JS (auto-inits all select.select-toggle) -->
+    <script src="{% static 'js/selectToggle.js' %}"></script>
+    <!-- Reusable Filter Drawer & Dual Range Slider JS -->
+    <script src="{% static 'js/filter-drawer.js' %}"></script>
+    {% block extra_js %}
+    {% endblock extra_js %}
+    {% comment %} <script src="{% static 'js/performance-analyzer.js' %}"></script> {% endcomment %}
+    {% if messages %}
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          {% for message in messages %}
+          if (typeof showNotification === 'function') {
+            showNotification('{{ message|escapejs }}', '{{ message.tags|default:"info" }}');
+          }
+          {% endfor %}
+        });
+      </script>
+    {% endif %}
+  </body>
+</html>

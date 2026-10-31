@@ -1,0 +1,812 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {{ variant.full_name }}
+    - Variant Details
+{% endblock title %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/variant-media.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard-charts.css' %}">
+{% endblock extra_css %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">{{ variant.full_name }}</h2>
+        <div class="page-actions">
+            <a href="{% url 'inventory_products:details' variant.product.id %}"
+               class="btn">
+                <i class="fas fa-arrow-left"></i>
+                Back to Variants
+            </a>  
+            {% if perms.inventory.change_product_variant %}
+                <a href="{% url 'inventory_variant:edit' variant.id %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    Edit Variant
+                </a>
+            {% endif %}
+            <a href="{% url 'report:barcode' variant.id %}" title="Print Barcode" target="_blank" class="btn">
+                <i class="fas fa-barcode"></i>
+                Barcode
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'inventory_products:home' %}" class="breadcrumb-item">Products</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'inventory_products:details' variant.product.id %}"
+           class="breadcrumb-item">{{ variant.product.display_name }}</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ variant.full_name }}</span>
+    </nav>
+    <!-- Main Layout -->
+    <div class="col d-flex flex-row detail-layout two-column-layout">
+        <!-- Left Column - Variant Details and Summary -->
+        <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+            <!-- Variant Details Column -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-box"></i>
+                        Variant Details
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="detail-name-compact">
+                        <h4>{{ variant.full_name }}</h4>
+                        <span class="detail-status status-badge status-{{ variant.status|lower }}">{{ variant.get_status_display }}</span>
+                    </div>
+                    <div class="supplier-contact-compact">
+                        <div class="contact-item">
+                            <i class="fas fa-barcode"></i>
+                            <strong>Barcode:</strong>
+                            <span data-copy="{{ variant.barcode }}">{{ variant.barcode }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-tag"></i>
+                            <span>
+                                <strong>Product:</strong>
+                            {{ variant.product.display_name }}</span>
+                        </div>
+                        {% if variant.size %}
+                            <div class="contact-item">
+                                <i class="fas fa-ruler"></i>
+                                <span>
+                                    <strong>Size:</strong>
+                                {{ variant.size.name }}</span>
+                            </div>
+                        {% endif %}
+                        {% if variant.color %}
+                            <div class="contact-item">
+                                <i class="fas fa-palette"></i>
+                                <span>
+                                    <strong>Color:</strong>
+                                    <div class="d-inline-flex align-items-center gap-2">
+                                        <div class="color-swatch-small"
+                                             style="background-color: {{ variant.color.hex_code|default:'#ccc' }}">
+                                        </div>
+                                        {{ variant.color.name }}
+                                    </div>
+                                </span>
+                            </div>
+                        {% endif %}
+                        {% if variant.extra_attributes %}
+                            <div class="contact-item">
+                                <i class="fas fa-info-circle"></i>
+                                <span>
+                                    <strong>Attributes:</strong>
+                                {{ variant.extra_attributes|truncatechars:50 }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Quick Actions Section -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-rocket"></i> Quick Actions
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="quick-actions-inline">
+                        {% if perms.inventory.add_inventorylog %}
+                            <a href="{% url 'inventory_variant:stock_in' variant.id %}"
+                               class="quick-action-icon"
+                               data-tooltip="Stock In">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                            <a href="{% url 'inventory_variant:adjustment_in' variant.id %}"
+                               class="quick-action-icon"
+                               data-tooltip="Adjust In">
+                                <i class="fas fa-arrow-up"></i>
+                            </a>
+                            <a href="{% url 'inventory_variant:adjustment_out' variant.id %}"
+                               class="quick-action-icon"
+                               data-tooltip="Adjust Out">
+                                <i class="fas fa-arrow-down"></i>
+                            </a>
+                            <a href="{% url 'inventory_variant:damage_create' variant.id %}"
+                               class="quick-action-icon"
+                               data-tooltip="Mark Damaged">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Dashboard Overview & Media & Activity -->
+        <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+            <!-- Stock and Price Dashboard Hero Tier -->
+            <div class="dash-hero-grid detail-dash-grid">
+                <!-- Stock Overview Hero Card -->
+                <div class="dash-hero-card" id="stockSection">
+                    <div>
+                        <div class="hero-card-header">
+                            <span class="hero-card-title">
+                                <i class="fa-solid fa-boxes-stacked"></i>
+                                Stock &amp; Inventory
+                            </span>
+                            <span class="hero-tag {% if variant.stock_status == 'Out of Stock' %}text-danger{% elif variant.is_low_stock %}text-warning{% else %}text-success{% endif %}">
+                                <i class="fa-solid {% if variant.stock_status == 'Out of Stock' %}fa-circle-xmark{% elif variant.is_low_stock %}fa-triangle-exclamation{% else %}fa-circle-check{% endif %} me-1"></i>{{ variant.stock_status }}
+                            </span>
+                        </div>
+                        <div class="hero-val-display">
+                            <span class="hero-number-lg {% if variant.available_quantity == 0 %}text-danger{% elif variant.is_low_stock %}text-warning{% endif %}">
+                                {{ variant.available_quantity|floatformat:0 }}
+                            </span>
+                            <span class="stat-label-small ms-1">units available</span>
+                        </div>
+                        <div class="stat-label-small mt-1">
+                            Physical total: {{ variant.total_quantity|floatformat:0 }} units · Reorder threshold: {{ variant.minimum_quantity|floatformat:0 }} units
+                        </div>
+                    </div>
+
+                    <div class="hero-submetrics">
+                        <div class="hero-submetric-item">
+                            <span class="hero-submetric-label">In Carts (Billing)</span>
+                            <div class="hero-submetric-val">{{ variant.cart_qty }}</div>
+                        </div>
+                        <div class="hero-submetric-item">
+                            <span class="hero-submetric-label">Damaged</span>
+                            <div class="hero-submetric-val {% if variant.damaged_quantity > 0 %}text-danger{% endif %}">
+                                {{ variant.damaged_quantity|floatformat:0 }}
+                            </div>
+                        </div>
+                        <div class="hero-submetric-item">
+                            <span class="hero-submetric-label">Total Inventory</span>
+                            <div class="hero-submetric-val">{{ variant.total_quantity|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Price & Valuation Hero Card -->
+                <div class="dash-hero-card" id="priceSection">
+                    <div>
+                        <div class="hero-card-header">
+                            <span class="hero-card-title">
+                                <i class="fa-solid fa-tags"></i>
+                                Pricing &amp; Valuation
+                            </span>
+                            <button type="button" class="btn-ghost-sm" id="togglePriceBtn" title="Toggle Purchase Cost (or press F9)">
+                                <i class="fas fa-eye" id="togglePriceIcon"></i>
+                                <span class="ms-1">Cost</span>
+                            </button>
+                        </div>
+                        <div class="hero-val-display">
+                            <span class="hero-number-lg">{{ variant.final_price|currency }}</span>
+                            {% if variant.discount_percentage > 0 %}
+                                <span class="hero-delta-badge positive ms-1">
+                                    -{{ variant.discount_percentage }}%
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="stat-label-small mt-1">
+                            Retail MRP: {{ variant.mrp|currency }} · Profit margin: <span class="{% if variant.profit_margin > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{{ variant.profit_margin|floatformat:1 }}%</span>
+                        </div>
+                    </div>
+
+                    <div class="hero-submetrics">
+                        <div class="hero-submetric-item" id="kpiPurchaseTile" style="cursor: pointer;" title="Click or press F9 to toggle cost">
+                            <span class="hero-submetric-label">Purchase Cost (F9)</span>
+                            <div class="hero-submetric-val" id="purchasePriceDisplay" data-price="{{ variant.purchase_price|currency }}">
+                                XXXX
+                            </div>
+                        </div>
+                        <div class="hero-submetric-item">
+                            <span class="hero-submetric-label">Selling MRP</span>
+                            <div class="hero-submetric-val">{{ variant.mrp|currency }}</div>
+                        </div>
+                        <div class="hero-submetric-item">
+                            <span class="hero-submetric-label">Stock Valuation</span>
+                            <div class="hero-submetric-val">{{ variant.total_value|currency }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Media Gallery -->
+            {% include "inventory/product_variant/media_gallery.html" %}
+            <!-- Recent Activity Table -->
+            {% if recent_logs %}
+                <div class="table-section" id="activitySection">
+                    <div class="table-header">
+                        <h3>
+                            <i class="fas fa-history"></i>
+                            Recent Activity ({{ recent_logs.count }})
+                        </h3>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="table_data" data-sort="-timestamp">
+                            <thead>
+                                <tr>
+                                    <th class="mobile-hide">Type</th>
+                                    <th>Change</th>
+                                    <th>New Quantity</th>
+                                    <th class="mobile-hide">Value</th>
+                                    <th class="mobile-hide">Supplier Invoice</th>
+                                    <th class="mobile-hide">User</th>
+                                    <th>Time</th>
+                                    <th class="mobile-hide">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table_body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <h4>No Activity Found</h4>
+                    <p>No activity has been recorded for this variant yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <style>
+        /* ── Variant Details Dashboard Hero Grid ── */
+
+        .btn-ghost-sm {
+            background: var(--bg-surface-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.2rem 0.55rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-ghost-sm:hover {
+            background: var(--bg-surface);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        @media (max-width: 992px) {
+            /* grid stacks via .detail-dash-grid global rule */
+        }
+
+        /* Compact invoice info styles */
+        .invoice-info-compact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            line-height: 1.2;
+        }
+
+        .invoice-info-compact i {
+            font-size: 0.75rem;
+            margin-right: 0.25rem;
+        }
+
+        .invoice-number {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .invoice-info-compact small {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Compact table styles for Recent Activity */
+        .data-table {
+            font-size: 0.875rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 0.5rem 0.75rem;
+            vertical-align: top;
+        }
+
+        .data-table th {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Column width optimization */
+        .data-table th:nth-child(1), /* Type */
+        .data-table td:nth-child(1) {
+            width: 100px;
+            min-width: 100px;
+        }
+
+        .data-table th:nth-child(2), /* Change */
+        .data-table td:nth-child(2) {
+            width: 80px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .data-table th:nth-child(3), /* New Quantity */
+        .data-table td:nth-child(3) {
+            width: 100px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .data-table th:nth-child(4), /* Value */
+        .data-table td:nth-child(4) {
+            width: 100px;
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .data-table th:nth-child(5), /* Supplier Invoice */
+        .data-table td:nth-child(5) {
+            width: 140px;
+            min-width: 140px;
+        }
+
+        .data-table th:nth-child(6), /* User */
+        .data-table td:nth-child(6) {
+            width: 120px;
+            min-width: 120px;
+        }
+
+        .data-table th:nth-child(7), /* Time */
+        .data-table td:nth-child(7) {
+            width: 120px;
+            min-width: 120px;
+        }
+
+        .data-table th:nth-child(8), /* Notes */
+        .data-table td:nth-child(8) {
+            width: 150px;
+            min-width: 150px;
+        }
+
+        /* Responsive table for mobile */
+        @media(max-width: 1024px) {
+            .data-table {
+                font-size: 0.8rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 0.4rem 0.5rem;
+            }
+        }
+
+        /* Modal Styles - Theme Compatible */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: var(--bg-surface);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 0.75rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: var(--shadow-md);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 0.75rem 0.75rem 0 0;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: var(--heading-weight);
+        }
+
+        .close {
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+
+        .close:hover,
+        .close:focus {
+            background-color: var(--bg-surface-hover);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            background-color: var(--bg-surface);
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border-color);
+            border-radius: 0 0 0.75rem 0.75rem;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: var(--bg-surface);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--border-color-focus);
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+        }
+
+        .form-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Quick Actions Styles */
+        .quick-actions {
+            padding: 1rem;
+        }
+
+        .action-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .action-group h4 {
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        /* Invoice Information Styles */
+        .invoice-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .invoice-info i {
+            margin-right: 4px;
+        }
+
+        .invoice-info strong {
+            color: var(--primary-color);
+        }
+
+        .invoice-info small {
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+
+        /* Quick Actions Styles */
+        .quick-actions-section {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+        }
+
+        .quick-actions-section h4 {
+            margin: 0 0 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .quick-actions-inline {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+
+        .quick-action-icon {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 44px;
+            height: 36px;
+            margin: 0 auto;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            background: var(--bg-body);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .quick-action-icon:hover {
+            transform: translateY(-2px);
+            background: var(--bg-surface-hover);
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: var(--shadow-md);
+            text-decoration: none;
+        }
+
+        .quick-action-icon i {
+            font-size: 0.85rem;
+            line-height: 1;
+            margin: 0;
+        }
+
+        /* Tooltip on hover */
+        .quick-action-icon::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            font-size: 0.7rem;
+            font-weight: 500;
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .quick-action-icon:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #17a2b8, #6f42c1);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #e83e8c);
+        }
+
+        /* Responsive improvements */
+        @media(max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .action-buttons .btn {
+                min-width: auto;
+            }
+
+            .quick-actions-inline {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.35rem;
+                width: 100%;
+                margin-top: 0.2rem;
+            }
+
+            .quick-action-icon {
+                width: 100%;
+                max-width: 36px;
+                height: 32px;
+                border-radius: 0.375rem;
+                margin: 0 auto;
+            }
+
+            .quick-action-icon i {
+                font-size: 0.8rem;
+                line-height: 1;
+            }
+        }
+    </style>
+    <script>
+        urls = {
+            recent_logs: '{% url "inventory_variant:recent_logs" variant.id %}',
+        }
+    </script>
+    <script src="{% static 'js/fetchData.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            let purchasePriceVisible = false;
+            const purchasePriceDisplay = document.getElementById('purchasePriceDisplay');
+            const purchasePriceSummary = document.getElementById('purchasePriceSummary');
+            const togglePriceBtn = document.getElementById('togglePriceBtn');
+            const togglePriceIcon = document.getElementById('togglePriceIcon');
+            const kpiPurchaseTile = document.getElementById('kpiPurchaseTile');
+
+            // Extract numeric value from currency string
+            function extractNumericValue(currencyString) {
+                // Remove currency symbols, commas, and spaces, keep only numbers and decimal point
+                const numericString = currencyString.replace(/[^\d.-]/g, '');
+                return parseFloat(numericString) || 0;
+            }
+
+            // Toggle purchase price visibility
+            function togglePurchasePrice() {
+                purchasePriceVisible = !purchasePriceVisible;
+
+                if (purchasePriceVisible) {
+                    // Show with animation
+                    if (purchasePriceDisplay) {
+                        const priceValue = extractNumericValue(purchasePriceDisplay.getAttribute('data-price'));
+                        purchasePriceDisplay.textContent = '0';
+                        purchasePriceDisplay.setAttribute('data-count', priceValue);
+                        animateCounter(purchasePriceDisplay, 0, priceValue, 1000);
+                    }
+
+                    if (purchasePriceSummary) {
+                        const summaryValue = extractNumericValue(purchasePriceSummary.getAttribute('data-price'));
+                        purchasePriceSummary.textContent = '0';
+                        purchasePriceSummary.setAttribute('data-count', summaryValue);
+                        animateCounter(purchasePriceSummary, 0, summaryValue, 1000);
+                    }
+
+                    if (togglePriceIcon) {
+                        togglePriceIcon.classList.remove('fa-eye');
+                        togglePriceIcon.classList.add('fa-eye-slash');
+                    }
+                } else {
+                    // Hide - show XXXX
+                    if (purchasePriceDisplay) {
+                        purchasePriceDisplay.textContent = 'XXXX';
+                    }
+
+                    if (purchasePriceSummary) {
+                        purchasePriceSummary.textContent = 'XXXX';
+                    }
+
+                    if (togglePriceIcon) {
+                        togglePriceIcon.classList.remove('fa-eye-slash');
+                        togglePriceIcon.classList.add('fa-eye');
+                    }
+                }
+            }
+
+            if (togglePriceBtn) {
+                togglePriceBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    togglePurchasePrice();
+                });
+            }
+
+            if (kpiPurchaseTile) {
+                kpiPurchaseTile.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    togglePurchasePrice();
+                });
+            }
+
+            // Listen for F9 key press
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'F9') {
+                    event.preventDefault();
+                    togglePurchasePrice();
+                }
+            });
+
+            initTableAjax(null, 'table_data', urls.recent_logs, { autoLoad: true });
+            initTableSorting('table_data');
+
+
+        });
+    </script>
+{% endblock extra_js %}

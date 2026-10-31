@@ -1,0 +1,365 @@
+{% extends "report/base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+    Damaged Stock Report - {% now "F d, Y" %}
+{% endblock title %}
+
+{% block style %}
+    <link rel="stylesheet" href="styles/A5.css" />
+    <style>
+        @page {
+            size: A5;
+            margin: 5mm;
+        }
+        body {
+            background: #ffffff !important;
+            font-size: 8px;
+            color: #1e293b;
+        }
+        .container {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            min-height: auto !important;
+            background: #ffffff !important;
+        }
+        .header-data {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+            padding-bottom: 5px;
+            border-bottom: 1.5px solid #cbd5e1;
+        }
+        .shop-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        .shop-address {
+            font-size: 8px;
+            color: #475569;
+            margin: 1px 0;
+            line-height: 1.3;
+        }
+        .text-bold {
+            font-size: 8px;
+            font-weight: 600;
+            color: #334155;
+            margin: 1px 0;
+        }
+        .invoice-content {
+            background: #f8fafc;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            display: inline-block;
+            text-align: right;
+        }
+        .invoice-content p {
+            font-size: 8px;
+            margin: 1px 0;
+            color: #475569;
+        }
+        .invoice-value {
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .report-badge {
+            font-size: 10px;
+            font-weight: 700;
+            color: #0284c7;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .filter-summary-bar {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 3px 6px;
+            margin-bottom: 6px;
+            font-size: 7.5px;
+            color: #334155;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .filter-item {
+            font-weight: 500;
+        }
+        .filter-item strong {
+            color: #0f172a;
+        }
+        .shop-section {
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+        .shop-heading {
+            background-color: #f1f5f9;
+            border-left: 3px solid #0284c7;
+            padding: 3px 6px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shop-name-title {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .shop-meta-info {
+            font-size: 8px;
+            color: #475569;
+        }
+        .damaged-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 4px;
+            font-size: 7.5px;
+            table-layout: fixed;
+        }
+        .damaged-table thead {
+            background-color: #1e293b;
+            color: #ffffff;
+        }
+        .damaged-table th {
+            padding: 3px 2px;
+            font-weight: 600;
+            font-size: 7px;
+            border: 1px solid #334155;
+            text-transform: uppercase;
+            line-height: 1.2;
+            color: #ffffff;
+        }
+        .damaged-table tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .damaged-table tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .damaged-table td {
+            padding: 2.5px 2px;
+            font-size: 7.5px;
+            color: #1e293b;
+            vertical-align: middle;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
+        .subtotal-row {
+            background-color: #f1f5f9 !important;
+            font-weight: 700;
+            border-top: 1px solid #cbd5e1;
+        }
+        .subtotal-row td {
+            font-weight: 700 !important;
+            color: #0f172a;
+            padding: 3px 2px;
+        }
+        .grand-summary-box {
+            margin-top: 8px;
+            padding: 5px 8px;
+            background-color: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            page-break-inside: avoid;
+        }
+        .grand-summary-title {
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .grand-summary-values {
+            font-size: 8.5px;
+            font-weight: 700;
+            color: #0f172a;
+            display: flex;
+            gap: 15px;
+        }
+        .status-pill {
+            font-size: 6.5px;
+            font-weight: 600;
+            padding: 1px 3px;
+            border-radius: 2px;
+            display: inline-block;
+        }
+        .status-pending { color: #b45309; background: #fef3c7; }
+        .status-returned { color: #0284c7; background: #e0f2fe; }
+        .status-repaired { color: #15803d; background: #dcfce7; }
+        .status-written_off { color: #b91c1c; background: #fee2e2; }
+        .footer-section {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 7px;
+            color: #94a3b8;
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 4px;
+        }
+    </style>
+{% endblock style %}
+
+{% block content %}
+    <div class="container">
+        <!-- Top Section / Header -->
+        <div class="header-data">
+            <!-- Left: Shop Details -->
+            <div class="shop-data">
+                <div class="shop-details">
+                    {% if shop_details.shop_name %}
+                        <div class="shop-name">{{ shop_details.shop_name }}</div>
+                    {% else %}
+                        <div class="shop-name">My Billing</div>
+                    {% endif %}
+                    {% if shop_details.first_line %}
+                        <p class="shop-address">{{ shop_details.first_line }}{% if shop_details.city %}, {{ shop_details.city }}{% endif %}</p>
+                    {% endif %}
+                    {% if shop_details.gst_no %}
+                        <p class="text-bold">GST: {{ shop_details.gst_no }}</p>
+                    {% endif %}
+                    {% if shop_details.phone_number %}
+                        <p class="text-bold">Ph: {{ shop_details.phone_number }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Right: Report Meta Data -->
+            <div class="invoice-data">
+                <div class="invoice-content">
+                    <div class="report-badge">Damaged Stock</div>
+                    <p>Date: <span class="invoice-value">{% now "d/m/Y h:i A" %}</span></p>
+                    <p>Total Shops: <span class="invoice-value">{{ total_shops }}</span></p>
+                    <p>Total Items: <span class="invoice-value">{{ total_records }}</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Parameters Bar -->
+        {% if active_filters.status or active_filters.area or active_filters.search or active_filters.supplier %}
+            <div class="filter-summary-bar">
+                {% if active_filters.status and active_filters.status != "ALL" %}
+                    <span class="filter-item"><strong>Status:</strong> {{ active_filters.status }}</span>
+                {% elif active_filters.status == "ALL" %}
+                    <span class="filter-item"><strong>Status:</strong> All Statuses</span>
+                {% endif %}
+                {% if active_filters.area %}
+                    <span class="filter-item"><strong>Area:</strong> {{ active_filters.area }}</span>
+                {% endif %}
+                {% if active_filters.search %}
+                    <span class="filter-item"><strong>Search:</strong> "{{ active_filters.search }}"</span>
+                {% endif %}
+            </div>
+        {% endif %}
+
+        <!-- Grouped by Shop / Supplier Section -->
+        {% if groups %}
+            {% for group in groups %}
+                <div class="shop-section">
+                    <div class="shop-heading">
+                        <div class="shop-name-title">
+                            {{ group.shop_name }}
+                        </div>
+                        <div class="shop-meta-info">
+                            {% if group.area and group.area != "—" %}
+                                <span>Area: {{ group.area }}</span> &nbsp;|&nbsp;
+                            {% endif %}
+                            {% if group.phone and group.phone != "—" %}
+                                <span>Ph: {{ group.phone }}</span> &nbsp;|&nbsp;
+                            {% endif %}
+                            <span>{{ group.items|length }} {% if group.items|length == 1 %}item{% else %}items{% endif %}</span>
+                        </div>
+                    </div>
+
+                    <table class="damaged-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 6%;">Sl.</th>
+                                <th class="text-center" style="width: 14%;">Inv. No.</th>
+                                <th class="text-center" style="width: 12%;">Date</th>
+                                <th style="width: 35%;">Product Variant</th>
+                                <th class="text-center" style="width: 9%;">Qty</th>
+                                <th class="text-right" style="width: 11%;">Price</th>
+                                <th class="text-right" style="width: 13%;">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in group.items %}
+                                <tr>
+                                    <td class="text-center">{{ forloop.counter }}</td>
+                                    <td class="text-center">{{ item.invoice_number }}</td>
+                                    <td class="text-center">{{ item.invoice_date|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div><strong>{{ item.variant_name }}</strong></div>
+                                        {% if item.barcode %}
+                                            <div style="font-size: 6.5px; color: #64748b;">BC: {{ item.barcode }}</div>
+                                        {% endif %}
+                                        {% if item.reason or item.status %}
+                                            <div style="font-size: 6.5px; color: #475569; margin-top: 1px;">
+                                                {% if item.reason %}Reason: {{ item.reason }}{% endif %}
+                                                <span class="status-pill status-{{ item.record.status|lower }}">{{ item.status }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>{{ item.quantity|floatformat:0 }}</strong>
+                                    </td>
+                                    <td class="text-right">{{ item.purchase_price|currency }}</td>
+                                    <td class="text-right">
+                                        <strong>{{ item.amount|currency }}</strong>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr class="subtotal-row">
+                                <td colspan="4" class="text-right">
+                                    Subtotal:
+                                </td>
+                                <td class="text-center">
+                                    {{ group.subtotal_quantity|floatformat:0 }}
+                                </td>
+                                <td></td>
+                                <td class="text-right">
+                                    {{ group.subtotal_amount|currency }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            {% endfor %}
+
+            <!-- Grand Summary Box -->
+            <div class="grand-summary-box">
+                <div class="grand-summary-title">
+                    REPORT TOTAL ({{ total_shops }} {% if total_shops == 1 %}Shop{% else %}Shops{% endif %}, {{ total_records }} Records)
+                </div>
+                <div class="grand-summary-values">
+                    <span>Total Units: {{ overall_total_units|floatformat:0 }}</span>
+                    <span>Total Amount: {{ overall_total_amount|currency }}</span>
+                </div>
+            </div>
+        {% else %}
+            <table class="damaged-table">
+                <tbody>
+                    <tr>
+                        <td colspan="7" class="text-center" style="padding: 20px; color: #64748b;">
+                            No damaged stock records found matching the filter criteria.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        {% endif %}
+
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <p>Computer Generated Report &bull; Page size: A5 &bull; Generated on {% now "d/m/Y h:i A" %}</p>
+        </div>
+    </div>
+{% endblock content %}

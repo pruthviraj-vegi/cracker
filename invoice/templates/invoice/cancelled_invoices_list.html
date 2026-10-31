@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}
+  Cancelled Invoices - Invoice Management
+{% endblock title %}
+
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="heading page-title">Cancelled Invoices</h2>
+    <div class="page-actions">
+      <a href="{% url 'invoice:home' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Active Invoices
+      </a>
+      <a href="{% url 'invoice:dashboard' %}" class="btn btn-primary">
+        <i class="fas fa-chart-line"></i>
+        Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="stats-grid mb-4">
+    <div class="stat-card">
+      <div class="stat-label">Total Cancelled</div>
+      <div class="stat-value text-danger">{{ stats.total_count|default:0 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cancelled Amount</div>
+      <div class="stat-value text-danger">{{ stats.total_amount|default:0|floatformat:2 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cash Invoices</div>
+      <div class="stat-value">{{ stats.cash_count|default:0 }}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Credit Invoices</div>
+      <div class="stat-value">{{ stats.credit_count|default:0 }}</div>
+    </div>
+  </div>
+
+  <!-- Search and Filter Section with Inline Breadcrumbs -->
+  <div class="search-filter-section">
+    <!-- Inline Breadcrumbs -->
+    <nav class="breadcrumb-inline" aria-label="breadcrumb">
+      <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'invoice:home' %}" class="breadcrumb-item">Invoices</a>
+      <span class="breadcrumb-separator">/</span>
+      <span class="breadcrumb-active">Cancelled</span>
+    </nav>
+
+    <form method="get" class="search-filter-form" autocomplete="off">
+      <div class="search-group search-expanded">
+        <i class="fas fa-search search-icon"></i>
+        <input type="search"
+               name="search"
+               class="search-input"
+               placeholder="Search by invoice #, customer name, or reason..."
+               value="{{ search_query|default:'' }}"
+               autofocus>
+      </div>
+      <select name="payment_type" class="filter-select">
+        <option value="">All Payment Types</option>
+        <option value="CASH" {% if payment_type == 'CASH' %}selected{% endif %}>Cash</option>
+        <option value="CREDIT" {% if payment_type == 'CREDIT' %}selected{% endif %}>Credit</option>
+      </select>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-search"></i>
+        Filter
+      </button>
+      {% if search_query or payment_type %}
+        <a href="{% url 'invoice:cancelled_list' %}" class="btn btn-secondary">
+          <i class="fas fa-times"></i>
+          Clear
+        </a>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Data Table -->
+  <div class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Customer</th>
+          <th>Type</th>
+          <th>Amount</th>
+          <th>Cancelled At</th>
+          <th>Cancelled By</th>
+          <th>Reason</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices %}
+          <tr>
+            <td>
+              <a href="{% url 'invoice:detail' inv.id %}" class="font-bold text-primary">
+                {{ inv.invoice_number }}
+              </a>
+            </td>
+            <td>{{ inv.customer.name }}</td>
+            <td>
+              <span class="badge badge-secondary">{{ inv.get_payment_type_display }}</span>
+            </td>
+            <td class="font-bold">{{ inv.amount|floatformat:2 }}</td>
+            <td>{{ inv.cancelled_at|date:"d M Y, H:i"|default:"-" }}</td>
+            <td>{{ inv.cancelled_by.username|default:"-" }}</td>
+            <td>
+              <span class="text-muted">{{ inv.cancellation_reason|default:inv.cancellation_record.reason|default:"No reason specified"|truncatewords:8 }}</span>
+            </td>
+            <td>
+              <a href="{% url 'invoice:detail' inv.id %}" class="btn btn-sm btn-secondary">
+                <i class="fas fa-eye"></i> View
+              </a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center p-4 text-muted">
+              <i class="fas fa-info-circle"></i>
+              No cancelled invoices found.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock content %}

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Report Configurations
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">Report Configurations</h1>
+        <div class="page-actions">
+            {% if perms.setting.add_reportconfiguration %}
+                <a href="{% url 'setting:report_config_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Report Configuration
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="#" class="breadcrumb-item">Settings</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Report Configurations</span>
+        </nav>
+
+        <form method="get" class="search-filter-form">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search by report type, terms, or thank you message..."
+                       value="{{ search_query }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search_query %}
+                <a href="{% url 'setting:report_config_list' %}" class="btn">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Report Configurations Table -->
+    <div class="table-container">
+        {% if configs %}
+            <table class="data-table">
+                <thead>
+                    <!-- Desktop Header -->
+                    <tr class="mobile-hide">
+                        <th>Configuration</th>
+                        <th class="mobile-hide">Report Type</th>
+                        <th class="mobile-hide">Paper Size</th>
+                        <th class="mobile-hide">Currency</th>
+                        <th>Status</th>
+                        <th>Default</th>
+                        <th class="mobile-hide">Created</th>
+                        <th>Actions</th>
+                    </tr>
+                    <!-- Mobile Header (<768px) -->
+                    <tr class="mobile-table-row">
+                        <th>Report & Details</th>
+                        <th>Status & Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cfg in configs %}
+                        <tr>
+                            <!-- Desktop Cells -->
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ cfg.get_report_type_display }} - {{ cfg.get_paper_size_display }}</strong>
+                                    {% if cfg.terms_conditions %}
+                                        <br>
+                                        <div class="secondary-text">{{ cfg.terms_conditions|truncatechars:50 }}</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">
+                                <span class="badge badge-primary">{{ cfg.get_report_type_display }}</span>
+                            </td>
+                            <td class="mobile-hide">
+                                <span class="badge badge-info">{{ cfg.get_paper_size_display }}</span>
+                            </td>
+                            <td class="mobile-hide">
+                                <span class="badge badge-secondary">{{ cfg.get_currency_display }}</span>
+                            </td>
+                            <td class="mobile-hide">
+                                {% if cfg.is_active %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">
+                                {% if cfg.is_default %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-star"></i> Default
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">
+                                <small>{{ cfg.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="action-buttons">
+                                    {% if perms.setting.view_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_detail' cfg.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_edit' cfg.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_delete' cfg.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if not cfg.is_default %}
+                                        <form method="post" action="{% url 'setting:set_default_config' cfg.pk %}" class="d-inline set-default-form">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-action btn-warning" title="Set as Default">
+                                                <i class="fas fa-star"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Mobile Cells (<768px) -->
+                            <td class="mobile-table-cell">
+                                <div>
+                                    <strong class="text-primary">{{ cfg.get_report_type_display }}</strong>
+                                    <span class="badge badge-info ms-1">{{ cfg.get_paper_size_display }}</span>
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    <i class="fas fa-coins me-1"></i>{{ cfg.get_currency_display }}
+                                </div>
+                            </td>
+                            <td class="mobile-table-cell">
+                                <div>
+                                    {% if cfg.is_active %}
+                                        <span class="status-badge status-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactive</span>
+                                    {% endif %}
+                                    {% if cfg.is_default %}<span class="badge badge-success ms-1"><i class="fas fa-star"></i> Default</span>{% endif %}
+                                </div>
+                                <div class="action-buttons mt-1">
+                                    {% if perms.setting.view_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_detail' cfg.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.change_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_edit' cfg.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_reportconfiguration %}
+                                        <a href="{% url 'setting:report_config_delete' cfg.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if not cfg.is_default %}
+                                        <form method="post" action="{% url 'setting:set_default_config' cfg.pk %}" class="d-inline set-default-form">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn-action btn-warning" title="Set as Default">
+                                                <i class="fas fa-star"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-file-alt empty-state-icon"></i>
+                <h3>No Report Configurations Found</h3>
+                <p>Get started by creating your first report configuration to generate automated reports.</p>
+                <a href="{% url 'setting:report_config_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Report Configuration
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.set-default-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const actionUrl = form.getAttribute('action');
+                const csrfInput = form.querySelector('[name=csrfmiddlewaretoken]');
+                const csrfToken = csrfInput ? csrfInput.value : '';
+
+                fetch(actionUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (typeof showNotification === 'function') {
+                            showNotification(data.message || 'Default placed successfully', 'success');
+                        }
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 600);
+                    } else {
+                        if (typeof showNotification === 'function') {
+                            showNotification(data.message || 'Failed to set default configuration', 'error');
+                        } else {
+                            alert(data.message || 'Failed to set default configuration');
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error('Error setting default:', err);
+                    form.submit();
+                });
+            });
+        });
+    });
+    </script>
+{% endblock extra_js %}

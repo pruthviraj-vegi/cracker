@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+  Delete Invoice - {{ supplier.name }}
+{% endblock title %}
+{% block content %}
+  <!-- Page Header -->
+  <div class="page-header">
+    <h2 class="page-title">Delete Invoice</h2>
+    <div class="page-actions">
+      <a href="{% url 'supplier:detail' supplier.pk %}"
+         class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Back to Supplier
+      </a>
+      <a href="{% url 'supplier:home' %}" class="btn btn-secondary">
+        <i class="fas fa-list"></i>
+        Back to List
+      </a>
+    </div>
+  </div>
+  <!-- Breadcrumb Navigation -->
+  <nav class="breadcrumb breadcrumb-right">
+    <a href="{% url 'supplier:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:home' %}" class="breadcrumb-item">Suppliers</a>
+    <span class="breadcrumb-separator">/</span>
+    <a href="{% url 'supplier:detail' supplier.pk %}"
+       class="breadcrumb-item">{{ supplier.name }}</a>
+    <span class="breadcrumb-separator">/</span>
+    <span class="breadcrumb-active">Delete Invoice</span>
+  </nav>
+  <!-- Delete Confirmation -->
+  <div class="form-container">
+    <div class="form-card">
+      <!-- Warning Message -->
+      <div class="delete-warning">
+        <div class="warning-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+          <h3>Are you sure you want to delete this invoice?</h3>
+          <p>This action cannot be undone. The invoice will be permanently removed from the system.</p>
+        </div>
+      </div>
+      <!-- Invoice Details -->
+      <div class="customer-details">
+        <h4 class="details-title">Invoice Information</h4>
+        <div class="detail-row">
+          <div class="detail-label">Invoice Number:</div>
+          <div class="detail-value">{{ invoice.invoice_number }}</div>
+          <div class="detail-label">Supplier:</div>
+          <div class="detail-value">{{ supplier.name }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Invoice Date:</div>
+          <div class="detail-value">{{ invoice.invoice_date|date:'F j, Y' }}</div>
+          <div class="detail-label">Invoice Type:</div>
+          <div class="detail-value">{{ invoice.get_invoice_type_display }}</div>
+        </div>
+        {% if invoice.gst_type %}
+          <div class="detail-row">
+            <div class="detail-label">GST Type:</div>
+            <div class="detail-value">{{ invoice.get_gst_type_display }}</div>
+            <div class="detail-label">Sub Total:</div>
+            <div class="detail-value">{{ invoice.sub_total|currency }}</div>
+          </div>
+        {% else %}
+          <div class="detail-row">
+            <div class="detail-label">Sub Total:</div>
+            <div class="detail-value">{{ invoice.sub_total|currency }}</div>
+            <div class="detail-label">Total Amount:</div>
+            <div class="detail-value">{{ invoice.total_amount|currency }}</div>
+          </div>
+        {% endif %}
+        {% if invoice.cgst_amount > 0 %}
+          <div class="detail-row">
+            <div class="detail-label">CGST Amount:</div>
+            <div class="detail-value">{{ invoice.cgst_amount|currency }}</div>
+            <div class="detail-label">SGST Amount:</div>
+            <div class="detail-value">{{ invoice.cgst_amount|currency }}</div>
+          </div>
+        {% endif %}
+        {% if invoice.igst_amount > 0 %}
+          <div class="detail-row">
+            <div class="detail-label">IGST Amount:</div>
+            <div class="detail-value">{{ invoice.igst_amount|currency }}</div>
+            <div class="detail-label">Total Amount:</div>
+            <div class="detail-value">{{ invoice.total_amount|currency }}</div>
+          </div>
+        {% endif %}
+        {% if invoice.adjustment_amount != 0 %}
+          <div class="detail-row">
+            <div class="detail-label">Adjustment Amount:</div>
+            <div class="detail-value">{{ invoice.adjustment_amount|currency }}</div>
+            <div class="detail-label">Paid Amount:</div>
+            <div class="detail-value">{{ invoice.paid_amount|currency }}</div>
+          </div>
+        {% else %}
+          <div class="detail-row">
+            <div class="detail-label">Paid Amount:</div>
+            <div class="detail-value">{{ invoice.paid_amount|currency }}</div>
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">
+              <span class="status-badge {% if invoice.status == 'PAID' %}   status-active    {% elif invoice.status == 'PARTIALLY_PAID' %}   status-warning    {% else %}   status-danger   {% endif %}">
+                {{ invoice.get_status_display }}
+              </span>
+            </div>
+          </div>
+        {% endif %}
+        {% if invoice.adjustment_amount != 0 %}
+          <div class="detail-row">
+            <div class="detail-label">Status:</div>
+            <div class="detail-value">
+              <span class="status-badge {% if invoice.status == 'PAID' %}   status-active    {% elif invoice.status == 'PARTIALLY_PAID' %}   status-warning    {% else %}   status-danger   {% endif %}">
+                {{ invoice.get_status_display }}
+              </span>
+            </div>
+            <div class="detail-label">Created:</div>
+            <div class="detail-value">{{ invoice.created_at|date:'F j, Y' }}</div>
+          </div>
+        {% else %}
+          <div class="detail-row">
+            <div class="detail-label">Created:</div>
+            <div class="detail-value">{{ invoice.created_at|date:'F j, Y' }}</div>
+            {% if invoice.created_by %}
+              <div class="detail-label">Created By:</div>
+              <div class="detail-value">{{ invoice.created_by.full_name }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+        {% if invoice.created_by and invoice.adjustment_amount != 0 %}
+          <div class="detail-row">
+            <div class="detail-label">Created By:</div>
+            <div class="detail-value">{{ invoice.created_by.username }}</div>
+          </div>
+        {% endif %}
+        {% if invoice.notes %}
+          <div class="detail-row">
+            <div class="detail-label">Notes:</div>
+            <div class="detail-value">{{ invoice.notes }}</div>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Confirmation Form -->
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="confirm_delete" class="form-label">
+            <input type="checkbox"
+                   id="confirm_delete"
+                   name="confirm_delete"
+                   required
+                   class="form-checkbox" />
+            <span class="checkbox-label">I understand that this action cannot be undone</span>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+            <i class="fas fa-trash"></i>
+            Delete Invoice
+          </button>
+          <a href="{% url 'supplier:detail' supplier.pk %}"
+             class="btn btn-secondary">
+            <i class="fas fa-times"></i>
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const confirmCheckbox = document.getElementById('confirm_delete')
+      const deleteBtn = document.getElementById('deleteBtn')
+    
+      confirmCheckbox.addEventListener('change', function () {
+        deleteBtn.disabled = !this.checked
+      })
+    
+      // Prevent accidental form submission
+      const form = document.querySelector('.delete-form')
+      form.addEventListener('submit', function (e) {
+        if (!confirmCheckbox.checked) {
+          e.preventDefault()
+          alert('Please confirm that you understand this action cannot be undone.')
+          return false
+        }
+    
+        // Final confirmation
+        if (!confirm('Are you absolutely sure you want to delete this invoice? This action cannot be undone.')) {
+          e.preventDefault()
+          return false
+        }
+      })
+    })
+  </script>
+{% endblock extra_js %}

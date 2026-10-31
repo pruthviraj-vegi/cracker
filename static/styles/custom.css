@@ -1,0 +1,290 @@
+:root {
+  --highlight-bg: rgb(158, 158, 158);
+}
+
+/* ============================================================
+   TOGGLE SWITCHES
+   ============================================================ */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 27px;
+  margin-bottom: 0;
+}
+
+.switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  border-radius: 50px;
+  background-color: var(--border-color, #ccc);
+  transition: 0.3s ease;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 19px;
+  width: 19px;
+  left: 4px;
+  bottom: 4px;
+  border-radius: 50px;
+  background-color: var(--bg-surface, #ffffff);
+  transition: 0.3s ease;
+}
+
+.switch input:checked + .slider {
+  background-color: var(--primary, #2196f3);
+}
+
+.switch input:focus + .slider {
+  box-shadow: 0 0 1px var(--primary, #2196f3);
+}
+
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+/* ============================================================
+   TABLE HIGHLIGHTS
+   ============================================================ */
+.highlight td {
+  color: var(--text-on-primary, #ffffff);
+}
+
+.highlight {
+  box-shadow: inset 0 0 0 9999px var(--highlight-bg);
+}
+
+tbody tr.table-secondary.highlight {
+  background-color: var(--highlight-bg) !important;
+}
+
+/* ============================================================
+   BUBBLE TAGS
+   ============================================================ */
+.bubble {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 15px;
+  background-color: var(--bg-surface-hover, #e0e0e0);
+  color: var(--text-secondary, #64748b);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bubble:hover {
+  background-color: var(--border-color, #bdbdbd);
+  color: var(--text-primary, #1e293b);
+}
+
+.bubble.active {
+  background-color: var(--primary, #3b82f6);
+  color: var(--text-on-primary, #ffffff);
+}
+
+/* ============================================================
+   STOCK SEARCH MODAL
+   ============================================================ */
+#stockSearchModal .modal-dialog {
+  max-width: 95%;
+  margin: 1.75rem auto;
+}
+
+#stockSearchModal .modal-content {
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.2));
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+#stockSearchModal .modal-header {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+}
+
+#stockSearchModal .modal-title {
+  font-weight: 600;
+}
+
+#stockSearchModal .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+#stockSearchModal .table th {
+  background-color: var(--bg-surface-hover);
+  border-top: none;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+#stockSearchModal .form-control {
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+#stockSearchModal .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+#stockSearchModal .btn-primary {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  color: var(--text-on-primary, #ffffff);
+  transition: all 0.2s ease;
+}
+
+#stockSearchModal .btn-primary:hover {
+  background: var(--primary-hover, #2563eb);
+  transform: translateY(-1px);
+}
+
+/* Search Results Keyboard Navigation */
+#search_body tr {
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+#search_body tr:hover {
+  background-color: var(--bg-surface-hover);
+}
+
+#search_body tr.table-active {
+  background-color: var(--primary) !important;
+  color: var(--text-on-primary, #ffffff) !important;
+}
+
+#search_body tr.table-active .btn {
+  background-color: var(--bg-surface) !important;
+  color: var(--primary) !important;
+  border-color: var(--bg-surface) !important;
+}
+
+#search_body tr.table-active .btn:hover {
+  background-color: var(--bg-surface-hover) !important;
+  color: var(--primary) !important;
+}
+
+/* ============================================================
+   CUSTOM REPORT MODAL
+   ============================================================ */
+#custom_report .modal-dialog {
+  max-width: 480px;
+  margin: 1.75rem auto;
+}
+
+#custom_report .modal-content {
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg, 0 10px 30px rgba(0, 0, 0, 0.2));
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+#custom_report .modal-header {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  border-radius: 12px 12px 0 0;
+}
+
+#custom_report .modal-title {
+  font-weight: 600;
+}
+
+#custom_report .modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+#custom_report .form-control {
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+#custom_report .form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+#custom_report .btn-primary {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  color: var(--text-on-primary, #ffffff);
+  transition: all 0.2s ease;
+}
+
+#custom_report .btn-primary:hover {
+  background: var(--primary-hover, #2563eb);
+  transform: translateY(-1px);
+}
+
+#custom_report .checkbox-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+#custom_report .date-list {
+  margin-bottom: 1rem;
+}
+
+#custom_report .date-picker {
+  margin-bottom: 0.5rem;
+}
+
+#custom_report .checkbox label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+#custom_report .checkbox input[type="checkbox"] {
+  margin-right: 0.5rem;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS (Consolidated single @media block)
+   ============================================================ */
+@media (max-width: 768px) {
+  #stockSearchModal .modal-dialog {
+    max-width: 98%;
+    margin: 0.5rem auto;
+  }
+
+  #stockSearchModal .modal-body {
+    max-height: 60vh;
+  }
+
+  #custom_report .modal-dialog {
+    max-width: 95%;
+    margin: 0.5rem auto;
+  }
+
+  #custom_report .modal-body {
+    max-height: 60vh;
+  }
+}

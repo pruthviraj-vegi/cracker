@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}
+    {{ title }}
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="heading page-title">{{ title }}</h2>
+        <div class="page-actions">
+            <a href="{% url 'invoice:return_home' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Returns
+            </a>
+            {% if return_invoice.status == 'PENDING' %}
+                <a href="{% url 'invoice:return_stock_adjustment' return_invoice.id %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    Manage Items
+                </a>
+            {% endif %}
+            <a href="{% url 'invoice:detail' return_invoice.invoice.id %}"
+               class="btn btn-info">
+                <i class="fas fa-file-invoice"></i>
+                View Original Invoice
+            </a>
+        </div>
+    </div>
+    <!-- Breadcrumb Navigation -->
+    <nav class="breadcrumb breadcrumb-right">
+        <a href="{% url 'invoice:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="{% url 'invoice:return_home' %}" class="breadcrumb-item">Return Invoices</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">{{ return_invoice.return_number }}</span>
+    </nav>
+    <!-- Main Layout -->
+    <div class="col d-flex flex-row detail-layout two-column-layout">
+        <!-- Left Column - Return Details & Summary Sidebar -->
+        <div class="col-md-3 d-flex flex-column gap-2 details-sidebar-column layout-sidebar-column">
+            <!-- Return Details Column -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-undo"></i> Return Details
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="detail-name-compact">
+                        <h4>{{ return_invoice.return_number }}</h4>
+                        <span class="detail-status status-badge status-{{ return_invoice.status|lower }}">
+                            {{ return_invoice.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="detail-contact-compact">
+                        <div class="contact-item">
+                            <i class="fas fa-user"></i>
+                            <span><strong>Customer:</strong> {{ return_invoice.customer.name }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <span><strong>Phone:</strong> {{ return_invoice.customer.phone_number|phone_number }}</span>
+                        </div>
+                        {% if return_invoice.customer.email %}
+                            <div class="contact-item">
+                                <i class="fas fa-envelope"></i>
+                                <span><strong>Email:</strong> {{ return_invoice.customer.email }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="contact-item">
+                            <i class="fas fa-file-invoice"></i>
+                            <span><strong>Original Invoice:</strong>
+                                <a href="{% url 'invoice:detail' return_invoice.invoice.id %}"
+                                   target="_blank">{{ return_invoice.invoice.invoice_number }}</a>
+                            </span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-calendar"></i>
+                            <span><strong>Return Date:</strong> {{ return_invoice.return_date|date:"M d, Y" }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span><strong>Refund Type:</strong> {{ return_invoice.get_refund_type_display }}</span>
+                        </div>
+                        <div class="contact-item">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span><strong>Reason:</strong> {{ return_invoice.get_reason_display }}</span>
+                        </div>
+                        {% if return_invoice.notes %}
+                            <div class="contact-item">
+                                <i class="fas fa-sticky-note"></i>
+                                <span><strong>Notes:</strong> {{ return_invoice.notes|truncatechars:50 }}</span>
+                            </div>
+                        {% endif %}
+                        {% if return_invoice.processed_by %}
+                            <div class="contact-item">
+                                <i class="fas fa-user-check"></i>
+                                <span><strong>Processed By:</strong> {{ return_invoice.processed_by.get_full_name|default:return_invoice.processed_by.username }}</span>
+                            </div>
+                        {% endif %}
+                        {% if return_invoice.processed_at %}
+                            <div class="contact-item">
+                                <i class="fas fa-clock"></i>
+                                <span><strong>Processed At:</strong> {{ return_invoice.processed_at|date:"M d, Y H:i" }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Summary Cards -->
+            <div class="sidebar-card" id="returnSummaryCard">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-boxes"></i> Return Summary
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="summary-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ total_items_returned }}</span>
+                            <span class="stat-label">Items Returned</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ total_quantity_returned|floatformat:0 }}</span>
+                            <span class="stat-label">Total Quantity</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ total_return_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Return Amount</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-card" id="amountSummaryCard">
+                <div class="sidebar-card-header">
+                    <h3 class="sidebar-card-title">
+                        <i class="fas fa-calculator"></i> Amount Summary
+                    </h3>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="summary-stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ return_invoice.total_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Original Amount</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">{{ return_invoice.refund_amount|currency_nonDecimal }}</span>
+                            <span class="stat-label">Refund Amount</span>
+                        </div>
+                        {% if return_invoice.restocking_fee > 0 %}
+                            <div class="stat-item">
+                                <span class="stat-number">{{ return_invoice.restocking_fee|currency_nonDecimal }}</span>
+                                <span class="stat-label">Restocking Fee</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Tables -->
+        <div class="col-md-9 d-flex flex-column gap-2 ps-1 layout-main-column">
+            <!-- Return Items Table -->
+            <div class="table-section" id="itemsSection">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-boxes"></i> Returned Items ({{ total_items_returned }})
+                    </h3>
+                </div>
+                {% if returned_items.exists %}
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="mobile-hide">Variant</th>
+                                    <th class="mobile-hide">Original Qty</th>
+                                    <th>Returned Qty</th>
+                                    <th class="mobile-hide">Unit Price</th>
+                                    <th>Total Amount</th>
+                                    <th class="mobile-hide">Condition</th>
+                                    <th class="mobile-hide">Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in returned_items %}
+                                    <tr>
+                                        <td>
+                                            <div class="product-info">
+                                                <strong><a class="text-decoration-none"
+          color: inherit"
+   href="{% url 'inventory_products:details' item.product_variant.product.id %}"
+   target="_blank">{{ item.product_variant.product.brand }}</a></strong>
+                                                <br>
+                                                <small class="text-muted">{{ item.product_variant.product.category.name }}</small>
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <div class="variant-info">
+                                                <strong><a class="text-decoration-none"
+          color: inherit"
+   href="{% url 'inventory_variant:details' item.product_variant.id %}"
+   target="_blank">{{ item.product_variant.simple_name }}</a></strong>
+                                                <br>
+                                                {% if item.product_variant.size %}
+                                                    <small class="text-muted">Size: {{ item.product_variant.size.name }}</small>
+                                                {% endif %}
+                                                {% if item.product_variant.color %}
+                                                    <small class="text-muted">Color: {{ item.product_variant.color.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td class="mobile-hide">{{ item.quantity_original|floatformat:2 }}</td>
+                                        <td>
+                                            <strong class="text-primary">{{ item.quantity_returned|floatformat:2 }}</strong>
+                                        </td>
+                                        <td class="mobile-hide">{{ item.unit_price|currency }}</td>
+                                        <td>
+                                            <strong>{{ item.total_amount|currency }}</strong>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <span class="badge badge-{{ item.condition|lower|default:'secondary' }}">{{ item.get_condition_display }}</span>
+                                        </td>
+                                        <td class="mobile-hide">
+                                            <span class="badge badge-info">{{ item.get_return_reason_display }}</span>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h4>No Items Returned</h4>
+                        <p>No items have been selected for return yet.</p>
+                        {% if return_invoice.status == 'PENDING' %}
+                            <a href="{% url 'invoice:return_stock_adjustment' return_invoice.id %}"
+                               class="btn btn-primary">
+                                <i class="fas fa-edit"></i>
+                                Select Items to Return
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Calculations Section -->
+            <div class="table-section">
+                <div class="table-header">
+                    <h3>
+                        <i class="fas fa-calculator"></i> Return Calculations
+                    </h3>
+                </div>
+                <div class="table-container">
+                    <div class="total-amount-display">
+                        <div class="total-row">
+                            <span class="total-label">Original Invoice Amount:</span>
+                            <span class="total-value">{{ return_invoice.total_amount|currency }}</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">Items Returned:</span>
+                            <span class="total-value">{{ total_items_returned }} items</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">Total Quantity Returned:</span>
+                            <span class="total-value">{{ total_quantity_returned|floatformat:2 }}</span>
+                        </div>
+                        <div class="total-row">
+                            <span class="total-label">Return Amount:</span>
+                            <span class="total-value text-success">{{ return_invoice.refund_amount|currency }}</span>
+                        </div>
+                        {% if return_invoice.restocking_fee > 0 %}
+                            <div class="total-row">
+                                <span class="total-label">Restocking Fee:</span>
+                                <span class="total-value text-danger">- {{ return_invoice.restocking_fee|currency }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="total-row total-final">
+                            <span class="total-label">Net Refund:</span>
+                            <span class="total-value">{{ return_invoice.refund_amount|add:return_invoice.restocking_fee|currency }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}
+{% block extra_js %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Summary card click handlers
+        const returnSummaryCard = document.getElementById('returnSummaryCard')
+        const amountSummaryCard = document.getElementById('amountSummaryCard')
+        const itemsSection = document.getElementById('itemsSection')
+    
+        returnSummaryCard.addEventListener('click', function () {
+            itemsSection.scrollIntoView({ behavior: 'smooth' })
+        })
+    
+        amountSummaryCard.addEventListener('click', function () {
+            itemsSection.scrollIntoView({ behavior: 'smooth' })
+        })
+    })
+    </script>
+{% endblock extra_js %}

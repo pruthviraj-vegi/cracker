@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    {{ page_title|default:"Report Configuration Details" }}
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">{{ page_title|default:"Report Configuration Details" }}</h1>
+        <div class="page-actions">
+            {% if perms.setting.change_reportconfiguration %}
+                <a href="{% url 'setting:report_config_edit' config.id %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Configuration
+                </a>
+            {% endif %}
+            <a href="{% url 'setting:report_config_list' %}"
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+    <div class="details-container">
+        <div class="details-card">
+            <div class="details-header">
+                <div class="details-title">
+                    <h2>{{ config.get_report_type_display }} Configuration</h2>
+                    <span class="badge badge-info">{{ config.get_paper_size_display }}</span>
+                    {% if config.is_default %}<span class="badge badge-success">Default</span>{% endif %}
+                </div>
+                <div class="details-status">
+                    {% if config.is_active %}
+                        <span class="status-badge status-active">
+                            <i class="fas fa-check-circle"></i> Active
+                        </span>
+                    {% else %}
+                        <span class="status-badge status-inactive">
+                            <i class="fas fa-times-circle"></i> Inactive
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="details-body">
+                <!-- Basic Info -->
+                <div class="details-section">
+                    <h3 class="section-title">Basic Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Report Type</label>
+                            <p>{{ config.get_report_type_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Paper Size</label>
+                            <p>{{ config.get_paper_size_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Currency</label>
+                            <p>{{ config.get_currency_display }}</p>
+                        </div>
+                        <div class="info-item">
+                            <label>Default Configuration</label>
+                            <p>
+                                {% if config.is_default %}
+                                    <span class="badge badge-success">Yes</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">No</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display Preferences -->
+                <div class="details-section">
+                    <h3 class="section-title">Display Preferences</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Show Logo</label>
+                            <p>
+                                {% if config.show_logo %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <label>Show Shop Name</label>
+                            <p>
+                                {% if config.show_shop_name %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <label>Show Address</label>
+                            <p>
+                                {% if config.show_address %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <label>Show Contact</label>
+                            <p>
+                                {% if config.show_contact %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="info-item">
+                            <label>Show GST</label>
+                            <p>
+                                {% if config.show_gst %}
+                                    <span class="text-success"><i class="fas fa-check-circle"></i> Shown</span>
+                                {% else %}
+                                    <span class="text-muted"><i class="fas fa-times-circle"></i> Hidden</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Terms & Messages -->
+                <div class="details-section">
+                    <h3 class="section-title">Terms & Messages</h3>
+                    <div class="info-grid">
+                        {% if config.terms_conditions %}
+                            <div class="info-item full-width">
+                                <label>Terms & Conditions</label>
+                                <p class="pre-text">{{ config.terms_conditions }}</p>
+                            </div>
+                        {% endif %}
+                        {% if config.thank_you_message %}
+                            <div class="info-item full-width">
+                                <label>Thank You Message</label>
+                                <p class="pre-text">{{ config.thank_you_message }}</p>
+                            </div>
+                        {% endif %}
+                        {% if config.footer_note %}
+                            <div class="info-item full-width">
+                                <label>Footer Note</label>
+                                <p class="pre-text">{{ config.footer_note }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="details-footer">
+                <div class="meta-info">
+                    <small>Created on {{ config.created_at|date:"M d, Y H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

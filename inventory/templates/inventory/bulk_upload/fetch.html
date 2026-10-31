@@ -1,0 +1,79 @@
+{% load custom_filters %}
+{% load static %}
+{% if page_obj %}
+    {% for batch in page_obj %}
+        <tr>
+            <td class="mobile-hide">
+                <a href="{% url 'inventory_bulk_upload:detail' batch.id %}"
+                   class="text-primary font-weight-bold">#{{ batch.id }}</a>
+            </td>
+            <td>
+                <div>
+                    <span class="font-weight-bold text-primary">{{ batch.supplier_invoice.invoice_number }}</span>
+                </div>
+            </td>
+            <td class="mobile-hide font-monospace">
+                <span>{{ batch.supplier_invoice.total_amount|currency }}</span>
+            </td>
+            <td>
+                <span class="badge {% if batch.status == 'COMMITTED' %}badge-success{% else %}badge-warning{% endif %}">
+                    {{ batch.get_status_display }}
+                </span>
+            </td>
+            <td class="mobile-hide">
+                <span class="badge badge-info">{{ batch.item_count }}</span>
+            </td>
+            <td class="mobile-hide">
+                <span>{{ batch.total_quantity|default:0|floatformat:0 }}</span>
+            </td>
+            <td class="mobile-hide font-monospace">
+                <span>{{ batch.total_purchase_amount|currency }}</span>
+            </td>
+            <td class="mobile-hide">
+                {% if batch.created_by %}
+                    <span>{{ batch.created_by.username }}</span>
+                {% else %}
+                    <span class="text-muted">-</span>
+                {% endif %}
+            </td>
+            <td class="mobile-hide">{{ batch.created_at|date:"M d, Y" }}</td>
+            <td>
+                <div class="action-buttons">
+                    <a href="{% url 'inventory_bulk_upload:detail' batch.id %}"
+                       class="btn-action btn-view"
+                       title="View Batch">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                    {% if perms.inventory.change_bulkupload %}
+                        <a href="{% url 'inventory_bulk_upload:edit' batch.id %}"
+                           class="btn-action btn-edit"
+                           title="Edit Batch">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    {% endif %}
+                    {% if perms.inventory.delete_bulkupload %}
+                        <a href="{% url 'inventory_bulk_upload:delete' batch.id %}"
+                           class="btn-action btn-delete"
+                           title="Delete Batch">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </td>
+        </tr>
+    {% endfor %}
+{% else %}
+    <tr>
+        <td colspan="10" class="text-center p-3">
+            <div class="empty-state">
+                <i class="fas fa-upload"></i>
+                <h4>No Batches Found</h4>
+                <p>No bulk upload batches match your search criteria. Try adjusting your filters or add a new batch.</p>
+                <a href="{% url 'inventory_bulk_upload:create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Add First Batch
+                </a>
+            </div>
+        </td>
+    </tr>
+{% endif %}

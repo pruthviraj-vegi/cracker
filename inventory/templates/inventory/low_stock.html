@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Low Stock Items
+{% endblock title %}
+{% block content %}
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2 class="page-title">Low Stock Items</h2>
+        <div class="page-actions">
+            <a href="{% url 'inventory:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats - Identical Architecture to Dashboard Pages -->
+    <div class="stats-grid mb-4" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-icon bg-yellow">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Total Low Stock</span>
+                <h4 class="stat-number">{{ total_low_stock }}</h4>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-red">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Out of Stock</span>
+                <h4 class="stat-number">{{ out_of_stock }}</h4>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-purple">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <div class="stat-content">
+                <span class="stat-label">Critical Stock</span>
+                <h4 class="stat-number">{{ critical_stock }}</h4>
+            </div>
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'inventory:dashboard' %}" class="breadcrumb-item">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Low Stock</span>
+        </nav>
+
+        <form method="get" class="search-filter-form" id="searchForm">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="search"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search low stock items..."
+                       value="{{ search_query }}"
+                       id="searchInput"
+                       autofocus />
+            </div>
+            <select name="sort" class="filter-select" id="sortSelect">
+                <option value="-quantity" {% if sort_by == '-quantity' %}selected{% endif %}>Stock High to Low</option>
+                <option value="quantity" {% if sort_by == 'quantity' %}selected{% endif %}>Stock Low to High</option>
+                <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name A-Z</option>
+                <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Name Z-A</option>
+                <option value="-created_at"
+                        {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                <option value="created_at"
+                        {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+            </select>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i>
+                Search
+            </button>
+        </form>
+    </div>
+    <!-- Data Table Container -->
+    <div class="table-container">
+        {% if page_obj %}
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="mobile-hide">ID</th>
+                        <th>Status</th>
+                        <th>Product Name</th>
+                        <th>Current Stock</th>
+                        <th class="mobile-hide">Min Stock</th>
+                        <th class="mobile-hide">Critical Threshold</th>
+                        <th class="mobile-hide">Price</th>
+                        <th class="mobile-hide">Created</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for variant in page_obj %}
+                        <tr>
+                            <td class="mobile-hide">{{ variant.id }}</td>
+                            <td>
+                                {% if variant.quantity == 0 %}
+                                    <span class="badge badge-danger">
+                                        <i class="fas fa-times-circle"></i>
+                                        Out of Stock
+                                    </span>
+                                {% elif variant.quantity < variant.critical_threshold %}
+                                    <span class="badge badge-warning">
+                                        <i class="fas fa-exclamation"></i>
+                                        Critical
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-info">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        Low Stock
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div>
+                                    <div class="fw-bold text-primary">{{ variant.full_name }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="fw-bold {% if variant.quantity == 0 %}text-danger{% elif variant.quantity < variant.critical_threshold %}text-warning{% else %}text-info{% endif %}">
+                                    {{ variant.quantity }}
+                                </span>
+                            </td>
+                            <td class="mobile-hide">{{ variant.minimum_quantity }}</td>
+                            <td class="mobile-hide">{{ variant.critical_threshold }}</td>
+                            <td class="mobile-hide">{{ variant.mrp }}</td>
+                            <td class="mobile-hide">{{ variant.created_at|date:'M d, Y' }}</td>
+                            <td>
+                                <div class="action-buttons justify-content-end">
+                                    <a href="{% url 'inventory_variant:stock_in' variant.id %}"
+                                       class="btn-action btn-primary"
+                                       title="Add Stock">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                    <a href="{% url 'inventory_variant:details' variant.id %}"
+                                       class="btn-action btn-secondary"
+                                       title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state py-4">
+                <i class="fas fa-check-circle text-success mb-2"></i>
+                <h3>No Low Stock Items Found</h3>
+                <p class="text-muted">All your inventory items are above their minimum stock levels.</p>
+                <a href="{% url 'inventory:dashboard' %}"
+                   class="empty-state-btn"
+                   id="backToDashboardBtn">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}
+
+{% block extra_js %}
+    <script>
+        // Search and filter functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const sortSelect = document.getElementById('sortSelect');
+            const searchForm = document.getElementById('searchForm');
+            
+            // Auto-submit form on filter change
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function() {
+                    searchForm.submit();
+                });
+            }
+            
+            // Debounced search
+            let searchTimeout;
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(function() {
+                        searchForm.submit();
+                    }, 500);
+                });
+            }
+        });
+    </script>
+{% endblock extra_js %}

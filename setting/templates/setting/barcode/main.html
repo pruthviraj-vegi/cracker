@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}
+    Barcode Configurations
+{% endblock title %}
+{% block content %}
+    <div class="page-header">
+        <h1 class="page-title">Barcode Configurations</h1>
+        <div class="page-actions">
+            {% if perms.setting.view_barcodeconfiguration %}
+                <a href="{% url 'setting:barcode_config_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Configuration
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <!-- Search and Filter Section with Inline Breadcrumbs -->
+    <div class="search-filter-section">
+        <!-- Inline Breadcrumbs -->
+        <nav class="breadcrumb-inline" aria-label="breadcrumb">
+            <a href="{% url 'setting:shop_settings_dashboard' %}"
+               class="breadcrumb-item">Settings</a>
+            <span class="breadcrumb-separator">/</span>
+            <span class="breadcrumb-active">Barcode Configurations</span>
+        </nav>
+
+        <form method="get" class="search-filter-form">
+            <div class="search-group search-expanded">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text"
+                       name="search"
+                       class="search-input"
+                       placeholder="Search by config name..."
+                       value="{{ search_query }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search"></i> Search
+            </button>
+            {% if search_query %}
+                <a href="{% url 'setting:barcode_config_list' %}" class="btn">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Barcode Config Table -->
+    <div class="table-container">
+        {% if configs %}
+            <table class="data-table">
+                <thead>
+                    <!-- Desktop Header -->
+                    <tr class="mobile-hide">
+                        <th>Config Name</th>
+                        <th class="mobile-hide">Type</th>
+                        <th class="mobile-hide">Label Size</th>
+                        <th class="mobile-hide">Paper Size</th>
+                        <th class="mobile-hide">Shop</th>
+                        <th>Status</th>
+                        <th class="mobile-hide">Created</th>
+                        <th>Actions</th>
+                    </tr>
+                    <!-- Mobile Header (<768px) -->
+                    <tr class="mobile-table-row">
+                        <th>Config & Type</th>
+                        <th>Status & Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for config in configs %}
+                        <tr>
+                            <!-- Desktop Cells -->
+                            <td class="mobile-hide">
+                                <div class="supplier-info">
+                                    <strong>{{ config.config_name }}</strong>
+                                    {% if config.is_default %}<span class="badge badge-success">Default</span>{% endif %}
+                                </div>
+                            </td>
+                            <td class="mobile-hide">{{ config.get_barcode_type_display }}</td>
+                            <td class="mobile-hide">{{ config.get_label_size_display }}</td>
+                            <td class="mobile-hide">{{ config.get_paper_size_display }}</td>
+                            <td class="mobile-hide">{{ config.shop.shop_name }}</td>
+                            <td class="mobile-hide">
+                                {% if config.is_active %}
+                                    <span class="status-badge status-active">
+                                        <i class="fas fa-check-circle"></i> Active
+                                    </span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">
+                                        <i class="fas fa-times-circle"></i> Inactive
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="mobile-hide">
+                                <small>{{ config.created_at|date:"M d, Y" }}</small>
+                            </td>
+                            <td class="mobile-hide">
+                                <div class="action-buttons">
+                                    {% if perms.setting.view_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_detail' config.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.edit_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_edit' config.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_delete' config.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Mobile Cells (<768px) -->
+                            <td class="mobile-table-cell">
+                                <div>
+                                    <strong class="text-primary">{{ config.config_name }}</strong>
+                                    {% if config.is_default %}<span class="badge badge-success ms-1">Default</span>{% endif %}
+                                </div>
+                                <div class="text-secondary small mt-1">
+                                    <i class="fas fa-barcode me-1"></i>{{ config.get_barcode_type_display }} • {{ config.get_paper_size_display }}
+                                    <br>
+                                    <i class="fas fa-store me-1"></i>{{ config.shop.shop_name }}
+                                </div>
+                            </td>
+                            <td class="mobile-table-cell">
+                                <div>
+                                    {% if config.is_active %}
+                                        <span class="status-badge status-active"><i class="fas fa-check-circle"></i> Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive"><i class="fas fa-times-circle"></i> Inactive</span>
+                                    {% endif %}
+                                </div>
+                                <div class="action-buttons mt-1">
+                                    {% if perms.setting.view_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_detail' config.pk %}"
+                                           class="btn-action btn-view"
+                                           title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.edit_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_edit' config.pk %}"
+                                           class="btn-action btn-edit"
+                                           title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    {% endif %}
+                                    {% if perms.setting.delete_barcodeconfiguration %}
+                                        <a href="{% url 'setting:barcode_config_delete' config.pk %}"
+                                           class="btn-action btn-delete"
+                                           title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <!-- Pagination -->
+            {% if configs.has_other_pages %}
+                <div class="pagination-container">
+                    <div class="pagination">
+                        {% if configs.has_previous %}
+                            <a href="?page={{ configs.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                               class="page-link">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        {% endif %}
+                        <span class="page-info">Page {{ configs.number }} of {{ configs.paginator.num_pages }}</span>
+                        {% if configs.has_next %}
+                            <a href="?page={{ configs.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                               class="page-link">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-barcode empty-state-icon"></i>
+                <h3>No Barcode Configurations Found</h3>
+                <p>Create a new configuration to start printing barcodes.</p>
+                <a href="{% url 'setting:barcode_config_create' %}"
+                   class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Configuration
+                </a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock content %}

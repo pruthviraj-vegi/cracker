@@ -1,0 +1,82 @@
+{% if page_obj %}
+    <div class="pagination-row">
+        <div class="pagination-info">
+            <span class="page-info">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+            </span>
+        </div>
+        {% if page_obj.paginator.num_pages > 1 %}
+            <nav aria-label="Pagination" class="pagination-nav">
+                <ul class="pagination">
+                    {# First/Prev #}
+                    {% if page_obj.has_previous %}
+                        <li class="page-item mobile-hide">
+                            <a class="page-link" data-page="1" title="First Page">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link"
+                               data-page="{{ page_obj.previous_page_number }}"
+                               title="Previous Page">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    {# Windowed page numbers with ellipses #}
+                    {% with current=page_obj.number total=page_obj.paginator.num_pages %}
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == 1 or num == total %}
+                                {% if num == current %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" data-page="{{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% elif num == current|add:'-1' or num == current|add:'1' or num == current %}
+                                {% if num == current %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" data-page="{{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% elif num == current|add:'-2' or num == current|add:'2' %}
+                                <li class="page-item mobile-hide">
+                                    <a class="page-link" data-page="{{ num }}">{{ num }}</a>
+                                </li>
+                            {% elif num == current|add:'-3' or num == current|add:'3' %}
+                                <li class="page-item disabled mobile-hide">
+                                    <span class="page-link">…</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
+                    {# Next/Last #}
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link"
+                               data-page="{{ page_obj.next_page_number }}"
+                               title="Next Page">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item mobile-hide">
+                            <a class="page-link"
+                               data-page="{{ page_obj.paginator.num_pages }}"
+                               title="Last Page">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+        <div class="pagination-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</div>
+    </div>
+{% endif %}
