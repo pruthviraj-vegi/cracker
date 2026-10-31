@@ -71,9 +71,14 @@ def inventory_dashboard(request):
             Sum(F("quantity") * F("purchase_price"), output_field=DecimalField()),
             Decimal("0"),
         ),
+        total_inventory_mrp_value=Coalesce(
+            Sum(F("quantity") * F("mrp"), output_field=DecimalField()),
+            Decimal("0"),
+        ),
     )
 
     total_inventory_value = float(variant_metrics["total_inventory_value"])
+    total_inventory_mrp_value = float(variant_metrics["total_inventory_mrp_value"])
 
     # Calculate valuation trend (month-over-month)
     from datetime import timedelta
@@ -120,6 +125,7 @@ def inventory_dashboard(request):
         "total_variants": variant_metrics["total_variants"],
         "low_stock_variants": variant_metrics["low_stock_count"],
         "total_inventory_value": total_inventory_value,
+        "total_inventory_mrp_value": total_inventory_mrp_value,
         "valuation_trend": trend_pct,
         "date_filter": request.GET.get("date_filter", "this_month"),
         "total_stock_data_json": json.dumps(total_stock_data),
@@ -238,10 +244,22 @@ def inventory_dashboard_fetch(request):
         for item in stock_out_breakdown_qs
     ]
 
+    # Calculate current total inventory MRP value across active variants
+    total_inventory_mrp_val = ProductVariant.objects.filter(
+        is_deleted=False, status=ProductVariant.VariantStatus.ACTIVE
+    ).aggregate(
+        total_mrp=Coalesce(
+            Sum(F("quantity") * F("mrp"), output_field=DecimalField(max_digits=16, decimal_places=2)),
+            Decimal("0"),
+        )
+    )["total_mrp"]
+    total_inventory_mrp_value = float(total_inventory_mrp_val)
+
     # Prepare stats
     stats = {
         "stock_in": round(stock_in_total, 2),
         "stock_out": round(stock_out_total, 2),
+        "total_inventory_mrp": float(total_inventory_mrp_value),
     }
 
     return JsonResponse(

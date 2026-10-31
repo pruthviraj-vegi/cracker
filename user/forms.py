@@ -17,6 +17,27 @@ logger = logging.getLogger(__name__)
 class CustomUserForm(forms.ModelForm):
     """Unified form for creating and editing users."""
 
+    password = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "placeholder": "Enter password",
+                "autocomplete": "new-password",
+            }
+        ),
+        required=False,
+        label="Password",
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput(
+            attrs={
+                "placeholder": "Confirm password",
+                "autocomplete": "new-password",
+            }
+        ),
+        required=False,
+        label="Confirm Password",
+    )
+
     class Meta:
         model = CustomUser
         fields = (
@@ -67,9 +88,29 @@ class CustomUserForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        is_create = not (self.instance and self.instance.pk)
+        if is_create:
+            self.fields["password"].required = True
+            self.fields["confirm_password"].required = True
+            self.fields["password"].label = "Password"
+            self.fields["confirm_password"].label = "Confirm Password"
+            self.fields["password"].help_text = "Enter a password for the new user."
+            self.fields["confirm_password"].help_text = "Re-enter the password to confirm."
+            self.fields["password"].widget.attrs["placeholder"] = "Enter password"
+            self.fields["confirm_password"].widget.attrs["placeholder"] = "Confirm password"
+        else:
+            self.fields["password"].required = False
+            self.fields["confirm_password"].required = False
+            self.fields["password"].label = "New Password (Optional)"
+            self.fields["confirm_password"].label = "Confirm New Password"
+            self.fields["password"].help_text = "Leave blank to keep existing password."
+            self.fields["confirm_password"].help_text = "Re-enter the new password if changing."
+            self.fields["password"].widget.attrs["placeholder"] = "Enter new password (optional)"
+            self.fields["confirm_password"].widget.attrs["placeholder"] = "Confirm new password"
+
         # Add required field indicators
         for _, field in self.fields.items():
-            if field.required:
+            if field.required and not str(field.label).endswith("*"):
                 field.label = f"{field.label} *"
 
         # Add appropriate classes to all fields based on widget type
@@ -86,6 +127,39 @@ class CustomUserForm(forms.ModelForm):
 
         # Override maxlength for phone_number to enforce 10 digits
         self.fields["phone_number"].widget.attrs["maxlength"] = "10"
+
+    def clean(self):
+        """Validate passwords matching and requirement."""
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+        is_create = not (self.instance and self.instance.pk)
+
+        if is_create and not password:
+            self.add_error("password", "Password is required for new users.")
+        if is_create and not confirm_password:
+            self.add_error("confirm_password", "Please confirm the password.")
+
+        if password or confirm_password:
+            if not password:
+                self.add_error("password", "Password is required.")
+            if not confirm_password:
+                self.add_error("confirm_password", "Please confirm the password.")
+            if password and confirm_password and password != confirm_password:
+                self.add_error("confirm_password", "Passwords do not match.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        """Save user instance and set password if provided."""
+        user = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            user.set_password(password)
+        if commit:
+            user.save()
+            self.save_m2m()
+        return user
 
     def clean_phone_number(self):
         """Validate that the phone number is unique."""

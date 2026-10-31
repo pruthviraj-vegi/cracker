@@ -205,13 +205,9 @@ class CreateUser(RequiredPermissionMixin, CreateView):
     success_url = reverse_lazy("user:home")
 
     def form_valid(self, form):
-        from django.utils.crypto import get_random_string
-
-        user = form.save(commit=False)
-        user.set_password(get_random_string(length=24))
-        user.save()
+        response = super().form_valid(form)
         messages.success(self.request, "User created successfully!")
-        return super().form_valid(form)
+        return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -241,8 +237,9 @@ class EditUser(RequiredPermissionMixin, UpdateView):
         return context
 
     def form_valid(self, form):
+        response = super().form_valid(form)
         messages.success(self.request, "User updated successfully!")
-        return super().form_valid(form)
+        return response
 
     def form_invalid(self, form):
         logger.error("Form invalid: %s", form.errors)

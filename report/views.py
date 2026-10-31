@@ -220,21 +220,61 @@ def create_invoice(request, pk):
 
 def estimate_invoice(request, pk):
     """Render an estimate invoice page for the given estimate ID."""
-    template = "report/estimate.html"
-    estimate = Cart.objects.get(id=pk)
+    estimate = get_object_or_404(Cart, id=pk)
     values = CartItem.objects.filter(cart__id=pk).select_related(
-        "product_variant__product"
+        "product_variant__product__category",
+        "product_variant__product__uom",
+        "product_variant__size",
+        "product_variant__color",
     )
     shop_details = ShopDetails.get_active()
     report_config = ReportConfiguration.get_default_config(
         ReportConfiguration.ReportType.ESTIMATE
     )
+    payment_details = (
+        PaymentDetails.get_active_payments(shop=shop_details)
+        .order_by("display_order")
+        .first()
+    )
+
+    if report_config.paper_size == "58mm":
+        template = "report/estimate_58mm.html"
+    elif report_config.paper_size == "80mm":
+        template = "report/estimate_80mm.html"
+    else:
+        template = "report/estimate.html"
+
     context = {
         "values": values,
         "details": estimate,
         "shop_details": shop_details,
         "report_config": report_config,
+        "payment_details": payment_details,
     }
+
+    # Generate QR code if enabled in config
+    if (
+        report_config
+        and report_config.show_qr_code
+        and payment_details
+        and payment_details.upi_id
+    ):
+        try:
+            # Create UPI payment QR code
+            qr_data = (
+                f"upi://pay?pa={payment_details.upi_id}"
+                f"&pn={shop_details.shop_name}"
+                f"&am={estimate.net_amount}"
+                f"&tn=for estimate no {estimate.id}"
+                f"&cu=INR"
+            )
+            qr_code = qrcode.make(qr_data)
+            image_bytes = io.BytesIO()
+            qr_code.save(image_bytes, format="PNG")
+            context["qrcode"] = base64.b64encode(image_bytes.getvalue()).decode()
+        except (ValueError, OSError) as exc:
+            logger.error("Error generating QR code: %s", exc)
+
     return render(request, template, context)
 
 

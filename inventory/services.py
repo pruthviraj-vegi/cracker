@@ -6,6 +6,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.db import models, transaction
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Max, Q, Sum
+from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils import timezone
 
@@ -1882,6 +1883,22 @@ def total_inventory_value(request=None) -> Decimal:
         )
     )
     return total_value["total_value"]
+
+
+def total_inventory_mrp_value(request=None) -> Decimal:
+    """Calculate total inventory MRP value across all active variants."""
+    total_mrp = ProductVariant.objects.filter(
+        is_deleted=False, status=ProductVariant.VariantStatus.ACTIVE
+    ).aggregate(
+        total_mrp=Coalesce(
+            Sum(
+                F("quantity") * F("mrp"),
+                output_field=DecimalField(max_digits=16, decimal_places=2),
+            ),
+            Decimal("0"),
+        )
+    )
+    return total_mrp["total_mrp"]
 
 
 def get_variants_data(request=None, params=None):

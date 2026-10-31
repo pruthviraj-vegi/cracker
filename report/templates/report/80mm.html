@@ -23,10 +23,10 @@
                 <p class="shop-address">{{ shop_details.address_line_two }}</p>
               {% endif %}
               {% if report_config.show_gst and shop_details.gst_no %}
-                <p class="text-bold">GST: {{ shop_details.gst_no }}</p>
+                <p class="shop-gst">GST: {{ shop_details.gst_no }}</p>
               {% endif %}
               {% if report_config.show_contact %}
-                <p class="text-bold">Ph: {{ shop_details.contact_info }}</p>
+                <p class="shop-contact">Ph: {{ shop_details.contact_info }}</p>
               {% endif %}
             </div>
           </div>
@@ -35,11 +35,11 @@
           <div class="invoice-data">
             <div class="invoice-content">
               <div>
-                <p>Invoice: <span class="invoice-value">{{ details.invoice_number }}</span></p>
-                <p>Date: <span class="invoice-value">{{ details.created_at|date:"d-m-Y H:i" }}</span></p>
+                <p><strong>Bill No:</strong> <span class="invoice-value">{{ details.invoice_number }}</span></p>
+                <p><strong>Date:</strong> <span class="invoice-value">{{ details.created_at|date:"d-m-Y H:i" }}</span></p>
               </div>
               <div class="text-right">
-                <p>Mode: <span class="invoice-value">{{ details.get_payment_type_display }}</span></p>
+                <p><strong>Mode:</strong> <span class="invoice-value">{{ details.get_payment_type_display }}</span></p>
               </div>
             </div>
           </div>
@@ -65,33 +65,32 @@
           <table class="items-table">
             <thead>
               <tr>
-                <th>S.No</th>
-                <th>Item Description</th>
-                <th>Qty</th>
-                <th>Rate</th>
-                <th>Amount</th>
+                <th class="col-sno">#</th>
+                <th class="col-item">Item Description</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-rate">Rate</th>
+                <th class="col-amount">Amount</th>
               </tr>
             </thead>
             <tbody>
               {% for item in values %}
                 <tr>
-                  <td class="text-center">{{ forloop.counter }}</td>
-                  <td>
+                  <td class="col-sno">{{ forloop.counter }}</td>
+                  <td class="col-item">
                     {{ item.product_variant.product.brand }}
                     {% if item.product_variant.simple_name %} - {{ item.product_variant.simple_name }}{% endif %}
                   </td>
-                  <td class="text-center">{{ item.quantity }}</td>
-                  <td class="text-right">{{ item.unit_price|currency }}</td>
-                  <td class="text-right font-semibold">{{ item.amount|currency }}</td>
+                  <td class="col-qty">{{ item.quantity }}</td>
+                  <td class="col-rate">{{ item.unit_price|currency }}</td>
+                  <td class="col-amount">{{ item.amount|currency }}</td>
                 </tr>
               {% endfor %}
             </tbody>
             <tfoot>
               <tr>
-                <td colspan="2" class="font-semibold">Total Items: {{ values|length }}</td>
-                <td class="text-center font-semibold">{{ details.get_total_quantity }}</td>
-                <td class="text-right font-semibold">Sub Total:</td>
-                <td class="text-right highlight font-bold">{{ details.amount|currency }}</td>
+                <td colspan="2" class="text-left font-bold">Total Items: {{ values|length }}</td>
+                <td class="col-qty font-bold">{{ details.get_total_quantity }}</td>
+                <td colspan="2" class="col-amount font-bold highlight">{{ details.amount|currency }}</td>
               </tr>
             </tfoot>
           </table>
@@ -105,9 +104,9 @@
           <table class="tax-table">
             <thead>
               <tr>
-                <th>Tax %</th>
-                <th>Taxable Val</th>
-                <th>Tax Amt</th>
+                <th class="text-center">Tax %</th>
+                <th class="text-right">Taxable Val</th>
+                <th class="text-right">Tax Amt</th>
               </tr>
             </thead>
             <tbody>
@@ -125,8 +124,8 @@
 
         <!-- Amount in Words -->
         <div class="amount-content">
-          <div class="terms_title">* Rupee In Words *</div>
-          <div class="font-semibold">{{ details.net_amount_due|currencyToWord }}</div>
+          <div class="terms_title">* Amount In Words *</div>
+          <div class="font-semibold words-text">{{ details.net_amount_due|currencyToWord }}</div>
         </div>
 
         <!-- Total Amount -->
@@ -169,7 +168,7 @@
               {% if report_config.terms_conditions %}
                 {{ report_config.terms_conditions|linebreaks }}
               {% else %}
-                <em>1. Goods once sold will not be taken back.</em>
+                <em>1. Goods once sold will not be taken back.</em><br />
                 <em>2. Subject to local jurisdiction.</em>
               {% endif %}
             </div>
@@ -183,7 +182,7 @@
           <div class="barcode">
             <img src="data:image/png;base64,{{ qrcode }}" alt="Scan QR Code to Pay" />
           </div>
-          <p style="font-size: 8px; font-weight: bold; margin-top: 1mm;">Scan to Pay via UPI</p>
+          <p class="qr-caption">Scan to Pay via UPI</p>
         </div>
         {% endif %}
 
@@ -197,6 +196,8 @@
         </div>
         {% endif %}
       </div>
+
+      <div class="feed-cut-space"></div>
     </div>
     
     <script src="{% static 'js/print.js' %}"></script>

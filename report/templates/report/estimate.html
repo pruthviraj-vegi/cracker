@@ -52,11 +52,11 @@
           </div>
         </div>
         <!-- Bottom: Customer Details -->
-        {% if report_config.show_customer_details %}
+        {% if report_config.show_customer_details and details.name %}
           <div class="customer-section">
             <div class="customer-content">
-              <h1>{{ details.customer.name }}</h1>
-              <p>{{ details.customer.address|truncatechars:20 }}</p>
+              <h1>{{ details.name }}</h1>
+              {% if details.notes %}<p>{{ details.notes|truncatechars:40 }}</p>{% endif %}
             </div>
           </div>
         {% endif %}

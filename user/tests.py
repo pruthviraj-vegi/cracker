@@ -292,3 +292,89 @@ class UserViewsTestCase(TestCase):
         res_sort = self.client.get(reverse("user:fetch"), {"sort": "full_name"})
         self.assertEqual(res_sort.status_code, 200)
 
+    def test_create_user_view_with_password(self):
+        """Test creating a new user with password via CreateUser view."""
+        # GET form should show password fields
+        res_get = self.client.get(reverse("user:create"))
+        self.assertEqual(res_get.status_code, 200)
+        self.assertContains(res_get, 'name="password"')
+        self.assertContains(res_get, 'name="confirm_password"')
+
+        # POST with password and confirm_password
+        post_data = {
+            "first_name": "TestNew",
+            "last_name": "User",
+            "phone_number": "9123456789",
+            "email": "testnew@example.com",
+            "password": "MySecretPassword123",
+            "confirm_password": "MySecretPassword123",
+            "is_active": "on",
+        }
+        res_post = self.client.post(reverse("user:create"), post_data)
+        self.assertEqual(res_post.status_code, 302)
+
+        new_user = CustomUser.objects.get(phone_number="9123456789")
+        self.assertEqual(new_user.first_name, "Testnew")
+        self.assertTrue(new_user.check_password("MySecretPassword123"))
+
+    def test_create_user_view_password_mismatch(self):
+        """Test creating a user with mismatched passwords fails validation."""
+        post_data = {
+            "first_name": "Mismatch",
+            "phone_number": "9123456780",
+            "password": "Password123",
+            "confirm_password": "DifferentPassword",
+        }
+        res_post = self.client.post(reverse("user:create"), post_data)
+        self.assertEqual(res_post.status_code, 200)
+        self.assertFalse(CustomUser.objects.filter(phone_number="9123456780").exists())
+        self.assertContains(res_post, "Passwords do not match.")
+
+    def test_edit_user_view_password_change(self):
+        """Test editing a user and updating their password."""
+        # 1. Edit with new password updates password
+        edit_data = {
+            "first_name": "RegularUser",
+            "phone_number": self.test_user.phone_number,
+            "password": "NewUpdatedPassword123",
+            "confirm_password": "NewUpdatedPassword123",
+            "is_active": "on",
+        }
+        res_edit = self.client.post(
+            reverse("user:edit", kwargs={"pk": self.test_user.pk}),
+            edit_data,
+        )
+        self.assertEqual(res_edit.status_code, 302)
+        self.test_user.refresh_from_db()
+        self.assertTrue(self.test_user.check_password("NewUpdatedPassword123"))
+
+        # 2. Edit without password keeps existing password
+        edit_data_no_pw = {
+            "first_name": "RegularUserUpdated",
+            "phone_number": self.test_user.phone_number,
+            "password": "",
+            "confirm_password": "",
+            "is_active": "on",
+        }
+        res_edit2 = self.client.post(
+            reverse("user:edit", kwargs={"pk": self.test_user.pk}),
+            edit_data_no_pw,
+        )
+        self.assertEqual(res_edit2.status_code, 302)
+        self.test_user.refresh_from_db()
+        self.assertEqual(self.test_user.first_name, "Regularuserupdated")
+        self.assertTrue(self.test_user.check_password("NewUpdatedPassword123"))
+
+    def test_reset_user_password_view(self):
+        """Test reset user password view."""
+        res_reset = self.client.post(
+            reverse("user:reset_password", kwargs={"user_id": self.test_user.pk}),
+            {
+                "new_password": "AdminResetPassword999",
+                "confirm_password": "AdminResetPassword999",
+            },
+        )
+        self.assertEqual(res_reset.status_code, 302)
+        self.test_user.refresh_from_db()
+        self.assertTrue(self.test_user.check_password("AdminResetPassword999"))
+

@@ -106,7 +106,7 @@
                         </span>
                         <span class="hero-tag">Period Flow</span>
                     </div>
-                    <div class="health-highlights-row mt-2">
+                    <div class="health-highlights-row three-boxes mt-2">
                         <div class="health-box">
                             <span class="health-box-label">
                                 <i class="fa-solid fa-arrow-down text-success"></i>
@@ -126,6 +126,16 @@
                                 <span class="counting-number" id="stockOut" data-count="0">0</span>
                             </div>
                             <span class="health-box-sub">Direct retail sales volume</span>
+                        </div>
+                        <div class="health-box">
+                            <span class="health-box-label">
+                                <i class="fa-solid fa-tags text-primary"></i>
+                                Total Inventory (MRP)
+                            </span>
+                            <div class="health-box-val">
+                                <span class="counting-number" id="totalInventoryMrp" data-count="{{ total_inventory_mrp_value|default:0 }}">0</span>
+                            </div>
+                            <span class="health-box-sub">Total stock (Qty × MRP)</span>
                         </div>
                     </div>
                 </div>
@@ -300,10 +310,14 @@
 
             // 1. Update Animated Counters
             if (typeof updateAllCounters === 'function') {
-                updateAllCounters({
+                const counters = {
                     stockIn: data.stats?.stock_in || 0,
                     stockOut: data.stats?.stock_out || 0
-                });
+                };
+                if (data.stats && data.stats.total_inventory_mrp !== undefined) {
+                    counters.totalInventoryMrp = data.stats.total_inventory_mrp;
+                }
+                updateAllCounters(counters);
             }
 
             // 2. Update Supplier In Chart

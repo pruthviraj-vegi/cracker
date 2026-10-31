@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+{% load static %} {% load custom_filters %}
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ details.name|default:"Customer" }} - Estimate {{ details.id }}</title>
+    <link rel="stylesheet" href="{% static 'styles/80mm.css' %}" />
+    <link rel="shortcut icon" type="image/ico" href="{% static 'images/favicon.ico' %}" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="top-section">
+        <div class="header-data">
+          <!-- Shop Details -->
+          <div class="shop-data">
+            <div class="shop-details">
+              {% if report_config.show_shop_name %}
+                <div class="shop-name">{{ shop_details.shop_name }}</div>
+              {% endif %}
+              {% if report_config.show_address %}
+                <p class="shop-address">{{ shop_details.address_line_one }}</p>
+                <p class="shop-address">{{ shop_details.address_line_two }}</p>
+              {% endif %}
+              {% if report_config.show_gst and shop_details.gst_no %}
+                <p class="shop-gst">GST: {{ shop_details.gst_no }}</p>
+              {% endif %}
+              {% if report_config.show_contact %}
+                <p class="shop-contact">Ph: {{ shop_details.contact_info }}</p>
+              {% endif %}
+            </div>
+          </div>
+          
+          <!-- Estimate Details -->
+          <div class="invoice-data">
+            <div class="invoice-content">
+              <div>
+                <p><strong>Est No:</strong> <span class="invoice-value">{{ details.id }}</span></p>
+                <p><strong>Date:</strong> <span class="invoice-value">{{ details.created_at|date:"d-m-Y H:i" }}</span></p>
+              </div>
+              <div class="text-right">
+                <p><span class="badge-title">ESTIMATE</span></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Customer Details -->
+        {% if report_config.show_customer_details and details.name %}
+        <div class="customer-section">
+          <div class="customer-content">
+            <h1>Customer: {{ details.name }}</h1>
+            {% if details.notes %}
+              <p>{{ details.notes|truncatechars:40 }}</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Items Table -->
+        <div class="content-table">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th class="col-sno">#</th>
+                <th class="col-item">Item Description</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-rate">Rate</th>
+                <th class="col-amount">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in values %}
+                <tr>
+                  <td class="col-sno">{{ forloop.counter }}</td>
+                  <td class="col-item">
+                    {{ item.product_variant.product.brand }}
+                    {% if item.product_variant.simple_name %} - {{ item.product_variant.simple_name }}{% endif %}
+                  </td>
+                  <td class="col-qty">{{ item.quantity }}</td>
+                  <td class="col-rate">{{ item.price|currency }}</td>
+                  <td class="col-amount">{{ item.amount|currency }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2" class="text-left font-bold">Total Items: {{ values|length }}</td>
+                <td class="col-qty font-bold">{{ details.total_quantity }}</td>
+                <td colspan="2" class="col-amount font-bold highlight">{{ details.total_amount|currency }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="bottom-section">
+        <!-- Amount in Words -->
+        <div class="amount-content">
+          <div class="terms_title">* Amount In Words *</div>
+          <div class="font-semibold words-text">{{ details.net_amount|currencyToWord }}</div>
+        </div>
+
+        <!-- Total Amount -->
+        <div class="total-amount-content">
+          <div>
+            <p>
+              <span>Sub Total:</span> 
+              <span class="font-semibold">{{ details.total_amount|currency }}</span>
+            </p>
+            {% if details.advance_payment > 0 %}
+              <p>
+                <span>Advance Paid:</span> 
+                <span class="font-semibold">- {{ details.advance_payment|currency }}</span>
+              </p>
+            {% endif %}
+          </div>
+          <div>
+            <p class="highlight">
+              <span>NET PAYABLE:</span> 
+              <span>{{ details.net_amount|currency }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer-content">
+        <!-- Terms & Conditions -->
+        {% if report_config.show_terms_conditions %}
+        <div class="terms-content">
+          <div class="terms-conditions">
+            <h3 class="terms_title">Terms &amp; Conditions</h3>
+            <div class="terms_subject">
+              {% if report_config.terms_conditions %}
+                {{ report_config.terms_conditions|linebreaks }}
+              {% else %}
+                <em>1. Estimate only. Valid for 7 days.</em><br />
+                <em>2. Goods once sold will not be taken back.</em><br />
+                <em>3. E. &amp; O.E.</em>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- QR Code -->
+        {% if report_config.show_qr_code and qrcode %}
+        <div class="qrcode-content">
+          <div class="barcode">
+            <img src="data:image/png;base64,{{ qrcode }}" alt="Scan QR Code to Pay" />
+          </div>
+          <p class="qr-caption">Scan to Pay via UPI</p>
+        </div>
+        {% endif %}
+
+        <!-- Thank You Message -->
+        {% if report_config.show_thank_you %}
+        <div class="footer-note-content">
+          <div class="thank-you">
+            <h3>{{ report_config.thank_you_message|default:"Thank You! Please Visit Again" }}</h3>
+            <p>This is a Computer Generated Estimate.</p>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="feed-cut-space"></div>
+    </div>
+    
+    <script src="{% static 'js/print.js' %}"></script>
+  </body>
+</html>

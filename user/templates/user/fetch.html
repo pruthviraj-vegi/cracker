@@ -69,6 +69,13 @@
                             <i class="fas fa-edit"></i>
                         </a>
                     {% endif %}
+                    {% if perms.user.change_customuser %}
+                        <a href="{% url 'user:reset_password' user.id %}"
+                           class="btn-action btn-password"
+                           title="Reset Password">
+                            <i class="fas fa-key"></i>
+                        </a>
+                    {% endif %}
                     {% if perms.user.view_salary %}
                         {% if user.commission or user.current_salary and user.current_salary.commission %}
                             <a href="{% url 'user:commission' user.id %}"

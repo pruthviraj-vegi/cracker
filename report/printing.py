@@ -88,6 +88,40 @@ def format_table_row(name, qty, price, total, width):
         return f"{name_part} {qty_part} {price_part} {total_part}"
 
 
+def format_item_rows(name, qty, price, total, width):
+    """
+    Formats item details into one or more rows, cleanly wrapping long item
+    names across lines so product descriptions are never truncated.
+    """
+    name = (name or "").strip()
+    qty = qty or ""
+    price = price or ""
+    total = total or ""
+
+    name_col_width = 11 if width == 32 else 20
+    name_lines = textwrap.wrap(name, width=name_col_width) or [""]
+
+    rows = []
+    first_name = name_lines[0]
+    if width == 32:
+        name_part = first_name[:11].ljust(11)
+        qty_part = qty.rjust(5)
+        price_part = price.rjust(7)
+        total_part = total.rjust(6)
+        rows.append(f"{name_part} {qty_part} {price_part} {total_part}")
+    else:
+        name_part = first_name[:20].ljust(20)
+        qty_part = qty.rjust(6)
+        price_part = price.rjust(9)
+        total_part = total.rjust(10)
+        rows.append(f"{name_part} {qty_part} {price_part} {total_part}")
+
+    for subsequent_name in name_lines[1:]:
+        rows.append(f"  {subsequent_name}")
+
+    return rows
+
+
 def format_tax_row(rate, taxable, cgst, sgst, total, width):
     """
     Formats a row of CGST/SGST tax details.
@@ -122,8 +156,8 @@ def make_escpos_qr_code(data):
     # 1. Set QR Code model to Model 2
     buf.extend(GS + b"(k\x04\x00\x31\x41\x32\x00")
 
-    # 2. Set module size to 6 dots
-    buf.extend(GS + b"(k\x03\x00\x31\x43\x06")
+    # 2. Set module size to 4 dots (optimal for 58mm/80mm thermal receipts)
+    buf.extend(GS + b"(k\x03\x00\x31\x43\x04")
 
     # 3. Set error correction level to M
     buf.extend(GS + b"(k\x03\x00\x31\x44\x31")
@@ -229,8 +263,11 @@ def format_invoice_for_direct_print(invoice, shop_details, report_config, width=
         price_str = f"{item.unit_price:.2f}"
         amount_str = f"{item.amount:.2f}"
 
-        row_str = format_table_row(variant_name, qty_str, price_str, amount_str, width)
-        buf.extend(row_str.encode("ascii", errors="ignore") + b"\n")
+        item_rows = format_item_rows(
+            variant_name, qty_str, price_str, amount_str, width
+        )
+        for row in item_rows:
+            buf.extend(row.encode("ascii", errors="ignore") + b"\n")
 
     # Divider
     buf.extend((b"-" * width) + b"\n")
@@ -409,8 +446,11 @@ def format_estimate_for_direct_print(cart, shop_details, report_config, width=48
         price_str = f"{item.price:.2f}"
         amount_str = f"{item.amount():.2f}"
 
-        row_str = format_table_row(variant_name, qty_str, price_str, amount_str, width)
-        buf.extend(row_str.encode("ascii", errors="ignore") + b"\n")
+        item_rows = format_item_rows(
+            variant_name, qty_str, price_str, amount_str, width
+        )
+        for row in item_rows:
+            buf.extend(row.encode("ascii", errors="ignore") + b"\n")
 
     # Divider
     buf.extend((b"-" * width) + b"\n")

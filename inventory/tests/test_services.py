@@ -12,6 +12,7 @@ from inventory.services import (
     get_media_gallery_stats,
     get_variants_data,
     total_inventory_value,
+    total_inventory_mrp_value,
 )
 from inventory.models import Category, InventoryLog, DamagedItemRecord, VariantMedia
 from Billing.tests.helpers import (
@@ -666,6 +667,11 @@ class VariantQueryServicesTests(TestCase):
         # 10 * 100 + 4 * 150 = 1000 + 600 = 1600.00
         val = total_inventory_value()
         self.assertEqual(val, Decimal("1600.00"))
+
+    def test_total_inventory_mrp_value(self):
+        # 10 * 200 + 4 * 250 = 2000 + 1000 = 3000.00
+        val = total_inventory_mrp_value()
+        self.assertEqual(val, Decimal("3000.00"))
 
     def test_get_variants_data_with_params(self):
         # Test params dict filtering
