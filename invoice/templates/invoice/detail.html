@@ -10,14 +10,14 @@
         <h2 class="heading page-title">{{ title }}</h2>
         <div class="page-actions">
             {% if not invoice.is_cancelled %}
-                {% if invoice.customer.get_default_customer.pk != invoice.customer.pk %}
+                {% comment %} {% if invoice.customer.get_default_customer.pk != invoice.customer.pk %}
                     <a href="javascript:void(0);"
                        onclick="sendInvoice('{{ invoice.id }}')"
                        class="btn btn-primary">
                         <i class="fas fa-paper-plane"></i>
                         Send Invoice
                     </a>
-                {% endif %}
+                {% endif %} {% endcomment %}
                 {% if perms.invoice.add_returninvoice %}
                     <a href="{% url 'invoice:create_auto_return_invoice' invoice.id %}"
                        class="btn btn-primary">

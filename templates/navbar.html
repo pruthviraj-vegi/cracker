@@ -7,7 +7,7 @@
             <span>Dashboard</span>
          </a>
       </li>
-      {% if perms.invoice.view_invoice %}
+      {% comment %} {% if perms.invoice.view_invoice %}
       <li class="nav-item">
          <a href="{% url 'base:calendar' %}"
             class="nav-link {% if request.resolver_match.url_name == 'calendar' %}active{% endif %}">
@@ -15,7 +15,7 @@
             <span>Calendar</span>
          </a>
       </li>
-      {% endif %}
+      {% endif %} {% endcomment %}
       <li class="nav-item">
          <a href="#" class="nav-link has-dropdown {% if 'cart' in request.resolver_match.namespace %}active{% endif %}">
             <i class="fas fa-shopping-cart"></i>
@@ -53,7 +53,7 @@
                class="dropdown-item {% if request.resolver_match.url_name == 'search_invoices_home' %}active{% endif %}">Search
                Invoices</a>
             {% endif %}
-            {% if perms.invoice.view_audittable %}
+            {% comment %} {% if perms.invoice.view_audittable %}
             <a href="{% url 'invoice:audit_home' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'invoices_audit' %}active{% endif %}">Invoices
                Audit</a>
@@ -67,7 +67,7 @@
             <a href="{% url 'invoice:report' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'report' %}active{% endif %}">Invoice
                Report</a>
-            {% endif %}
+            {% endif %} {% endcomment %}
          </div>
       </li>
       {% endif %}
@@ -92,7 +92,7 @@
                Variants</a>
             {% endif %}
             <div class="dropdown-divider"></div>
-            {% if perms.inventory.view_supplier_invoice %}
+            {% comment %} {% if perms.inventory.view_supplier_invoice %}
             <a href="{% url 'inventory:supplier_invoice' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'supplier_invoice' %}active{% endif %}">Supplier
                Invoices</a>
@@ -147,7 +147,7 @@
             <div class="dropdown-divider"></div>
             <a href="{% url 'inventory:media_gallery' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'media_gallery' %}active{% endif %}">Media
-               Gallery</a>
+               Gallery</a> {% endcomment %}
          </div>
       </li>
       {% endif %}
@@ -173,14 +173,14 @@
                class="dropdown-item {% if request.resolver_match.namespace == 'customer' and request.resolver_match.url_name == 'create' %}active{% endif %}">Add
                Customer</a>
             {% endif %}
-            {% if perms.customer.view_customercreditsummary %}
+            {% comment %} {% if perms.customer.view_customercreditsummary %}
             <a href="{% url 'customer:credit_home' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'credit_home' %}active{% endif %}">Credits</a>
-            {% endif %}
+            {% endif %} {% endcomment %}
          </div>
       </li>
       {% endif %}
-      {% if perms.supplier.view_supplier or perms.supplier.add_supplier %}
+      {% comment %} {% if perms.supplier.view_supplier or perms.supplier.add_supplier %}
       <li class="nav-item">
          <a href="#"
             class="nav-link has-dropdown {% if 'supplier' in request.resolver_match.namespace %}active{% endif %}">
@@ -204,7 +204,7 @@
             {% endif %}
          </div>
       </li>
-      {% endif %}
+      {% endif %} {% endcomment %}
       {% if perms.user.view_customuser %}
       <li class="nav-item">
          <a href="#" class="nav-link has-dropdown {% if 'user' in request.resolver_match.namespace %}active{% endif %}">
@@ -255,13 +255,13 @@
       </li>
       {% endif %}
       {% if perms.api.view_apitoken %}
-      <li class="nav-item">
+      {% comment %} <li class="nav-item">
          <a href="{% url 'api_tokens:home' %}"
             class="nav-link {% if 'api_tokens' in request.resolver_match.namespace %}active{% endif %}">
             <i class="fas fa-key"></i>
             <span>API Tokens</span>
          </a>
-      </li>
+      </li> {% endcomment %}
       {% endif %}
       {% if perms.setting.view_shopdetails or perms.setting.view_reportconfiguration or perms.setting.view_paymentdetails or perms.setting.view_barcodeconfiguration %}
       <li class="nav-item">
