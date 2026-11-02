@@ -29,10 +29,7 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
             "payment_type",
             "advance_amount",
             "payment_method",
-            "invoice_date",
-            "due_date",
             "notes",
-            "sold_by",
         ]
         widgets = {
             "customer": forms.Select(attrs={"placeholder": "Select customer"}),
@@ -44,7 +41,6 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
                     "autofocus": True,
                 }
             ),
-            "sold_by": forms.Select(),
             "advance_amount": forms.TextInput(
                 attrs={
                     "placeholder": "0.00",
@@ -52,16 +48,6 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
                 }
             ),
             "payment_method": forms.Select(),
-            "invoice_date": AnimatedDatePickerWidget(
-                enable_time=True,
-                icon_class="fa-calendar-days",
-                attrs={"placeholder": "Select Date & Time"},
-            ),
-            "due_date": AnimatedDatePickerWidget(
-                enable_time=True,
-                icon_class="fa-calendar-check",
-                attrs={"placeholder": "Select Due Date & Time"},
-            ),
             "notes": forms.Textarea(
                 attrs={
                     "placeholder": "Enter any additional notes",
@@ -70,7 +56,8 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
         super().__init__(*args, **kwargs)
 
         # Add required field indicators
@@ -81,9 +68,6 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
         # Apply theme classes via mixin
         self.apply_theme_classes()
 
-        # Make due_date not required by default (will be handled in clean method)
-        self.fields["due_date"].required = False
-        self.fields["sold_by"].widget.attrs["class"] = "select-toggle"
         self.fields["payment_type"].widget.attrs["class"] = "select-toggle"
         self.fields["payment_method"].widget.attrs["class"] = "select-toggle"
         self.fields["discount_amount"].widget.attrs[
@@ -92,50 +76,31 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
         self.fields["advance_amount"].widget.attrs["class"] = "form-input indian-number"
         self.fields["amount"].widget.attrs["class"] = "form-input indian-number"
 
-        # Format initial datetime for animated datepicker
-        try:
-            if not self.instance.pk:
-                if not self.initial.get("invoice_date"):
-                    self.initial["invoice_date"] = timezone.now().strftime("%Y-%m-%dT%H:%M")
-            else:
-                if self.instance.invoice_date:
-                    self.initial["invoice_date"] = self.instance.invoice_date.strftime("%Y-%m-%dT%H:%M")
-                if self.instance.due_date:
-                    self.initial["due_date"] = self.instance.due_date.strftime("%Y-%m-%dT%H:%M")
-        except Exception as e:
-            logger.error("Error setting initial datetime: %s", e)
-
         # Set initial customer for new invoices
         try:
             if not self.instance.pk:
-                customer = Customer.objects.order_by("id").first()
-                if customer:
-                    self.fields["customer"].initial = customer
+                default_customer = Customer.get_default_customer()
+                if default_customer:
+                    self.fields["customer"].initial = default_customer
         except Exception as e:  # pylint: disable=broad-except
             logger.error("Error setting initial customer: %s", e)
 
-        # Filter sold_by queryset to show only commission users or admins as fallback
-        try:
-            # Get commissioned users or fall back to all active users
-            commissioned_users = CustomUser.objects.filter(
-                salaries__commission=True,
-                salaries__effective_to__isnull=True,
-                is_active=True,
-            ).distinct()
-
-            if not commissioned_users.exists():
-                commissioned_users = CustomUser.objects.filter(is_active=True)
-
-            self.fields["sold_by"].queryset = commissioned_users
-
-            # Set initial value only for new invoices
-            if not self.instance.pk:
-                first_user = commissioned_users.first()
-                if first_user:
-                    self.fields["sold_by"].initial = first_user
-
-        except Exception as e:  # pylint: disable=broad-except
-            logger.error("Error setting sold_by field: %s", e)
+    def save(self, commit=True):
+        """Save invoice instance and assign sold_by, invoice_date, and due_date if not already set."""
+        instance = super().save(commit=False)
+        if not getattr(instance, "sold_by_id", None) and self.user:
+            instance.sold_by = self.user
+        if not getattr(instance, "invoice_date", None):
+            instance.invoice_date = timezone.now()
+        if instance.payment_type == Invoice.PaymentType.CREDIT:
+            if not getattr(instance, "due_date", None):
+                instance.due_date = timezone.now() + timedelta(days=30)
+        elif instance.payment_type == Invoice.PaymentType.CASH:
+            instance.due_date = None
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
     def clean_amount(self):
         """Validate amount is not negative"""
@@ -166,20 +131,12 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
             )
         return advance_amount
 
-    def clean_due_date(self):
-        """Set default due date if not provided"""
-        due_date = self.cleaned_data.get("due_date")
-        if due_date is None or due_date == "":
-            return timezone.now() + timedelta(days=30)
-        return due_date
-
     def clean(self):
         """Cross-field validation and business logic"""
         cleaned_data = super().clean()
         amount = cleaned_data.get("amount")
         discount_amount = cleaned_data.get("discount_amount", 0)
         payment_type = cleaned_data.get("payment_type")
-        due_date = cleaned_data.get("due_date")
         customer = cleaned_data.get("customer")
 
         # Walk-in customer (default ID) must use CASH payment type
@@ -191,14 +148,9 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
             cleaned_data["payment_type"] = Invoice.PaymentType.CASH
             payment_type = Invoice.PaymentType.CASH
 
-        # For cash invoices, set due_date to None and advance_amount to 0
+        # For cash invoices, advance_amount must be 0
         if payment_type == Invoice.PaymentType.CASH:
-            cleaned_data["due_date"] = None
             cleaned_data["advance_amount"] = 0
-            # Note: payment_status will be set in the model's save method
-        # For credit invoices, due_date is required
-        elif payment_type == Invoice.PaymentType.CREDIT and not due_date:
-            raise forms.ValidationError("Due date is required for credit invoices")
 
         # Validate discount doesn't exceed amount
         if amount and discount_amount and discount_amount > amount:
@@ -207,6 +159,7 @@ class InvoiceForm(ThemedFormMixin, forms.ModelForm):
             )
 
         return cleaned_data
+
 
 
 class AuditTableForm(forms.ModelForm):

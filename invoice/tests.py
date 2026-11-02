@@ -339,3 +339,172 @@ class InvoiceDashboardFetchTests(TestCase):
         self.assertEqual(stats_t["net_amount"], 700.0)
 
 
+class InvoiceSoldByTests(TestCase):
+    """Tests ensuring sold_by, invoice_date, and due_date are handled automatically."""
+
+    def setUp(self):
+        from customer.models import Customer
+        self.user = create_test_user(is_staff=True, is_superuser=True)
+        self.other_user = create_test_user(is_staff=True, is_superuser=True, first_name="Other")
+        Customer.get_default_customer()
+        self.customer = create_test_customer(created_by=self.user)
+
+    def test_sold_by_and_dates_not_in_invoice_form_fields(self):
+        from invoice.form import InvoiceForm
+        form = InvoiceForm(user=self.user)
+        self.assertNotIn("sold_by", form.fields)
+        self.assertNotIn("invoice_date", form.fields)
+        self.assertNotIn("due_date", form.fields)
+
+    def test_invoice_form_save_assigns_user_and_dates(self):
+        from invoice.form import InvoiceForm
+        form_data = {
+            "customer": self.customer.id,
+            "amount": "1000.00",
+            "discount_amount": "0.00",
+            "advance_amount": "0.00",
+            "payment_type": "CASH",
+            "payment_method": "CASH",
+        }
+        form = InvoiceForm(data=form_data, user=self.user)
+        self.assertTrue(form.is_valid(), form.errors)
+        invoice = form.save(commit=False)
+        self.assertEqual(invoice.sold_by, self.user)
+        self.assertIsNotNone(invoice.invoice_date)
+        self.assertIsNone(invoice.due_date)
+
+    def test_invoice_form_credit_auto_assigns_due_date(self):
+        from invoice.form import InvoiceForm
+        form_data = {
+            "customer": self.customer.id,
+            "amount": "1000.00",
+            "discount_amount": "0.00",
+            "advance_amount": "100.00",
+            "payment_type": "CREDIT",
+            "payment_method": "CASH",
+        }
+        form = InvoiceForm(data=form_data, user=self.user)
+        self.assertTrue(form.is_valid(), form.errors)
+        invoice = form.save(commit=False)
+        self.assertEqual(invoice.sold_by, self.user)
+        self.assertIsNotNone(invoice.invoice_date)
+        self.assertIsNotNone(invoice.due_date)
+
+    def test_create_invoice_view_sets_login_user_as_sold_by(self):
+        from django.urls import reverse
+        from cart.models import Cart, CartItem
+        from invoice.models import Invoice
+
+        self.client.force_login(self.user)
+        variant = create_test_variant(
+            purchase_price=Decimal("100.00"),
+            mrp=Decimal("200.00"),
+            quantity=Decimal("10"),
+            user=self.user,
+        )
+        cart = Cart.objects.create(name="Test Cart", created_by=self.user)
+        CartItem.objects.create(
+            cart=cart,
+            product_variant=variant,
+            quantity=Decimal("2"),
+            price=Decimal("200.00"),
+        )
+
+        response = self.client.post(
+            reverse("invoice:create_invoice", kwargs={"pk": cart.id}),
+            data={
+                "customer": self.customer.id,
+                "amount": "400.00",
+                "discount_amount": "0.00",
+                "advance_amount": "0.00",
+                "payment_type": "CASH",
+                "payment_method": "CASH",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        invoice = Invoice.objects.filter(customer=self.customer).latest("id")
+        self.assertRedirects(
+            response,
+            reverse("invoice:intermediate", kwargs={"pk": invoice.id}),
+        )
+        self.assertEqual(invoice.sold_by, self.user)
+        self.assertEqual(invoice.created_by, self.user)
+        self.assertIsNotNone(invoice.invoice_date)
+
+    def test_intermediate_page_view(self):
+        from django.urls import reverse
+
+        invoice = create_test_invoice(
+            customer=self.customer,
+            sold_by=self.user,
+            created_by=self.user,
+            amount=Decimal("400.00"),
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("invoice:intermediate", kwargs={"pk": invoice.id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "intermediate_page.html")
+        self.assertEqual(response.context["invoice_no"], invoice.id)
+
+    def test_invoice_edit_view_preserves_sold_by(self):
+        from django.urls import reverse
+
+        invoice = create_test_invoice(
+            customer=self.customer,
+            sold_by=self.user,
+            created_by=self.user,
+            amount=Decimal("1000.00"),
+            payment_type="CASH",
+        )
+        self.client.force_login(self.other_user)
+        response = self.client.post(
+            reverse("invoice:edit", kwargs={"pk": invoice.id}),
+            data={
+                "customer": self.customer.id,
+                "amount": "1000.00",
+                "discount_amount": "50.00",
+                "advance_amount": "0.00",
+                "payment_type": "CASH",
+                "payment_method": "CASH",
+            },
+        )
+        self.assertRedirects(response, reverse("invoice:detail", kwargs={"pk": invoice.id}))
+        invoice.refresh_from_db()
+        self.assertEqual(invoice.sold_by, self.user)
+        self.assertEqual(invoice.modified_by, self.other_user)
+        self.assertEqual(invoice.discount_amount, Decimal("50.00"))
+
+    def test_fetch_invoices_sort_by_payment_method(self):
+        from django.urls import reverse
+
+        inv1 = create_test_invoice(
+            customer=self.customer,
+            sold_by=self.user,
+            created_by=self.user,
+            amount=Decimal("100.00"),
+        )
+        inv1.payment_method = "CASH"
+        inv1.save(update_fields=["payment_method"])
+
+        inv2 = create_test_invoice(
+            customer=self.customer,
+            sold_by=self.user,
+            created_by=self.user,
+            amount=Decimal("200.00"),
+        )
+        inv2.payment_method = "UPI"
+        inv2.save(update_fields=["payment_method"])
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse("invoice:fetch"),
+            data={"sort": "payment_method"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "invoice/fetch.html")
+
+
+
+

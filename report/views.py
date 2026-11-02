@@ -15,6 +15,7 @@ from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from django.template.loader import get_template
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from weasyprint import HTML
 
 from barcode import Code128
@@ -150,6 +151,7 @@ def generate_pdf_bytes(template_name, context, base_url=None):
     )
 
 
+@xframe_options_sameorigin
 def create_invoice(request, pk):
     """Create and render an invoice page for the given invoice ID."""
     template = None

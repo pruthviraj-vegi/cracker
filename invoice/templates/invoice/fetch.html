@@ -43,37 +43,9 @@
                     </small>
                 </div>
             </td>
-            <td>
-                {% if invoice.is_cancelled %}
-                    <span class="badge badge-warning">
-                        <i class="fas fa-times-circle"></i>
-                        Cancelled
-                    </span>
-                {% elif invoice.payment_status == 'PAID' %}
-                    <span class="badge badge-success">
-                        <i class="fas fa-check-circle"></i>
-                        Paid
-                    </span>
-                {% elif invoice.payment_status == 'PARTIALLY_PAID' %}
-                    <span class="badge badge-warning">
-                        <i class="fas fa-clock"></i>
-                        Partial
-                    </span>
-                {% elif invoice.payment_status == 'VOID' %}
-                    <span class="badge badge-danger">
-                        <i class="fas fa-times-circle"></i>
-                        Void
-                    </span>
-                {% else %}
-                    <span class="badge badge-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                        Unpaid
-                    </span>
-                {% endif %}
-            </td>
-            <td class="mobile-hide">{{ invoice.invoice_date|date:"M d, Y" }}</td>
-            <td class="mobile-hide">{{ invoice.due_date|date:"M d, Y" }}</td>
+            <td class="mobile-hide">{{ invoice.payment_method }}</td>
             <td class="mobile-hide">{{ invoice.sold_by.username }}</td>
+            <td class="mobile-hide">{{ invoice.invoice_date|date:"M d, Y" }}</td>
             <td>
                 <div class="action-buttons">
                     <a href="{% url 'invoice:detail' invoice.id %}"

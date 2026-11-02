@@ -39,14 +39,13 @@
                 </div>
                 <h3 class="fw-bold mb-2" style="color: var(--text-primary);">Invoice Created Successfully</h3>
 
-                <!-- Status Area (countdown / spinner / success / error) -->
+                <!-- Status Area (spinner / success / error) -->
                 <div id="statusArea" class="my-3">
-                    <!-- 3-Second Countdown Notice for Direct Print -->
-                    <div id="statusCountdown" class="alert alert-info py-2 px-3 mb-2 d-none" role="alert" style="border-radius: var(--border-radius-md, 8px);">
-                        <div class="d-flex align-items-center justify-content-center gap-2">
-                            <i class="fas fa-keyboard text-primary fs-5"></i>
+                    <div id="statusNotice" class="alert alert-info py-2 px-3 mb-2" role="alert" style="border-radius: var(--border-radius-md, 8px);">
+                        <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                            <i class="fas fa-print text-primary fs-5"></i>
                             <span style="color: var(--text-primary); font-size: 0.95rem;">
-                                Press <kbd class="px-2 py-1 bg-dark text-white rounded">Enter</kbd> to Print or auto-redirecting in <strong id="timerSeconds" class="badge bg-primary text-white fs-6">3</strong>s
+                                Initiating print... Redirecting to new cart when printed or cancelled.
                             </span>
                         </div>
                     </div>
@@ -61,7 +60,7 @@
                         <span class="display-5 text-success d-block mb-2">
                             <i class="fas fa-print"></i>
                         </span>
-                        <p class="text-success fw-bold mb-0">Printed successfully! Redirecting...</p>
+                        <p class="text-success fw-bold mb-0">Printed successfully! Redirecting to new cart...</p>
                     </div>
                     <div id="statusError" class="d-none">
                         <div class="alert alert-warning border-0 py-2 px-3 d-inline-block text-start mb-2" role="alert">
@@ -76,24 +75,60 @@
                     </div>
                 </div>
 
+                <!-- Invoice Summary Details -->
+                {% if invoice %}
+                <div class="card mb-3 text-start" style="background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: var(--border-radius-md, 8px);">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary">Invoice Number:</span>
+                            <strong style="color: var(--text-primary);">{{ invoice.invoice_number }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary">Customer:</span>
+                            <span style="color: var(--text-primary);">{{ invoice.customer.name }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-secondary">Payment Mode:</span>
+                            <span class="badge bg-secondary">{{ invoice.get_payment_type_display }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                            <span class="text-secondary fw-bold">Total Amount:</span>
+                            <span class="fw-bold fs-5 text-primary">{{ invoice.total_payable|currency }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Action Buttons — Always visible -->
                 <div class="d-flex flex-column gap-2 mt-3" id="actionButtons">
                     {% if is_direct_print_enabled %}
                     <button type="button" id="directPrintBtn" class="btn btn-primary w-100 justify-content-center">
                         <i class="fas fa-print me-2"></i> Direct Print <span class="badge bg-light text-dark ms-2">Enter</span>
                     </button>
-                    {% endif %}
-                    <a href="{% url 'report:invoice_pdf' invoice_no %}" target="_blank" class="btn {% if is_direct_print_enabled %}btn-secondary{% else %}btn-primary{% endif %} w-100 justify-content-center" id="pdfPreviewBtn">
+                    <a href="{% url 'report:invoice_pdf' invoice_no %}" target="_blank" class="btn btn-secondary w-100 justify-content-center" id="pdfPreviewBtn">
                         <i class="fas fa-file-pdf me-2"></i> View PDF / Print Preview
                     </a>
+                    {% else %}
+                    <button type="button" id="printAgainBtn" class="btn btn-primary w-100 justify-content-center">
+                        <i class="fas fa-print me-2"></i> Print Again <span class="badge bg-light text-dark ms-2">Enter</span>
+                    </button>
+                    <a href="{% url 'report:invoice_pdf' invoice_no %}" target="_blank" class="btn btn-outline-secondary w-100 justify-content-center" id="pdfPreviewBtn">
+                        <i class="fas fa-file-pdf me-2"></i> View PDF
+                    </a>
+                    {% endif %}
                     <a href="{% url 'cart:auto_cart_create' %}" class="btn btn-outline-secondary w-100 justify-content-center" id="newCartBtn">
-                        <i class="fas fa-arrow-right me-2"></i> New Invoice / Go to Cart
+                        <i class="fas fa-arrow-right me-2"></i> Cancel & Go to Cart <span class="badge bg-light text-dark ms-2">Esc</span>
                     </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if not is_direct_print_enabled %}
+<!-- Hidden Iframe to render invoice and trigger print immediately -->
+<iframe id="printIframe" src="{% url 'report:invoice_pdf' invoice_no %}" style="position: absolute; width: 0; height: 0; border: 0; visibility: hidden;"></iframe>
+{% endif %}
 {% endblock content %}
 
 {% block extra_js %}
@@ -111,12 +146,18 @@
         }
 
         let isPrinting = false;
-        let countdownTimer = null;
-        let timeLeft = 3;
+        let redirected = false;
+
+        function redirectToCart() {
+            if (!redirected) {
+                redirected = true;
+                window.location.href = autoRedirectUrl;
+            }
+        }
 
         // --- UI Helpers ---
         function showLoader(msg) {
-            $('#statusCountdown').addClass('d-none');
+            $('#statusNotice').addClass('d-none');
             $('#statusLoader').removeClass('d-none');
             $('#statusSuccess, #statusError').addClass('d-none');
             $('#statusMessage').text(msg);
@@ -124,32 +165,24 @@
         }
 
         function showSuccess() {
-            $('#statusCountdown').addClass('d-none');
+            $('#statusNotice').addClass('d-none');
             $('#statusSuccess').removeClass('d-none');
             $('#statusLoader, #statusError').addClass('d-none');
             $('#directPrintBtn').prop('disabled', true);
         }
 
         function showError(msg) {
-            $('#statusCountdown').addClass('d-none');
+            $('#statusNotice').addClass('d-none');
             $('#statusError').removeClass('d-none');
             $('#statusLoader, #statusSuccess').addClass('d-none');
             $('#errorMessageText').text(msg);
             $('#directPrintBtn').prop('disabled', false);
         }
 
-        function clearCountdown() {
-            if (countdownTimer) {
-                clearInterval(countdownTimer);
-                countdownTimer = null;
-            }
-        }
-
         // --- Direct Print ---
         function triggerDirectPrint() {
             if (isPrinting) return;
             isPrinting = true;
-            clearCountdown();
 
             showLoader('Sending to printer ({{ shop_details.printer_ip|default:"thermal printer" }})...');
 
@@ -162,9 +195,7 @@
                         if (typeof showNotification === 'function') {
                             showNotification('Invoice printed successfully!', 'success');
                         }
-                        setTimeout(function () {
-                            window.location.href = autoRedirectUrl;
-                        }, 1500);
+                        setTimeout(redirectToCart, 1500);
                     } else {
                         isPrinting = false;
                         showError(response.error || 'Failed to print.');
@@ -182,55 +213,98 @@
             });
         }
 
-        // --- Bind Direct Print Button ---
+        // --- Browser Print via Hidden Iframe ---
+        function triggerBrowserPrint() {
+            const iframe = document.getElementById('printIframe');
+            if (!iframe) return;
+
+            showLoader('Opening print dialog...');
+
+            function onPrintFinished() {
+                redirectToCart();
+            }
+
+            // Listen for afterprint on iframe content window and parent window
+            try {
+                if (iframe.contentWindow) {
+                    iframe.contentWindow.addEventListener('afterprint', onPrintFinished);
+                }
+            } catch (e) {}
+            window.addEventListener('afterprint', onPrintFinished);
+
+            let printInvoked = false;
+
+            // When user returns to window after print dialog closes, redirect if afterprint did not fire
+            window.addEventListener('focus', function () {
+                if (printInvoked) {
+                    setTimeout(onPrintFinished, 600);
+                }
+            });
+
+            function doPrint() {
+                try {
+                    const frameWin = iframe.contentWindow;
+                    frameWin.focus();
+                    printInvoked = true;
+                    frameWin.print();
+                } catch (e) {
+                    console.error('Iframe print error:', e);
+                    // Fallback: window.open
+                    window.open(pdfUrl, '_blank');
+                }
+            }
+
+            // Trigger print once iframe is loaded
+            if (iframe.contentDocument && iframe.contentDocument.readyState === 'complete') {
+                setTimeout(doPrint, 200);
+            } else {
+                iframe.onload = function () {
+                    setTimeout(doPrint, 200);
+                };
+            }
+        }
+
+        // Trigger print immediately on intermediate page load
+        if (isDirectPrint) {
+            triggerDirectPrint();
+        } else {
+            triggerBrowserPrint();
+        }
+
+        // --- Bind Action Buttons ---
         $('#directPrintBtn').on('click', function (e) {
             e.preventDefault();
             triggerDirectPrint();
         });
 
-        // --- Prevent Auto-redirect if User Clicks Buttons ---
-        $('#pdfPreviewBtn').on('click', function () {
-            clearCountdown();
+        $('#printAgainBtn').on('click', function (e) {
+            e.preventDefault();
+            triggerBrowserPrint();
         });
 
-        $('#newCartBtn').on('click', function () {
-            clearCountdown();
+        $('#newCartBtn').on('click', function (e) {
+            e.preventDefault();
+            redirectToCart();
         });
 
-        // --- Keyboard Handler (Enter to print, Esc to skip/go to cart) ---
+        // --- Keyboard Handler (Enter to print, Esc to redirect to cart) ---
         $(document).on('keydown', function (e) {
+            if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+                return;
+            }
+
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (isDirectPrint && !isPrinting) {
+                if (isDirectPrint) {
                     triggerDirectPrint();
+                } else {
+                    triggerBrowserPrint();
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
-                clearCountdown();
-                window.location.href = autoRedirectUrl;
+                redirectToCart();
             }
         });
-
-        // --- Auto-trigger / Countdown based on direct print mode ---
-        if (isDirectPrint) {
-            $('#statusCountdown').removeClass('d-none');
-            $('#timerSeconds').text(timeLeft);
-
-            countdownTimer = setInterval(function () {
-                timeLeft -= 1;
-                if (timeLeft > 0) {
-                    $('#timerSeconds').text(timeLeft);
-                } else {
-                    clearCountdown();
-                    window.location.href = autoRedirectUrl;
-                }
-            }, 1000);
-        } else {
-            // Auto-redirect after a short delay since auto window.open is blocked by browsers
-            setTimeout(function () {
-                window.location.href = autoRedirectUrl;
-            }, 1500);
-        }
     });
 </script>
 {% endblock extra_js %}

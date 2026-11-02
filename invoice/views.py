@@ -614,6 +614,7 @@ VALID_SORT_FIELDS = {
     "amount",
     "payment_status",
     "payment_type",
+    "payment_method",
     "invoice_date",
     "due_date",
     "created_at",
@@ -791,11 +792,11 @@ class CreateInvoice(RequiredPermissionMixin, View):
             messages.error(request, "Cart is empty")
             return redirect("cart:get_cart_data", pk=cart.id)
         form = self.form_class(
+            user=request.user,
             initial={
                 "payment_type": Invoice.PaymentType.CASH,
                 "amount": cart_total,
-                "due_date": timezone.now() + timedelta(days=30),
-            }
+            },
         )
         context = {
             "cart": cart,
@@ -813,14 +814,14 @@ class CreateInvoice(RequiredPermissionMixin, View):
         if int(cart_total) <= 0:
             messages.error(request, "Cart is empty")
             return redirect("cart:get_cart_data", pk=cart.id)
-        form = self.form_class(request.POST)
+        form = self.form_class(request.POST, user=request.user)
         if form.is_valid():
             with transaction.atomic():
                 invoice = form.save(commit=False)
                 invoice.cart_no = cart.id
                 invoice.amount = cart_total
-                invoice.modified_by = request.user
                 invoice.created_by = request.user
+                invoice.modified_by = request.user
                 invoice.save()
 
                 for item in cart.cart_items.select_related(
@@ -848,30 +849,40 @@ class CreateInvoice(RequiredPermissionMixin, View):
 
                 cart.delete()
                 messages.success(request, "Invoice created successfully")
-                shop_details = ShopDetails.get_active()
-                report_config = ReportConfiguration.get_default_config(
-                    ReportConfiguration.ReportType.INVOICE
-                )
-                is_direct_print_enabled = bool(
-                    report_config and report_config.is_direct_print_enabled
-                ) or bool(
-                    shop_details and getattr(shop_details, "is_direct_print_enabled", False)
-                )
-                return render(
-                    request,
-                    "intermediate_page.html",
-                    {
-                        "invoice_no": invoice.id,
-                        "shop_details": shop_details,
-                        "report_config": report_config,
-                        "is_direct_print_enabled": is_direct_print_enabled,
-                    },
-                )
+                return redirect("invoice:intermediate", pk=invoice.id)
 
         else:
             context = {"cart": cart, "form": form, "title": "Create Invoice"}
             logger.error("Form invalid: %s", form.errors)
             return render(request, self.template_name, context)
+
+
+@required_permission("invoice.view_invoice")
+def intermediate_page(request, pk):
+    """Display intermediate success page for printing and post-creation navigation."""
+    invoice = get_object_or_404(
+        Invoice.objects.select_related("customer", "sold_by"), id=pk
+    )
+    shop_details = ShopDetails.get_active()
+    report_config = ReportConfiguration.get_default_config(
+        ReportConfiguration.ReportType.INVOICE
+    )
+    is_direct_print_enabled = bool(
+        report_config and report_config.is_direct_print_enabled
+    ) or bool(
+        shop_details and getattr(shop_details, "is_direct_print_enabled", False)
+    )
+    return render(
+        request,
+        "intermediate_page.html",
+        {
+            "invoice": invoice,
+            "invoice_no": invoice.id,
+            "shop_details": shop_details,
+            "report_config": report_config,
+            "is_direct_print_enabled": is_direct_print_enabled,
+        },
+    )
 
 
 class InvoiceDetail(RequiredPermissionMixin, View):
@@ -938,7 +949,7 @@ class InvoiceEdit(RequiredPermissionMixin, View):
     def get(self, request, pk):
         """Display the edit form for an existing invoice."""
         invoice = get_object_or_404(Invoice, id=pk)
-        form = self.form_class(instance=invoice)
+        form = self.form_class(instance=invoice, user=request.user)
         context = {
             "invoice": invoice,
             "form": form,
@@ -950,7 +961,7 @@ class InvoiceEdit(RequiredPermissionMixin, View):
     def post(self, request, pk):
         """Process invoice update with payment type change handling."""
         invoice = get_object_or_404(Invoice, id=pk)
-        form = self.form_class(request.POST, instance=invoice)
+        form = self.form_class(request.POST, instance=invoice, user=request.user)
 
         new_payment_type = request.POST.get("payment_type")
         old_payment_type = invoice.payment_type
@@ -964,9 +975,9 @@ class InvoiceEdit(RequiredPermissionMixin, View):
                 and old_payment_type == Invoice.PaymentType.CASH
             ):
                 # When changing from CASH to CREDIT: reset paid_amount to 0
-                # For CASH invoices, paid_amount = amount - discount_amount
-                # For CREDIT invoices, paid_amount should start at 0
                 invoice_instance.paid_amount = Decimal("0")
+
+            invoice_instance.modified_by = request.user
 
             # Model's save() will handle CASH invoices automatically
             # (setting paid_amount = amount - discount_amount and advance_amount = 0)
