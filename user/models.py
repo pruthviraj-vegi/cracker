@@ -104,6 +104,11 @@ class CustomUser(AbstractBaseUser, PermissionsMixin, SoftDeleteModel):
         return str(self.first_name) + " " + str(self.last_name)
 
     @property
+    def name(self):
+        """Return the display name of the user."""
+        return self.full_name.strip()
+
+    @property
     def current_salary(self):
         """Get the current active salary record (effective_to is None) with prefetch support."""
         if hasattr(self, "current_salaries"):

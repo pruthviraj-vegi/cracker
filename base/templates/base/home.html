@@ -121,58 +121,133 @@
       </div>
     </div>
 
-    <!-- ── ANALYTICS SECTION ── -->
-    <!-- Stock Comparison Chart (Controlled Compact Height) -->
-    <div class="chart-card revenue-chart-card dash-stagger-item" style="--delay: 3;">
-      <div class="chart-header">
-        <h3 class="chart-title">
-          <i class="fa-solid fa-arrow-right-arrow-left me-1"></i>
-          Stock In vs Stock Out
-        </h3>
-        <div class="chart-summary-stats">
-          <div class="stat-item">
-            <span class="stat-label-small">
-              <span class="legend-dot text-success"></span>
-              Stock In
-            </span>
-            <span class="stat-value-small" id="revCurrentTotal">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label-small">
-              <span class="legend-dot text-danger"></span>
-              Stock Out
-            </span>
-            <span class="stat-value-small" id="revPreviousTotal">0</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-label-small">Delta</span>
-            <span class="stat-change" id="revChange">--</span>
-          </div>
+    <!-- ── SECONDARY METRICS STRIP: SALES & ITEM VOLUME ── -->
+    <div class="kpi-strip dash-stagger-item mt-3 mb-3" style="--delay: 2.5;">
+      <div class="kpi-strip-card">
+        <div class="kpi-icon-wrap" style="background: var(--primary-bg, rgba(37,99,235,0.1)); color: var(--primary);">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-label">Total Sales</span>
+          <span class="kpi-value"><span class="counting-number" id="heroTotalSales" data-count="{{ today_sales|default:0 }}" data-decimals="2">{{ today_sales|default:"0.00" }}</span></span>
         </div>
       </div>
-      <div class="chart-container-compact">
-        <canvas id="comparisonChart"></canvas>
+
+      <div class="kpi-strip-card">
+        <div class="kpi-icon-wrap" style="background: var(--success-bg, rgba(16,185,129,0.1)); color: var(--success);">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-label">Items Sold (Qty)</span>
+          <span class="kpi-value"><span class="counting-number" id="heroTotalItemsQty" data-count="{{ today_quantity|default:0 }}" data-decimals="2">{{ today_quantity|default:"0" }}</span></span>
+        </div>
+      </div>
+
+      <div class="kpi-strip-card">
+        <div class="kpi-icon-wrap" style="background: var(--warning-bg, rgba(245,158,11,0.1)); color: var(--warning);">
+          <i class="fa-solid fa-barcode"></i>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-label">No. of Items Billed</span>
+          <span class="kpi-value"><span class="counting-number" id="heroTotalItemsCount" data-count="{{ today_items_count|default:0 }}">{{ today_items_count|default:"0" }}</span></span>
+        </div>
+      </div>
+
+      <div class="kpi-strip-card">
+        <div class="kpi-icon-wrap" style="background: rgba(139,92,246,0.1); color: #8b5cf6;">
+          <i class="fa-solid fa-tags"></i>
+        </div>
+        <div class="kpi-body">
+          <span class="kpi-label">Total Selling Price</span>
+          <span class="kpi-value"><span class="counting-number" id="heroTotalSellingPrice" data-count="{{ today_selling_price|default:today_mrp|default:0 }}" data-decimals="2">{{ today_selling_price|default:today_mrp|default:"0.00" }}</span></span>
+        </div>
       </div>
     </div>
 
-    <!-- Payment Method Donut (Balanced Card) -->
-    <div class="chart-card dash-stagger-item" style="--delay: 5;">
-      <div class="chart-header">
-        <h3 class="chart-title">
-          <i class="fa-solid fa-receipt me-1"></i>
-          Payment Method Mix (Cash &amp; Settled Collections)
-        </h3>
-      </div>
-      <div class="chart-row">
-        <div class="donut-wrap">
-          <canvas id="paymentMethodChart" width="220" height="220"></canvas>
-          <div class="center-info">
-            <div class="center-label">TOTAL</div>
-            <div class="center-val" id="pmCenterVal">0</div>
-            <div class="center-pct" id="pmCenterPct">100%</div>
+    <!-- ── ANALYTICS SECTION: Three Donut/Pie Charts in a Single Row ── -->
+    <div class="charts-three-col-grid dash-stagger-item mt-3 mb-3" style="--delay: 3;">
+      <!-- Quantity by Variant Donut Card -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">
+            <i class="fa-solid fa-chart-pie me-1"></i>
+            Quantity by Variant
+          </h3>
+          <div class="stat-item py-1 px-2" style="min-width: unset;">
+            <span class="stat-label-small">
+              <span class="legend-dot text-primary"></span>
+              Total Qty
+            </span>
+            <span class="stat-value-small fw-bold counting-number" id="dashVariantTotalQty" data-count="0" data-decimals="2">0</span>
           </div>
         </div>
-        <div class="legend" id="paymentMethodLegend"></div>
+        <div class="chart-row">
+          <div class="donut-wrap">
+            <canvas id="variantQtyChart" width="180" height="180"></canvas>
+            <div class="center-info">
+              <div class="center-label">TOTAL QTY</div>
+              <div class="center-val" id="vqCenterVal">0</div>
+              <div class="center-pct" id="vqCenterPct">100%</div>
+            </div>
+          </div>
+          <div class="legend" id="variantQtyLegend"></div>
+        </div>
+      </div>
+
+      <!-- Selling Price by Variant Donut Card -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">
+            <i class="fa-solid fa-tags me-1"></i>
+            Selling Price by Variant
+          </h3>
+          <div class="stat-item py-1 px-2" style="min-width: unset;">
+            <span class="stat-label-small">
+              <span class="legend-dot text-success"></span>
+              Total Selling Price
+            </span>
+            <span class="stat-value-small fw-bold counting-number" id="dashVariantTotalSellingPrice" data-count="0" data-decimals="2">0.00</span>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="donut-wrap">
+            <canvas id="variantSellingPriceChart" width="180" height="180"></canvas>
+            <div class="center-info">
+              <div class="center-label">SELLING PRICE</div>
+              <div class="center-val" id="vspCenterVal">0.00</div>
+              <div class="center-pct" id="vspCenterPct">100%</div>
+            </div>
+          </div>
+          <div class="legend" id="variantSellingPriceLegend"></div>
+        </div>
+      </div>
+
+      <!-- Payment Method Donut Card -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">
+            <i class="fa-solid fa-receipt me-1"></i>
+            Payment Method Mix
+          </h3>
+          <div class="stat-item py-1 px-2" style="min-width: unset;">
+            <span class="stat-label-small">
+              <span class="legend-dot text-warning"></span>
+              Total Inflow
+            </span>
+            <span class="stat-value-small fw-bold counting-number" id="dashPmTotalReceived" data-count="0" data-decimals="2">0.00</span>
+          </div>
+        </div>
+        <div class="chart-row">
+          <div class="donut-wrap">
+            <canvas id="paymentMethodChart" width="180" height="180"></canvas>
+            <div class="center-info">
+              <div class="center-label">TOTAL</div>
+              <div class="center-val" id="pmCenterVal">0.00</div>
+              <div class="center-pct" id="pmCenterPct">100%</div>
+            </div>
+          </div>
+          <div class="legend" id="paymentMethodLegend"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -201,10 +276,13 @@
     let lastDashboardData = null;
 
     // Initialize Charts
-    const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
+    const variantQtyCtx = document.getElementById('variantQtyChart').getContext('2d');
+    const variantSellingPriceCanvas = document.getElementById('variantSellingPriceChart') || document.getElementById('variantMrpChart');
+    const variantSellingPriceCtx = variantSellingPriceCanvas ? variantSellingPriceCanvas.getContext('2d') : null;
     const paymentMethodCtx = document.getElementById('paymentMethodChart').getContext('2d');
 
-    let comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
+    let variantQtyChart = ModernCharts.initDoughnut(variantQtyCtx);
+    let variantSellingPriceChart = variantSellingPriceCtx ? ModernCharts.initDoughnut(variantSellingPriceCtx) : null;
     let paymentMethodChart = ModernCharts.initDoughnut(paymentMethodCtx);
 
     // Fetch Data Function
@@ -252,13 +330,57 @@
     function updateDashboard(data) {
       if (!data) return;
       const stats = data.stats || {};
+      const sellingPriceTotal = stats.total_selling_price !== undefined ? stats.total_selling_price : (stats.total_mrp || 0);
 
       // Update Animated Counters
       if (typeof updateAllCounters === 'function') {
         updateAllCounters({
           heroTotalReceived: stats.total_received || 0,
-          heroTotalInvoices: stats.total_invoices || 0,
+          heroTotalInvoices: stats.cash_invoices || stats.total_invoices || 0,
+          heroTotalSales: stats.total_sales || 0,
+          heroTotalItemsQty: stats.total_quantity || 0,
+          heroTotalItemsCount: stats.total_items_count || 0,
+          heroTotalSellingPrice: sellingPriceTotal,
+          heroTotalMrp: sellingPriceTotal,
+          dashVariantTotalQty: stats.total_quantity || 0,
+          dashVariantTotalSellingPrice: sellingPriceTotal,
+          dashVariantTotalMrp: sellingPriceTotal,
+          dashPmTotalReceived: stats.total_received || 0,
         });
+      }
+
+      // Update Quantity by Variant Donut Chart
+      ModernCharts.updateDoughnut(
+        variantQtyChart,
+        'variantQtyLegend',
+        data.variant_qty_breakdown,
+        {
+          label: 'name',
+          count: 'count',
+          amount: 'quantity',
+          percentage: 'percentage',
+          centerLabel: 'TOTAL QTY',
+          minDecimals: 0,
+          maxDecimals: 2
+        }
+      );
+
+      // Update Selling Price by Variant Donut Chart
+      if (variantSellingPriceChart) {
+        ModernCharts.updateDoughnut(
+          variantSellingPriceChart,
+          'variantSellingPriceLegend',
+          data.variant_selling_price_breakdown || data.variant_mrp_breakdown,
+          {
+            label: 'name',
+            count: 'count',
+            amount: 'selling_price',
+            percentage: 'percentage',
+            centerLabel: 'SELLING PRICE',
+            minDecimals: 2,
+            maxDecimals: 2
+          }
+        );
       }
 
       // Update Payment Method Donut Chart
@@ -268,17 +390,6 @@
         data.payment_method_breakdown,
         { label: 'payment_method', count: 'count', amount: 'amount', percentage: 'percentage' }
       );
-
-      // Update Stock Comparison Chart
-      if (data.comparison_data) {
-        const { currentData, previousData } = ModernCharts.updateRevenueChart(comparisonChart, data.comparison_data);
-
-        ModernCharts.updateSummaryStats(currentData, previousData, {
-          current: 'revCurrentTotal',
-          previous: 'revPreviousTotal',
-          change: 'revChange'
-        }, { inverted: true });
-      }
     }
 
     // Initialize styled date filter dropdown
@@ -301,10 +412,14 @@
     // Seamless chart re-render when theme changes (instant, 0ms, no network calls)
     document.addEventListener('themeChanged', function() {
       requestAnimationFrame(function() {
-        comparisonChart.destroy();
+        variantQtyChart.destroy();
+        if (variantSellingPriceChart) variantSellingPriceChart.destroy();
         paymentMethodChart.destroy();
 
-        comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
+        variantQtyChart = ModernCharts.initDoughnut(variantQtyCtx);
+        if (variantSellingPriceCtx) {
+          variantSellingPriceChart = ModernCharts.initDoughnut(variantSellingPriceCtx);
+        }
         paymentMethodChart = ModernCharts.initDoughnut(paymentMethodCtx);
 
         if (lastDashboardData) {

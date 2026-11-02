@@ -173,10 +173,10 @@
                class="dropdown-item {% if request.resolver_match.namespace == 'customer' and request.resolver_match.url_name == 'create' %}active{% endif %}">Add
                Customer</a>
             {% endif %}
-            {% comment %} {% if perms.customer.view_customercreditsummary %}
+            {% if perms.customer.view_customercreditsummary %}
             <a href="{% url 'customer:credit_home' %}"
                class="dropdown-item {% if request.resolver_match.url_name == 'credit_home' %}active{% endif %}">Credits</a>
-            {% endif %} {% endcomment %}
+            {% endif %}
          </div>
       </li>
       {% endif %}

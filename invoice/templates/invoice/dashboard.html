@@ -186,42 +186,8 @@
             </div>
         </div>
 
-        <!-- ── ANALYTICS SECTION ── -->
-        <!-- Revenue Comparison Chart (Controlled compact height) -->
-        <div class="chart-card revenue-chart-card dash-stagger-item" style="--delay: 4;">
-            <div class="chart-header">
-                <h3 class="chart-title">
-                    <i class="fa-solid fa-chart-area me-1"></i>
-                    Revenue Trajectory
-                </h3>
-                <div class="chart-summary-stats">
-                    <div class="stat-item">
-                        <span class="stat-label-small">
-                            <span class="legend-dot text-primary"></span>
-                            Present
-                        </span>
-                        <span class="stat-value-small" id="revCurrentTotal">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label-small">
-                            <span class="legend-dot text-secondary"></span>
-                            Past
-                        </span>
-                        <span class="stat-value-small" id="revPreviousTotal">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label-small">Delta</span>
-                        <span class="stat-change" id="revChange">--</span>
-                    </div>
-                </div>
-            </div>
-            <div class="chart-container-compact">
-                <canvas id="revenueChart"></canvas>
-            </div>
-        </div>
-
         <!-- Two Pie/Donut Charts Side by Side (Balanced 50% / 50%) -->
-        <div class="charts-two-col-grid dash-stagger-item" style="--delay: 5;">
+        <div class="charts-two-col-grid dash-stagger-item" style="--delay: 4;">
             <!-- Payment Status Donut -->
             <div class="chart-card">
                 <div class="chart-header">
@@ -291,11 +257,9 @@
         let lastDashboardData = null;
 
         // Initialize Charts
-        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
         const paymentCtx = document.getElementById('paymentStatusChart').getContext('2d');
         const categoryCtx = document.getElementById('categoryChart').getContext('2d');
 
-        let revenueChart = ModernCharts.initRevenueChart(revenueCtx);
         let paymentChart = ModernCharts.initDoughnut(paymentCtx);
         let categoryChart = ModernCharts.initDoughnut(categoryCtx);
 
@@ -428,26 +392,22 @@
                 creditBar.setAttribute('title', `Credit Ledger: ${creditPct}% (${formatINR(creditAmt)})`);
             }
 
-            // 5. Update Revenue Line Chart & Summary
+            // 5. Sync Delta Badge in Hero Card if comparison data exists
             if (data.comparison_data) {
-                const { currentData, previousData } = ModernCharts.updateRevenueChart(revenueChart, data.comparison_data);
+                const cData = data.comparison_data.current_period ? data.comparison_data.current_period.data : [];
+                const pData = data.comparison_data.previous_period ? data.comparison_data.previous_period.data : [];
+                const currTotal = cData.reduce((a, b) => a + (b.amount || 0), 0);
+                const prevTotal = pData.reduce((a, b) => a + (b.amount || 0), 0);
+                const totalChange = prevTotal > 0 ? ((currTotal - prevTotal) / prevTotal) * 100 : 0;
+                const changeStr = (totalChange >= 0 ? '+' : '') + totalChange.toFixed(1) + '%';
 
-                ModernCharts.updateSummaryStats(currentData, previousData, {
-                    current: 'revCurrentTotal',
-                    previous: 'revPreviousTotal',
-                    change: 'revChange'
-                });
-
-                // Sync Delta Badge in Hero Card
-                const revChangeEl = document.getElementById('revChange');
                 const heroDeltaBadge = document.getElementById('heroDeltaBadge');
                 const heroDeltaText = document.getElementById('heroDeltaText');
-                if (revChangeEl && heroDeltaBadge && heroDeltaText) {
-                    const changeStr = revChangeEl.textContent || '--';
+                if (heroDeltaBadge && heroDeltaText) {
                     heroDeltaText.textContent = changeStr;
                     heroDeltaBadge.className = 'hero-delta-badge ' + (
-                        changeStr.includes('+') ? 'positive' :
-                        changeStr.includes('-') ? 'negative' : 'neutral'
+                        totalChange > 0 ? 'positive' :
+                        totalChange < 0 ? 'negative' : 'neutral'
                     );
                 }
             }
@@ -490,11 +450,9 @@
         // Seamless chart re-render when theme changes (instant, 0ms, zero network requests)
         document.addEventListener('themeChanged', function() {
             requestAnimationFrame(function() {
-                revenueChart.destroy();
                 paymentChart.destroy();
                 categoryChart.destroy();
 
-                revenueChart = ModernCharts.initRevenueChart(revenueCtx);
                 paymentChart = ModernCharts.initDoughnut(paymentCtx);
                 categoryChart = ModernCharts.initDoughnut(categoryCtx);
 

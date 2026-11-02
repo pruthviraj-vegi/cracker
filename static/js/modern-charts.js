@@ -130,7 +130,7 @@
                 chart.update();
                 if (cLabelEl) cLabelEl.textContent = 'NO DATA';
                 if (cPctEl) cPctEl.style.display = 'none';
-                if (cValEl) cValEl.textContent = '0.00';
+                if (cValEl) cValEl.textContent = (keys && keys.minDecimals === 0) ? '0' : '0.00';
                 if (legendContainer) {
                     legendContainer.innerHTML = '<div class="text-center py-3 text-muted" style="font-size: 0.73rem; opacity: 0.7;">No records for selected period</div>';
                 }
@@ -179,10 +179,14 @@
             chart.data.datasets[0].backgroundColor = bgColors;
             chart.data.datasets[0].borderColor = borderColors;
 
-            const formattedTotal = totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const minDec = (keys && keys.minDecimals !== undefined) ? keys.minDecimals : 2;
+            const maxDec = (keys && keys.maxDecimals !== undefined) ? keys.maxDecimals : 2;
+            const defaultCenterLabel = (keys && keys.centerLabel) ? keys.centerLabel : 'TOTAL';
+
+            const formattedTotal = totalAmount.toLocaleString('en-IN', { minimumFractionDigits: minDec, maximumFractionDigits: maxDec });
 
             // Update center with total initially
-            if (cLabelEl) cLabelEl.textContent = 'TOTAL';
+            if (cLabelEl) cLabelEl.textContent = defaultCenterLabel;
             if (cPctEl) {
                 cPctEl.textContent = '100%';
                 cPctEl.style.display = totalAmount > 0 ? 'inline-block' : 'none';
@@ -231,7 +235,7 @@
                 chart.update('none');
 
                 if (idx === null) {
-                    if (cLabelEl) cLabelEl.textContent = 'TOTAL';
+                    if (cLabelEl) cLabelEl.textContent = defaultCenterLabel;
                     if (cPctEl) {
                         cPctEl.textContent = '100%';
                         cPctEl.style.display = totalAmount > 0 ? 'inline-block' : 'none';
@@ -250,7 +254,7 @@
                         cPctEl.textContent = pct + '%';
                         cPctEl.style.display = 'inline-block';
                     }
-                    if (cValEl) cValEl.textContent = (item[keys.amount] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    if (cValEl) cValEl.textContent = (item[keys.amount] || 0).toLocaleString('en-IN', { minimumFractionDigits: minDec, maximumFractionDigits: maxDec });
                 }
             }
 
@@ -283,7 +287,7 @@
                     var pctStr = pct.toFixed(1) + '%';
                     var strokeColor = borderColors[index];
                     var amount = item[keys.amount] || 0;
-                    var formattedAmount = amount.toLocaleString('en-IN');
+                    var formattedAmount = amount.toLocaleString('en-IN', { minimumFractionDigits: minDec, maximumFractionDigits: maxDec });
                     var labelText = getItemLabel(item);
 
                     var div = document.createElement('div');

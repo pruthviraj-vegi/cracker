@@ -48,14 +48,14 @@ class Customer(SoftDeleteModel):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Referral linkage: which customer referred this customer
+    # Referral linkage: which user referred this customer
     referred_by = models.ForeignKey(
-        "self",
+        User,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="referrals",
-        help_text="Referring customer (who brought this customer)",
+        help_text="User who referred this customer",
     )
 
     def __str__(self):
@@ -133,10 +133,6 @@ class Customer(SoftDeleteModel):
         # Validate email format if provided
         if self.email and "@" not in self.email:
             raise ValidationError("Please enter a valid email address.")
-
-        # Prevent setting self as referrer
-        if self.pk and self.referred_by_id == self.pk:
-            raise ValidationError("A customer cannot refer themselves.")
 
     def delete(self, *args, **kwargs):
         """Prevent deletion of the default Walk-in customer."""

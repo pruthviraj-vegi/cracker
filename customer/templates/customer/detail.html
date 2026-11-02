@@ -80,9 +80,9 @@
               <span>{{ customer.created_at|date:"M d, Y" }}</span>
             </div>
             {% if customer.referred_by %}
-              <div class="contact-item">
+              <div class="contact-item" title="Referred by">
                 <i class="fas fa-user-plus"></i>
-                <span>{{ customer.referred_by.name }}</span>
+                <span>{{ customer.referred_by.full_name|default:customer.referred_by.name }}</span>
               </div>
             {% endif %}
           </div>

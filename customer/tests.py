@@ -636,3 +636,38 @@ class PaymentFormCustomerSelectionTests(TestCase):
         from customer.forms import PaymentForm
         form = PaymentForm()
         self.assertFalse(form.fields["customer"].disabled)
+
+
+class CustomerReferralTests(TestCase):
+    """Tests for Customer referred_by relation pointing to CustomUser."""
+
+    def setUp(self):
+        self.referrer_user = create_test_user(first_name="Referrer", phone_number="9123456789")
+        self.referrer_user.last_name = "Staff"
+        self.referrer_user.save()
+
+    def test_customer_referred_by_custom_user(self):
+        """Test Customer model with referred_by pointing to a CustomUser."""
+        customer = Customer.objects.create(
+            name="Referred Client",
+            phone_number="9876543219",
+            referred_by=self.referrer_user,
+        )
+        self.assertEqual(customer.referred_by, self.referrer_user)
+        self.assertIn(customer, self.referrer_user.referrals.all())
+        self.assertEqual(self.referrer_user.name, "Referrer Staff")
+
+    def test_customer_form_referred_by_user_queryset(self):
+        """Test CustomerForm correctly accepts and populates CustomUser referrer."""
+        from customer.forms import CustomerForm
+
+        form_data = {
+            "name": "New Client",
+            "phone_number": "9876543218",
+            "referred_by": self.referrer_user.pk,
+        }
+        form = CustomerForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors)
+        saved = form.save()
+        self.assertEqual(saved.referred_by, self.referrer_user)
+        self.assertIn(self.referrer_user, form.fields["referred_by"].queryset)

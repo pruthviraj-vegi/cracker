@@ -124,42 +124,8 @@
             </div>
         </div>
 
-        <!-- ── ANALYTICS SECTION ── -->
-        <!-- Sales Comparison Chart (Controlled Compact Height) -->
-        <div class="chart-card revenue-chart-card dash-stagger-item" style="--delay: 3;">
-            <div class="chart-header">
-                <h3 class="chart-title">
-                    <i class="fa-solid fa-chart-area me-1"></i>
-                    Customer Sales Trajectory
-                </h3>
-                <div class="chart-summary-stats">
-                    <div class="stat-item">
-                        <span class="stat-label-small">
-                            <span class="legend-dot text-primary"></span>
-                            Current
-                        </span>
-                        <span class="stat-value-small" id="revCurrentTotal">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label-small">
-                            <span class="legend-dot text-secondary"></span>
-                            Previous
-                        </span>
-                        <span class="stat-value-small" id="revPreviousTotal">0</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label-small">Delta</span>
-                        <span class="stat-change" id="revChange">--</span>
-                    </div>
-                </div>
-            </div>
-            <div class="chart-container-compact">
-                <canvas id="comparisonChart"></canvas>
-            </div>
-        </div>
-
         <!-- Three Donut Charts in a Single Row -->
-        <div class="charts-three-col-grid dash-stagger-item" style="--delay: 5;">
+        <div class="charts-three-col-grid dash-stagger-item" style="--delay: 3;">
             <!-- Invoice Status Donut -->
             <div class="chart-card">
                 <div class="chart-header">
@@ -248,12 +214,10 @@
         let lastDashboardData = null;
 
         // Initialize Charts
-        const comparisonCtx = document.getElementById('comparisonChart').getContext('2d');
         const invoiceStatusCtx = document.getElementById('invoiceStatusChart').getContext('2d');
         const paymentTypeCtx = document.getElementById('paymentTypeChart').getContext('2d');
         const customerCtx = document.getElementById('customerChart').getContext('2d');
 
-        let comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
         let invoiceStatusChart = ModernCharts.initDoughnut(invoiceStatusCtx);
         let paymentTypeChart = ModernCharts.initDoughnut(paymentTypeCtx);
         let customerChart = ModernCharts.initDoughnut(customerCtx);
@@ -315,16 +279,7 @@
                 });
             }
 
-            // 2. Update Revenue Comparison Chart
-            if (data.comparison_data) {
-                const { currentData, previousData } = ModernCharts.updateRevenueChart(comparisonChart, data.comparison_data);
 
-                ModernCharts.updateSummaryStats(currentData, previousData, {
-                    current: 'revCurrentTotal',
-                    previous: 'revPreviousTotal',
-                    change: 'revChange'
-                });
-            }
 
             // 3. Update Invoice Status Chart
             ModernCharts.updateDoughnut(
@@ -371,12 +326,10 @@
         // Seamless chart re-render when theme changes (instant, 0ms, zero network calls)
         document.addEventListener('themeChanged', function() {
             requestAnimationFrame(function() {
-                comparisonChart.destroy();
                 invoiceStatusChart.destroy();
                 paymentTypeChart.destroy();
                 customerChart.destroy();
 
-                comparisonChart = ModernCharts.initRevenueChart(comparisonCtx);
                 invoiceStatusChart = ModernCharts.initDoughnut(invoiceStatusCtx);
                 paymentTypeChart = ModernCharts.initDoughnut(paymentTypeCtx);
                 customerChart = ModernCharts.initDoughnut(customerCtx);

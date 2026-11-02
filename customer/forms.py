@@ -6,10 +6,14 @@ proper validation for fields such as phone numbers, emails, and payment amounts.
 """
 
 from django import forms
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from base.forms import ThemedFormMixin
 from base.widgets import AnimatedDatePickerWidget
 from .models import Customer, Payment
+
+User = get_user_model()
 
 
 class CustomerForm(forms.ModelForm):
@@ -70,14 +74,19 @@ class CustomerForm(forms.ModelForm):
         # Override maxlength for phone_number to enforce 10 digits
         self.fields["phone_number"].widget.attrs["maxlength"] = "10"
 
-        # Referred by is optional; exclude self from choices if editing
+        # Referred by is optional; select from active users (or current referrer if editing)
         self.fields["referred_by"].required = False
-        if self.instance.pk:
-            self.fields["referred_by"].queryset = Customer.objects.exclude(
-                pk=self.instance.pk
+        user_queryset = User.objects.filter(is_active=True)
+        if self.instance.pk and self.instance.referred_by_id:
+            user_queryset = User.objects.filter(
+                Q(is_active=True) | Q(pk=self.instance.referred_by_id)
             )
-        else:
-            self.fields["referred_by"].queryset = Customer.objects.all()
+        self.fields["referred_by"].queryset = user_queryset.order_by(
+            "first_name", "last_name"
+        )
+        self.fields["referred_by"].label_from_instance = (
+            lambda user: user.full_name.strip() if hasattr(user, "full_name") else str(user)
+        )
 
     def clean_phone_number(self):
         """

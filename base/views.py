@@ -25,13 +25,193 @@ from base.utility import get_period_label, get_periodic_data
 
 from customer.models import Customer, CustomerCreditSummary, Payment
 from inventory.models import InventoryLog, ProductVariant
-from invoice.models import Invoice, ReturnInvoice
+from invoice.models import Invoice, ReturnInvoice, InvoiceItem
 from invoice.choices import PaymentStatusChoices, PaymentTypeChoices
 from supplier.models import SupplierInvoice, SupplierPayment
 
 from .forms import CustomLoginForm
 
 logger = logging.getLogger(__name__)
+
+
+def get_variant_dashboard_data(start_date, end_date):
+    """Calculate variant quantity and selling price breakdowns for invoices in the given date range.
+
+    Returns:
+        dict: Summary metrics (total_sales, total_quantity, total_selling_price, total_items_count)
+              and breakdown lists for quantity and selling price doughnut/pie charts.
+    """
+    active_invoices = Invoice.objects.filter(
+        invoice_date__date__range=[start_date, end_date],
+        is_cancelled=False,
+    )
+
+    sales_metrics = active_invoices.aggregate(
+        total_invoices=Count("id"),
+        total_sales=Coalesce(
+            Sum(F("amount") - F("discount_amount")),
+            Decimal("0"),
+            output_field=DecimalField(max_digits=16, decimal_places=2),
+        ),
+        total_gross_sales=Coalesce(
+            Sum("amount"),
+            Decimal("0"),
+            output_field=DecimalField(max_digits=16, decimal_places=2),
+        ),
+    )
+
+    invoice_items = InvoiceItem.objects.filter(invoice__in=active_invoices)
+
+    item_metrics = invoice_items.aggregate(
+        total_items_count=Count("id"),
+        total_quantity=Coalesce(
+            Sum("quantity"),
+            Decimal("0"),
+            output_field=DecimalField(max_digits=16, decimal_places=2),
+        ),
+        total_selling_price=Coalesce(
+            Sum(F("quantity") * F("unit_price")),
+            Decimal("0"),
+            output_field=DecimalField(max_digits=16, decimal_places=2),
+        ),
+    )
+
+    total_sales = sales_metrics["total_sales"]
+    total_gross_sales = sales_metrics["total_gross_sales"]
+    total_invoices_count = sales_metrics["total_invoices"]
+    total_items_count = item_metrics["total_items_count"]
+    total_quantity = item_metrics["total_quantity"]
+    total_selling_price = item_metrics["total_selling_price"]
+
+    variant_qs = list(
+        invoice_items.values(
+            "product_variant_id",
+            "product_variant__product__brand",
+            "product_variant__product__name",
+            "product_variant__size__name",
+            "product_variant__color__name",
+        )
+        .annotate(
+            qty=Coalesce(
+                Sum("quantity"),
+                Decimal("0"),
+                output_field=DecimalField(max_digits=16, decimal_places=2),
+            ),
+            selling_price_sum=Coalesce(
+                Sum(F("quantity") * F("unit_price")),
+                Decimal("0"),
+                output_field=DecimalField(max_digits=16, decimal_places=2),
+            ),
+            count=Count("id"),
+        )
+    )
+
+    def _build_variant_label(row):
+        brand = (row.get("product_variant__product__brand") or "").strip()
+        name = (row.get("product_variant__product__name") or "").strip()
+        size = (row.get("product_variant__size__name") or "").strip()
+        color = (row.get("product_variant__color__name") or "").strip()
+
+        if brand and name:
+            label = f"{brand} - {name}"
+        elif brand or name:
+            label = brand or name
+        else:
+            label = f"Variant #{row.get('product_variant_id')}"
+
+        attrs = [a for a in [size, color] if a]
+        if attrs:
+            label = f"{label} ({', '.join(attrs)})"
+        return label
+
+    tot_qty_float = float(total_quantity)
+    tot_sp_float = float(total_selling_price)
+
+    # 1. Quantity by variant breakdown
+    raw_qty_list = sorted(variant_qs, key=lambda x: x["qty"], reverse=True)
+    variant_qty_breakdown = []
+    if len(raw_qty_list) > 6:
+        top_qty = raw_qty_list[:5]
+        remaining_qty = raw_qty_list[5:]
+        for item in top_qty:
+            q = float(item["qty"])
+            variant_qty_breakdown.append({
+                "name": _build_variant_label(item),
+                "quantity": q,
+                "amount": q,
+                "count": item["count"],
+                "percentage": round(q / tot_qty_float * 100, 1) if tot_qty_float > 0 else 0,
+            })
+        others_q = sum(float(r["qty"]) for r in remaining_qty)
+        others_c = sum(r["count"] for r in remaining_qty)
+        variant_qty_breakdown.append({
+            "name": "Others",
+            "quantity": others_q,
+            "amount": others_q,
+            "count": others_c,
+            "percentage": round(others_q / tot_qty_float * 100, 1) if tot_qty_float > 0 else 0,
+        })
+    else:
+        for item in raw_qty_list:
+            q = float(item["qty"])
+            variant_qty_breakdown.append({
+                "name": _build_variant_label(item),
+                "quantity": q,
+                "amount": q,
+                "count": item["count"],
+                "percentage": round(q / tot_qty_float * 100, 1) if tot_qty_float > 0 else 0,
+            })
+
+    # 2. Selling price by variant breakdown
+    raw_sp_list = sorted(variant_qs, key=lambda x: x["selling_price_sum"], reverse=True)
+    variant_selling_price_breakdown = []
+    if len(raw_sp_list) > 6:
+        top_sp = raw_sp_list[:5]
+        remaining_sp = raw_sp_list[5:]
+        for item in top_sp:
+            s = float(item["selling_price_sum"])
+            variant_selling_price_breakdown.append({
+                "name": _build_variant_label(item),
+                "selling_price": s,
+                "amount": s,
+                "mrp": s,
+                "count": item["count"],
+                "percentage": round(s / tot_sp_float * 100, 1) if tot_sp_float > 0 else 0,
+            })
+        others_s = sum(float(r["selling_price_sum"]) for r in remaining_sp)
+        others_c = sum(r["count"] for r in remaining_sp)
+        variant_selling_price_breakdown.append({
+            "name": "Others",
+            "selling_price": others_s,
+            "amount": others_s,
+            "mrp": others_s,
+            "count": others_c,
+            "percentage": round(others_s / tot_sp_float * 100, 1) if tot_sp_float > 0 else 0,
+        })
+    else:
+        for item in raw_sp_list:
+            s = float(item["selling_price_sum"])
+            variant_selling_price_breakdown.append({
+                "name": _build_variant_label(item),
+                "selling_price": s,
+                "amount": s,
+                "mrp": s,
+                "count": item["count"],
+                "percentage": round(s / tot_sp_float * 100, 1) if tot_sp_float > 0 else 0,
+            })
+
+    return {
+        "total_sales": float(total_sales),
+        "total_gross_sales": float(total_gross_sales),
+        "total_invoices_count": total_invoices_count,
+        "total_items_count": total_items_count,
+        "total_quantity": float(total_quantity),
+        "total_selling_price": float(total_selling_price),
+        "total_mrp": float(total_selling_price),
+        "variant_qty_breakdown": variant_qty_breakdown,
+        "variant_selling_price_breakdown": variant_selling_price_breakdown,
+        "variant_mrp_breakdown": variant_selling_price_breakdown,
+    }
 
 
 class CustomLoginView(LoginView):
@@ -189,11 +369,19 @@ class HomeView(TemplateView):
             is_deleted=False, status=ProductVariant.VariantStatus.ACTIVE
         ).count()
 
+        today = timezone.now().date()
+        today_data = get_variant_dashboard_data(today, today)
+
         context["user"] = self.request.user
         context["customer_receivable"] = customer_receivable
         context["total_customers"] = total_customers
         context["supplier_balance"] = supplier_balance
         context["total_products"] = total_products
+        context["today_sales"] = today_data["total_sales"]
+        context["today_quantity"] = today_data["total_quantity"]
+        context["today_items_count"] = today_data["total_items_count"]
+        context["today_selling_price"] = today_data["total_selling_price"]
+        context["today_mrp"] = today_data["total_mrp"]
 
         return context
 
@@ -220,7 +408,7 @@ def dashboard_stats(request):
     """Return date-dependent dashboard statistics for the main dashboard.
 
     AJAX endpoint that returns invoice stats, combined payment method breakdown,
-    and comparison data for the revenue chart based on the selected date filter.
+    variant quantity & MRP breakdowns, and comparison data for the revenue chart.
     """
     date_filter = request.GET.get("date_filter", "this_month")
     start_date, end_date = getDates(request)
@@ -325,14 +513,30 @@ def dashboard_stats(request):
     # Comparison data for stock in vs stock out chart
     comparison_data = get_inventory_comparison_data(date_filter, start_date, end_date)
 
+    # Variant and sales statistics for the period
+    variant_data = get_variant_dashboard_data(start_date, end_date)
+
     return JsonResponse(
         {
             "success": True,
             "stats": {
-                "total_invoices": invoice_stats["total_invoices"],
+                "total_invoices": variant_data["total_invoices_count"],
+                "cash_invoices": invoice_stats["total_invoices"],
                 "total_received": total_received,
+                "total_sales": variant_data["total_sales"],
+                "total_gross_sales": variant_data["total_gross_sales"],
+                "total_items_count": variant_data["total_items_count"],
+                "total_quantity": variant_data["total_quantity"],
+                "total_selling_price": variant_data["total_selling_price"],
+                "total_mrp": variant_data["total_mrp"],
             },
             "payment_method_breakdown": combined_breakdown,
+            "variant_qty_breakdown": variant_data["variant_qty_breakdown"],
+            "variant_selling_price_breakdown": variant_data["variant_selling_price_breakdown"],
+            "variant_mrp_breakdown": variant_data["variant_mrp_breakdown"],
+            "total_quantity": variant_data["total_quantity"],
+            "total_selling_price": variant_data["total_selling_price"],
+            "total_mrp": variant_data["total_mrp"],
             "comparison_data": comparison_data,
             "date_range": {
                 "start_date": start_date.isoformat(),
