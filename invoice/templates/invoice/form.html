@@ -5,6 +5,56 @@
 {{ title }}
 {% endblock title %}
 
+{% block extra_css %}
+<style>
+  .discount-preset-group {
+    display: flex;
+    background: var(--toggle-bg, var(--bg-surface-hover, #f1f5f9));
+    border: 1px solid var(--toggle-border, var(--border-color, #cbd5e1));
+    border-radius: var(--toggle-radius, 6px);
+    padding: 2px;
+    gap: 3px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+  }
+
+  .discount-preset-btn {
+    flex: 1;
+    padding: 4px 2px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid transparent;
+    border-radius: calc(var(--toggle-radius, 6px) - 2px);
+    background: transparent;
+    color: var(--toggle-text, var(--text-secondary, #64748b));
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    line-height: 1.2;
+    user-select: none;
+    outline: none;
+  }
+
+  .discount-preset-btn:hover {
+    color: var(--toggle-text-hover, var(--text-primary, #0f172a));
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  [data-theme="dark"] .discount-preset-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .discount-preset-btn.active {
+    background: var(--toggle-active-bg, var(--primary, #2563eb));
+    color: var(--toggle-active-text, #ffffff);
+    border-color: var(--toggle-active-border, var(--primary, #2563eb));
+    font-weight: 700;
+    box-shadow: var(--toggle-active-shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
+  }
+</style>
+{% endblock extra_css %}
+
 
 {% block content %}
 <!-- Page Header -->
@@ -135,7 +185,7 @@
             <!-- Amounts Row -->
             <div class="row">
               <!-- Amount Field -->
-              <div class="col-md-4 mb-2">
+              <div class="col-md-3 col-sm-6 mb-2">
                 <div class="form-group {% if form.amount.errors %}has-error{% endif %}">
                   <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
                   {{ form.amount }}
@@ -151,8 +201,29 @@
                   {% endif %}
                 </div>
               </div>
+              <!-- Discount Percentage Field (Frontend) -->
+              <div class="col-md-3 col-sm-6 mb-2">
+                <div class="form-group">
+                  <label for="id_discount_percentage" class="form-label">Discount (%)</label>
+                  <input type="number"
+                         id="id_discount_percentage"
+                         class="form-input indian-number"
+                         placeholder="0"
+                         min="0"
+                         max="100"
+                         step="any"
+                         autocomplete="off">
+                  <div class="discount-preset-group" role="group" aria-label="Quick discount presets">
+                    <button type="button" class="discount-preset-btn" data-percent="5">5%</button>
+                    <button type="button" class="discount-preset-btn" data-percent="10">10%</button>
+                    <button type="button" class="discount-preset-btn" data-percent="15">15%</button>
+                    <button type="button" class="discount-preset-btn" data-percent="20">20%</button>
+                  </div>
+                  <small class="form-help"><span class="form-help-text">Click % or enter manually</span></small>
+                </div>
+              </div>
               <!-- Discount Amount Field -->
-              <div class="col-md-4 mb-2">
+              <div class="col-md-3 col-sm-6 mb-2">
                 <div class="form-group {% if form.discount_amount.errors %}has-error{% endif %}">
                   <label for="{{ form.discount_amount.id_for_label }}" class="form-label">{{ form.discount_amount.label }}</label>
                   {{ form.discount_amount }}
@@ -169,7 +240,7 @@
                 </div>
               </div>
               <!-- Advance Amount Field -->
-              <div class="col-md-4 mb-2">
+              <div class="col-md-3 col-sm-6 mb-2">
                 <div class="form-group {% if form.advance_amount.errors %}has-error{% endif %}">
                   <label for="{{ form.advance_amount.id_for_label }}" class="form-label">{{ form.advance_amount.label }}</label>
                   {{ form.advance_amount }}
@@ -453,10 +524,118 @@
       }
     });
 
-    // Listen for input changes to update totals in real-time
-    [amountField, discountAmountField, advanceAmountField].forEach(field => {
-      field.addEventListener('input', updateTotals);
+    const discountPercentField = document.getElementById('id_discount_percentage');
+    const discountPresetButtons = document.querySelectorAll('.discount-preset-btn');
+
+    function updateActivePreset(currentPercent) {
+      const num = parseFloat(currentPercent);
+      discountPresetButtons.forEach(btn => {
+        const btnVal = parseFloat(btn.dataset.percent);
+        if (!isNaN(num) && num === btnVal) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    function syncPercentFromDiscount() {
+      if (!discountPercentField || !amountField || !discountAmountField) return;
+      const subTotal = parseFloat(amountField.value.replace(/,/g, '')) || 0;
+      const discount = parseFloat(discountAmountField.value.replace(/,/g, '')) || 0;
+      if (subTotal > 0 && discount > 0) {
+        const pct = (discount / subTotal) * 100;
+        const formattedPct = Number.isInteger(pct) ? pct : parseFloat(pct.toFixed(2));
+        discountPercentField.value = formattedPct;
+        updateActivePreset(formattedPct);
+      } else {
+        discountPercentField.value = '';
+        updateActivePreset(null);
+      }
+    }
+
+    // Sync percentage on page load if discount already exists
+    syncPercentFromDiscount();
+
+    // Quick discount preset click handling
+    discountPresetButtons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        const percent = parseFloat(this.dataset.percent);
+        const subTotal = parseFloat(amountField.value.replace(/,/g, '')) || 0;
+
+        // Toggle behavior: if already active, unselect and clear discount
+        if (this.classList.contains('active')) {
+          this.classList.remove('active');
+          if (discountPercentField) discountPercentField.value = '';
+          if (discountAmountField) discountAmountField.value = '0';
+        } else {
+          updateActivePreset(percent);
+          if (discountPercentField) discountPercentField.value = percent;
+          if (discountAmountField) {
+            const calculatedDiscount = (subTotal * percent) / 100;
+            discountAmountField.value = calculatedDiscount.toFixed(2);
+          }
+        }
+        updateTotals();
+      });
     });
+
+    // Listen for discount percentage input
+    if (discountPercentField) {
+      discountPercentField.addEventListener('input', function () {
+        const subTotal = parseFloat(amountField.value.replace(/,/g, '')) || 0;
+        const val = this.value.trim();
+
+        if (val === '' || isNaN(parseFloat(val))) {
+          discountAmountField.value = '0';
+          updateActivePreset(null);
+        } else {
+          let percent = parseFloat(val);
+          if (percent < 0) {
+            percent = 0;
+            this.value = '0';
+          } else if (percent > 100) {
+            percent = 100;
+            this.value = '100';
+          }
+          const calculatedDiscount = (subTotal * percent) / 100;
+          discountAmountField.value = calculatedDiscount.toFixed(2);
+          updateActivePreset(percent);
+        }
+        updateTotals();
+      });
+    }
+
+    // Listen for direct discount amount input
+    if (discountAmountField) {
+      discountAmountField.addEventListener('input', function () {
+        syncPercentFromDiscount();
+        updateTotals();
+      });
+    }
+
+    // Listen for amount changes
+    if (amountField) {
+      amountField.addEventListener('input', function () {
+        if (discountPercentField && discountPercentField.value.trim() !== '') {
+          const subTotal = parseFloat(this.value.replace(/,/g, '')) || 0;
+          let percent = parseFloat(discountPercentField.value) || 0;
+          if (percent > 100) percent = 100;
+          if (percent < 0) percent = 0;
+          const calculatedDiscount = (subTotal * percent) / 100;
+          discountAmountField.value = calculatedDiscount.toFixed(2);
+          updateActivePreset(percent);
+        } else {
+          syncPercentFromDiscount();
+        }
+        updateTotals();
+      });
+    }
+
+    // Listen for advance amount changes
+    if (advanceAmountField) {
+      advanceAmountField.addEventListener('input', updateTotals);
+    }
 
     // Initial setup
     toggleFields();
